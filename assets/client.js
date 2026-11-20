@@ -45,15 +45,22 @@ async function run(q, label='Ocurrió un error') {
   return data;
 }
 let authModalTrigger=null;
+let pendingLoginChallenge=null;
+let pendingLoginTimer=null;
+function stopLoginPolling(){
+ if(pendingLoginTimer!==null){clearTimeout(pendingLoginTimer);pendingLoginTimer=null;}
+ pendingLoginChallenge=null;
+}
 function closeAuthModal(){
  const modal=$('#authModal');
  if(!modal||modal.classList.contains('hidden'))return;
  modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');
  document.body.classList.remove('auth-modal-open');
- $('#memberAccessKey').value='';
+ stopLoginPolling();
  authModalTrigger?.focus?.();authModalTrigger=null;
 }
 function openAuthModal(screen='signin'){
+ stopLoginPolling();
  if(customer&&screen==='signin'){show('account');return;}
  authModalTrigger=document.activeElement;setAuthScreen(screen);
  $('#memberVerification').classList.add('hidden');
@@ -77,6 +84,7 @@ function show(which){
  }
 }
 function setAuthScreen(screen){
+ stopLoginPolling();
  const registering=screen==='register';
  $('#memberLoginView').classList.toggle('hidden',registering);
  $('#registerView').classList.toggle('hidden',!registering);
@@ -132,9 +140,47 @@ function normalizeName(value){
  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
  .replace(/\s+/g,' ').trim().toLocaleLowerCase('es-CO');
 }
+function generateLoginChallenge(){
+ const raw=crypto.getRandomValues(new Uint8Array(32));
+ return btoa(String.fromCharCode(...raw)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function pollMemberLogin(challenge,startedAt){
+ if(pendingLoginChallenge!==challenge)return;
+ if(Date.now()-startedAt>=10*60*1000){
+  stopLoginPolling();
+  $('#memberVerificationMessage').textContent='La solicitud venció. Puedes volver a iniciar sesión y pedir una nueva aprobación.';
+  $('#memberLoginFeedback').textContent='Solicitud vencida: vuelve a intentarlo.';
+  $('#memberLoginFeedback').classList.remove('hidden');
+  return;
+ }
+ try{
+  const {data,error}=await sb.functions.invoke('bellalovers-ingresar',{body:{action:'status',challenge}});
+  if(pendingLoginChallenge!==challenge)return;
+  if(error)throw error;
+  if(data?.status==='aprobada'&&data.access_token&&data.refresh_token){
+   const {error:sessionError}=await sb.auth.setSession({
+    access_token:data.access_token,refresh_token:data.refresh_token
+   });
+   if(sessionError)throw sessionError;
+   stopLoginPolling();
+   await loadUser();
+   notify('¡Tu ingreso fue aprobado! Bienvenida a BellaLovers.');
+   return;
+  }
+  if(['rechazada','vencida','error'].includes(data?.status)){
+   stopLoginPolling();
+   $('#memberVerificationMessage').textContent=data?.status==='rechazada'?
+    'BellaShop no autorizó este ingreso. Comunícate con la tienda para confirmar tu identidad.':
+    data?.message||'Esta solicitud terminó. Puedes solicitar el ingreso nuevamente.';
+   return;
+  }
+ }catch(err){console.warn('Consulta de autorización:',err.message);}
+ if(pendingLoginChallenge===challenge)pendingLoginTimer=setTimeout(()=>pollMemberLogin(challenge,startedAt),4000);
+}
 async function sendMemberAccess(event){
  event.preventDefault();
  const info=$('#memberLoginFeedback'),verify=$('#memberVerification');
+ const button=$('#memberLoginForm button[type=submit]');
  try{
   const identifier=normalizeIdentifier($('#memberIdentifier').value);
   const name=$('#memberFullName').value.trim();
@@ -149,41 +195,24 @@ async function sendMemberAccess(event){
     await loadUser();return;
    }
   }
-  verify.classList.remove('hidden');
-  info.textContent='Para proteger tus compras y puntos, BellaShop debe confirmar que eres la titular cuando ingresas desde un dispositivo nuevo.';
-  info.classList.remove('hidden');
-  $('#memberAccessKey').focus();
- }catch(err){
-  info.textContent=err.message||'Revisa tus datos.';
-  info.classList.remove('hidden');verify.classList.add('hidden');
- }
-}
-async function verifyMemberAccess(event){
- event.preventDefault();
- const info=$('#memberLoginFeedback'),button=$('#memberKeyForm button[type=submit]');
- try{
-  if(!sb)throw new Error('No se pudo conectar con BellaLovers.');
-  const identifier=normalizeIdentifier($('#memberIdentifier').value);
-  const name=$('#memberFullName').value.trim();
-  if(!name.includes(' '))throw new Error('Escribe nombre y apellido completos.');
-  const key=$('#memberAccessKey').value.trim().toUpperCase();
-  if(!/^[A-HJ-NP-Z2-9]{12}$/.test(key))throw new Error('Revisa la clave de acceso.');
-  setLoading(button,true,'Verificando acceso…');
+  setLoading(button,true,'Solicitando autorización…');
+  stopLoginPolling();
+  const challenge=generateLoginChallenge();
   const {data,error}=await sb.functions.invoke('bellalovers-ingresar',{
-   body:{identifier,full_name:name,access_key:key}
+   body:{action:'request',identifier,full_name:name,challenge}
   });
-  if(error||!data?.success||!data.access_token||!data.refresh_token)
-   throw new Error(data?.error||'No se pudo confirmar tu identidad. Consulta con BellaShop.');
-  const {error:sessionError}=await sb.auth.setSession({
-   access_token:data.access_token,refresh_token:data.refresh_token
-  });
-  if(sessionError)throw sessionError;
-  $('#memberAccessKey').value='';
-  await loadUser();
-  notify('¡Bienvenida a tu cuenta BellaLovers!');
- }catch(err){
-  info.textContent=err.message||'No fue posible ingresar.';
+  if(error)throw error;
+  pendingLoginChallenge=challenge;
+  verify.classList.remove('hidden');
+  $('#memberVerificationMessage').textContent='Tu solicitud está pendiente de aprobación. Comunícate con BellaShop por WhatsApp o acércate al local para que verifiquen tu identidad y autoricen tu ingreso.';
+  info.textContent=data?.message||'Si tu membresía está activa, BellaShop podrá autorizarte. Esta ventana esperará la respuesta.';
   info.classList.remove('hidden');
+  const startedAt=Date.now();
+  pendingLoginTimer=setTimeout(()=>pollMemberLogin(challenge,startedAt),4000);
+ }catch(err){
+  info.textContent='No se pudo enviar tu solicitud. Intenta de nuevo o consulta con BellaShop.';
+  info.classList.remove('hidden');
+  verify.classList.add('hidden');
  }finally{setLoading(button,false);}
 }
 
@@ -364,7 +393,7 @@ async function loadJoinStatus(){
 function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
- $('#memberKeyForm').addEventListener('submit',verifyMemberAccess);
+ $('#cancelMemberLogin').addEventListener('click',()=>{stopLoginPolling();$('#memberVerification').classList.add('hidden');$('#memberLoginFeedback').classList.add('hidden');});
  $('#closeAuthModal').addEventListener('click',closeAuthModal);
  $('#authModal').addEventListener('click',event=>{if(event.target===$('#authModal'))closeAuthModal();});
  document.addEventListener('keydown',handleAuthKeydown);
