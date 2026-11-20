@@ -19,6 +19,19 @@ La jefa también puede **rechazar** solicitudes dando un motivo; la decisión qu
 
 **Muy importante:** el celular de la solicitud es de contacto y **no queda verificado digitalmente**. BellaShop debe contrastar ese número, el nombre y la factura de la compra al aprobar la solicitud. La propiedad del correo sí se prueba al abrir el enlace enviado allí.
 
+## Profesoras afiliadas: directorio exclusivo de BellaShop
+
+**Nadie puede registrarse como profesora afiliada por su cuenta.** El formulario público solo ofrece las categorías Estudiante y Manicurista/cliente frecuente.
+
+- Administrador → **Profesoras**: agregar un nombre, editarlo, retirar del listado, reactivarlo y compartir enlace/QR. Los códigos `BLP-XXXXXXXX` se crean automáticamente, nunca los inventa la clienta.
+- Solicitudes de ingreso: el desplegable **«¿Qué profesora afiliada te recomendó?»** muestra únicamente nombres de profesoras activas o la opción «Ninguna».
+- Supabase restringe el alta y cambios a un administrador vigente; el público consulta por RPC exclusivamente **nombre y código de profesoras activas**. No se exponen los datos de sus cuentas ni números de teléfono.
+- **Retirar** es una desactivación reversible, no un borrado de historial: desaparece de nuevas solicitudes, pero las recomendaciones previas se conservan.
+- La aprobación por primera factura vincula la recomendación a la profesora afiliada seleccionada. Para que pueda **recibir puntos por referidos**, debe tener una membresía aprobada, categoría Profesora y estar vinculada desde ese mismo formulario del administrador. Si aún no está vinculada, se conserva la recomendación para reconocer los puntos elegibles al vincularla posteriormente, sin duplicar abonos.
+- Las solicitudes con profesora elegida se ven en Administrador → Solicitudes de ingreso, junto con los datos de la primera compra.
+
+**Actualmente el directorio parte vacío; BellaShop decide quiénes serán afiliadas.** No se añaden profesoras ficticias.
+
 ## Reglas de puntos
 
 - Compra elegible desde **$50.000 en productos = 5 puntos**.
@@ -37,7 +50,7 @@ Las reglas ya programadas en el backend se conservan; aprobar la solicitud con s
 - **Clientas:** saldos, movimientos, categorías, bloqueo, archivo y restauración con auditoría.
 - **Compras:** facturas únicas, canales WhatsApp/tienda/web/domicilio, anulaciones y puntos.
 - **Recompensas:** crear y editar premios con fotografía, stock, referencia, costo y categoría. Los premios aparecen **dentro de la cuenta de clientas aprobadas**, no en la portada pública.
-- **Profesoras:** referidos, códigos y beneficios según condiciones.
+- **Profesoras afiliadas:** alta, edición, retiro/restauración, vínculo a cuentas, referencias y QR, autorizados por BellaShop.
 - **Equipo y accesos:** permisos para operadores y administradores previamente autorizados.
 - **Configuración:** activar o pausar la **recepción de solicitudes**; las aprobaciones siguen siendo siempre manuales.
 
@@ -45,7 +58,7 @@ El formulario para crear el primer administrador desde la web está deshabilitad
 
 ## Qué falta para abrir solicitudes al público
 
-La recepción pública está **desactivada** (`bl_settings.join_requests_open=false`). El viejo inicio automático por SMS está desactivado (`signup_open=false`, sin permiso de ejecutar `bl_register`). Para activar:
+La recepción pública se administra desde **Configuración** (`bl_settings.join_requests_open`) y puede estar abierta o pausada según decisión de BellaShop. El viejo inicio automático por SMS está desactivado (`signup_open=false`, sin permiso de ejecutar `bl_register`). Para activar:
 
 1. **Completar y aprobar la política de datos**: la página `politica-datos.html` sigue siendo un BORRADOR; faltan nombre legal/NIT, dirección, vigencia y revisión de terceros encargados. No abrir el formulario de datos personales antes de publicar una versión adecuada.
 2. En Supabase → **Authentication → URL Configuration**, configurar:
@@ -73,7 +86,7 @@ La inscripción es **solicitud**, NO membresía. Crear usuarios desde el botón 
 - Frontend: `index.html`, `admin.html`, `assets/client.js`, `assets/admin.js`.
 - Función de aprobación: `supabase/functions/bellalovers-aprobar/index.ts` (deploy ya realizado en BellaLovers).
 - Base: `supabase/schema.sql`.
-- Incrementales (en orden): `20261120_restauracion_y_equipo.sql` → `20261120_premios_canales_registro.sql` → `20261120_seguridad_admin.sql` → `20261120_solicitudes_y_primera_compra.sql`.
+- Incrementales (en orden): `20261120_restauracion_y_equipo.sql` → `20261120_premios_canales_registro.sql` → `20261120_seguridad_admin.sql` → `20261120_solicitudes_y_primera_compra.sql` → `20261120_profesoras_afiliadas.sql`.
 
 **Los cambios del esquema ya se aplicaron solo al proyecto BellaLovers**. No ejecutar migraciones en RutaYa, Master Viviana ni inventario de BellaShop.
 
