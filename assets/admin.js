@@ -168,7 +168,8 @@ function setup(){
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
  $('#csvCustomers').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');
  $('#csvPurchases').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Factura','Cliente','Total productos','Domicilio','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,uname(p.customer_id),p.products_total,p.delivery_fee,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');
- if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');$('#adminPreviewLogin').classList.remove('hidden');return;}
+ $('#adminPreviewLogin').classList.remove('hidden');
+ if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');return;}
  db('admin').then(async s=>{sb=s;const {data:{session}}=await sb.auth.getSession();if(session)await initAdmin();}).catch(err=>notify(err.message,'error'));
 }
 async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
