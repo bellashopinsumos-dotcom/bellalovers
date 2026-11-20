@@ -13,7 +13,7 @@ Sitio en GitHub Pages, administrador exclusivo y base de datos independiente en 
 3. Cuando esa persona haga su **primera compra**, BellaShop verifica su factura real, presencial, por WhatsApp, web o domicilio.
 4. Desde administración → **Solicitudes de ingreso**, la jefa selecciona la solicitud, introduce número único de factura, valor de productos y canal, y pulsa **Confirmar factura y aprobar membresía**.
 5. Una función segura de Supabase, `bellalovers-aprobar`, verifica la sesión de administrador, envía una **invitación al correo** y registra la membresía, factura y puntos a través de una operación controlada.
-6. La clienta puede entrar a **Mi cuenta** mediante un enlace de un solo uso enviado a su correo. El envío del enlace usa `signInWithOtp` **con `shouldCreateUser:false`**: no crea usuarios nuevos.
+6. La clienta entra a **Mi cuenta** escribiendo su **celular o correo más el nombre completo**. Una función de servidor comprueba que fue aprobada y envía un enlace de un solo uso al correo registrado. El envío utiliza `signInWithOtp` **con `shouldCreateUser:false`**: no crea usuarios nuevos.
 
 La jefa también puede **rechazar** solicitudes dando un motivo; la decisión queda auditada. Nunca se aprueba automáticamente por el simple hecho de enviar el formulario o conocer el enlace.
 
@@ -31,6 +31,27 @@ La jefa también puede **rechazar** solicitudes dando un motivo; la decisión qu
 - Las solicitudes con profesora elegida se ven en Administrador → Solicitudes de ingreso, junto con los datos de la primera compra.
 
 **Actualmente el directorio parte vacío; BellaShop decide quiénes serán afiliadas.** No se añaden profesoras ficticias.
+
+## Cuenta personal de las BellaLovers aprobadas
+
+En la portada hay dos recorridos separados: **Solicitar ingreso** (requiere posterior aprobación al comprar) y **Entrar a mi cuenta** (solo miembros aprobados).
+
+La sección de ingreso pide:
+
+- **Celular colombiano o correo electrónico**: basta cualquiera de los dos.
+- **Nombre completo tal como quedó registrado**: uno o más nombres, uno o más apellidos, según la solicitud aprobada.
+
+El formulario NO inicia una sesión simplemente por acertar nombre y celular: la Edge Function `bellalovers-acceso` solo busca una solicitud **aprobada** y un perfil activo, comprueba la coincidencia del nombre y **envía el enlace seguro al correo ya registrado**. El servidor no revela el correo de la clienta ni informa si existe la cuenta. No se utiliza SMS. Esta función usa un límite de intentos por identificador y dirección IP (`bl_member_access_limits`, accesible solamente mediante service role); requiere correo saliente real operativo.
+
+Después de confirmar el enlace enviado al correo, la clienta visualiza:
+
+- **Carné digital** con nombre, categoría, identificador y **«Miembro desde»** la fecha real de creación del perfil.
+- **Saldo actual** y progreso hacia los **50 puntos** mínimos.
+- **Compras facturadas** con valor de productos, fecha, estado y puntos ganados (también WhatsApp o domicilio).
+- **Movimientos de puntos**, vencimientos y solicitudes de premios.
+- **Recompensas que BellaShop publicó desde su panel:** si no hay, **«Próximamente tendremos recompensas para ti»**. Si hay premios pero tiene menos de 50 puntos, se ven con botón de canje bloqueado y contador de puntos que le faltan. A partir de 50 puntos, puede solicitar los premios que alcance a pagar con su saldo, si hay existencias; BellaShop valida la entrega. Puede pulsar **Actualizar premios** después de cambios del administrador.
+
+**No publicar jamás datos de una clienta solo con celular y nombre:** ambos pueden ser conocidos por terceros. El enlace enviado a su correo es la verificación de titularidad. Si una clienta pierde acceso a ese correo, BellaShop necesitará un procedimiento de verificación de identidad y cambio de contacto administrado de forma segura, no una vía pública que entregue la cuenta.
 
 ## Reglas de puntos
 
@@ -86,8 +107,10 @@ La inscripción es **solicitud**, NO membresía. Crear usuarios desde el botón 
 - Frontend: `index.html`, `admin.html`, `assets/client.js`, `assets/admin.js`.
 - Función de aprobación: `supabase/functions/bellalovers-aprobar/index.ts` (deploy ya realizado en BellaLovers).
 - Base: `supabase/schema.sql`.
-- Incrementales (en orden): `20261120_restauracion_y_equipo.sql` → `20261120_premios_canales_registro.sql` → `20261120_seguridad_admin.sql` → `20261120_solicitudes_y_primera_compra.sql` → `20261120_profesoras_afiliadas.sql`.
+- Incrementales (en orden): `20261120_restauracion_y_equipo.sql` → `20261120_premios_canales_registro.sql` → `20261120_seguridad_admin.sql` → `20261120_solicitudes_y_primera_compra.sql` → `20261120_profesoras_afiliadas.sql` → `20261120_acceso_seguro_miembros.sql`.
 
 **Los cambios del esquema ya se aplicaron solo al proyecto BellaLovers**. No ejecutar migraciones en RutaYa, Master Viviana ni inventario de BellaShop.
 
 Pruebas: `npm test` y `node --check` en GitHub Actions. Las pruebas de sintaxis y reglas no sustituyen una prueba completa de correo y compras reales.
+
+- Función de acceso de miembros: `supabase/functions/bellalovers-acceso/index.ts` (deploy realizado en Supabase BellaLovers; requiere que el correo funcione y que la URL esté autorizada).
