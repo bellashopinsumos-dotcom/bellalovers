@@ -43,6 +43,7 @@ function show(which) {
   ['#loginPanel','#account'].forEach(selector=>$(selector).classList.add('hidden'));
   $('#acceso').classList.toggle('hidden',which==='account');
   const nav=$('#navCuenta');
+  $('#navRegister')?.classList.toggle('hidden',which==='account');
   if(which==='login'){
     $('#loginPanel').classList.remove('hidden');
     if(nav){nav.href='#acceso';nav.dataset.openAuth='signin';nav.innerHTML='Iniciar sesión <span aria-hidden="true">♡</span>';}
