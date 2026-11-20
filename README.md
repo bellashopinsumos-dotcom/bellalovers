@@ -39,33 +39,47 @@ Compra mínima elegible: $50.000 COP; 1 punto por $10.000 completos en productos
 - Las cuentas no se eliminan al archivarlas. Para solicitudes legales de supresión definitiva se requiere un procedimiento separado, con revisión de obligaciones de conservación.
 - No se permiten restablecimientos arbitrarios de contraseñas ni acceso a las sesiones de clientes.
 
-## Pendiente para ponerlo en producción
+## Cambios implementados: premios públicos y compras por canales
 
-1. Crear en **Authentication → Users** el usuario de `bellashopinsumos@gmail.com`, confirmar su correo y establecer una contraseña robusta. Después, autorizarlo como administrador desde el SQL Editor:
+- El administrador registra el origen de la factura como tienda, WhatsApp, página web, domicilio u otro.
+- Los puntos se calculan con el valor de **productos pagados**, sin el costo de transporte, independientemente del canal. En ventas WhatsApp o entregadas a domicilio se aplican las mismas reglas de compras válidas que en el mostrador.
+- Premios en la tabla `bl_rewards`: referencia real, nombre, costo interno (privado), puntos, unidades, reservado, categoría, imagen y publicación.
+- El administrador puede subir JPG/PNG/WEBP hasta 3 MB al bucket `bellalovers-premios` (escritura solo administrador).
+- La vitrina pública carga premios publicados y con stock a través de `bl_public_rewards`; nunca devuelve `unit_cost` ni datos personales.
+- Carné digital y avisos de vencimientos/solicitudes en cuentas que hayan iniciado sesión.
+- Nueva migración: `supabase/migrations/20261120_premios_canales_registro.sql`.
 
-   ```sql
-   insert into public.bl_staff(user_id,role,active)
-   select id,'admin',true
-   from auth.users where lower(email)='bellashopinsumos@gmail.com'
-     and email_confirmed_at is not null
-   on conflict (user_id) do update set role='admin',active=true;
-   ```
+## Activación del primer administrador
 
-   No ejecutes este paso si todavía no controlas el correo. Nunca compartas la contraseña en chats o archivos.
+Desde `admin.html` pulsa **Primer ingreso: activar cuenta BellaShop**. La aplicación solo permite iniciar el proceso para `bellashopinsumos@gmail.com`, requiere una contraseña robusta de 12 o más caracteres y un correo confirmado. Supabase enviará un enlace de verificación. Una vez confirmado, se puede ingresar desde la misma página. La RPC `bl_claim_first_admin` da el primer permiso únicamente a ese correo confirmado, y solo mientras no exista otro administrador activo.
 
-2. Agregar estas direcciones a **Authentication → URL Configuration** en Supabase:
-   - Site URL: `https://bellashopinsumos-dotcom.github.io/bellalovers/`
-   - Additional Redirect URLs: `https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html`
-3. Configurar proveedor de SMS autorizado para Colombia y probar el registro/verificación.
-4. Aprobar la política de tratamiento de datos definitiva, **entonces** cambiar `legalPolicyApproved: false` a `true` en `assets/config.js`. No hacerlo antes.
-5. Cargar recompensas reales con costos y stock aprobados por la jefa. Integración con el inventario central de BellaShop pendiente.
-6. Probar operaciones completas con usuarios de prueba autorizados y supervisión de la jefa; validar correos de recuperación y auditorías.
+**Antes de crear la cuenta**, en Supabase → Authentication → URL Configuration establece:
 
-**Estado al 20/11/2026:** backend creado y conectado, migraciones aplicadas, código y diseño publicados. Se eliminaron los datos y accesos de demostración. La base está vacía: no hay aún clientas, compras, premios ni administradores. El registro público continúa desactivado hasta configurar SMS y aprobar el tratamiento de datos.
+- Site URL: `https://bellashopinsumos-dotcom.github.io/bellalovers/`
+- Additional Redirect URL: `https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html`
+
+Si el correo de confirmación no llega, revisa los límites de envío de Supabase y la configuración de proveedor de correo. No compartas la contraseña ni llaves secretas en archivos del sitio.
+
+## Inscripciones de clientas: preparados, NO ABIERTAS
+
+El formulario para registro con celular y SMS OTP está implementado, pero **la bandera `signup_open` de `bl_settings` permanece en false**. Para abrir desde el administrador:
+
+1. Configurar en Supabase Authentication → Providers el proveedor **Phone/SMS** para Colombia, probar envío real y revisar costos, límites y controles antispam.
+2. Completar, revisar y publicar una política de datos real: identificación legal, dirección, responsables, proveedores y vigencia. La página `politica-datos.html` es todavía un **borrador**, no sustituye la aprobación de BellaShop.
+3. En administración → Configuración → Activación de inscripciones, confirmar ambos puntos, pulsar **Abrir inscripciones**. La RPC de registro hace el control del estado del lado servidor; no basta con cambiar el HTML.
+
+No abrir antes de comprobar los pasos anteriores, o la inscripción fallará y los datos pueden quedar mal tratados.
+
+## Verificación y puesta en marcha
+
+- En este momento no se ha añadido ninguna cuenta o premio ficticio; la base sigue vacía hasta que se registren personas reales.
+- Revisa los premios y sus costos con la jefa antes de publicarlos.
+- Comprueba la asignación de puntos, devoluciones, referidos y redenciones con personas autorizadas.
+- La integración con el inventario central y el envío de mensajes proactivos por WhatsApp siguen pendientes de infraestructura y aprobación.
 
 ## Instalación de otra instancia
 
-Ejecutar primero `supabase/schema.sql` en un proyecto nuevo y luego `supabase/migrations/20261120_restauracion_y_equipo.sql`. Revisar y adaptar `assets/config.js` a los valores publicables del proyecto. No ejecutar migrations sobre otras aplicaciones. Mantener control de cambios y respaldos antes de producción.
+Ejecutar primero `supabase/schema.sql` en un proyecto nuevo, después `supabase/migrations/20261120_restauracion_y_equipo.sql` y finalmente `supabase/migrations/20261120_premios_canales_registro.sql`. Revisar y adaptar `assets/config.js` a los valores publicables del proyecto. No ejecutar migrations sobre otras aplicaciones. Mantener control de cambios y respaldos antes de producción.
 
 ## Pruebas automáticas
 
