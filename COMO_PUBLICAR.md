@@ -1,11 +1,11 @@
 # BellaLovers — publicación y operación
 
-La página de demostración se publica desde la rama `main`, carpeta `/(root)` en GitHub Pages:
+La página de BellaLovers se publica desde la rama `main`, carpeta `/(root)` en GitHub Pages:
 
 - Página pública: https://bellashopinsumos-dotcom.github.io/bellalovers/
 - Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-**Actualización 20/11/2026:** el proyecto Supabase BellaLovers YA está creado y conectado mediante clave publicable. La web conserva el modo de demostración; `legalPolicyApproved: false` impide registros públicos mientras no exista política definitiva ni verificación SMS. No se deben usar datos reales todavía.
+**Actualización 20/11/2026:** el proyecto Supabase BellaLovers YA está creado y conectado mediante clave publicable. Los datos y botones ficticios fueron retirados. No hay clientas, compras ni premios cargados; `legalPolicyApproved: false` impide registros públicos mientras no exista política definitiva ni verificación SMS. La activación del registro requiere primero pruebas autorizadas y la política de tratamiento de datos.
 
 ## Qué falta para operar
 
