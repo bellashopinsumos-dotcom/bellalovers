@@ -118,7 +118,7 @@ async function sendJoinRequest(event) {
  try{
   if(!requestsOpen)throw new Error('Las solicitudes todavía no están abiertas por BellaShop.');
   const payload={p_name:$('#joinName').value.trim(),p_phone:normalPhone($('#joinPhone').value),
-   p_email:'',p_category:$('#joinCategory').value,
+   p_email:$('#joinEmail').value.trim().toLowerCase(),p_category:$('#joinCategory').value,
    p_teacher_code:$('#joinTeacherCode').value.trim()||null,
    p_marketing:$('#joinMarketing').checked,p_accept:$('#joinPrivacy').checked};
   setLoading(btn,true,'Enviando solicitud…');
