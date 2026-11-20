@@ -4,33 +4,24 @@
 
 **Administrador:** https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-## ¿Cómo se ve el inicio de sesión?
+## Inicio de sesión sin claves
 
-La página muestra normalmente su portada. Arriba hay un botón **Iniciar sesión**: al tocarlo se abre una **ventanita** con dos pestañas, **Iniciar sesión** y **Registrarse**, más una **X** para cerrar.
+Cuando una clienta toca **Iniciar sesión**, aparece una ventana con **Iniciar sesión**, **Registrarse** y una X para cerrarla.
 
-En **Iniciar sesión**, la persona escribe su **celular o correo** y su **nombre completo**, como quedó registrado. No se pide Gmail ni se muestra clave inicialmente.
+La clienta escribe **celular o correo** y **nombre completo**. No necesita ninguna clave privada, contraseña, Gmail ni código SMS.
 
-Si su dispositivo ya tiene una sesión válida, puede entrar a consultar directamente sus compras, puntos y premios. Si es nuevo, BellaShop debe confirmar que es la titular; si ya recibió una clave de acceso puede ponerla en el paso de verificación. Eso evita que otra persona vea sus compras solo con conocer su nombre y número.
+- **Si ya tiene una sesión válida en el mismo celular:** podrá entrar a su cuenta.
+- **Si entra por primera vez desde ese dispositivo:** verá «Esperando autorización de BellaShop». La solicitud aparece en el administrador y **vence a los 10 minutos**. La clienta debe mantener abierta la ventana.
+- En Administrador → **Solicitudes de ingreso → Solicitudes para entrar a Mi cuenta**, busca el nombre y celular de la clienta. **Antes de pulsar Aprobar**, verifica por WhatsApp o en persona que es la titular; el sistema te pedirá escribir **VERIFICADO** para confirmarlo.
+- Al aprobar, la ventana del celular permite entrar automáticamente y consultar compras, puntos y premios. No se envían correos ni SMS y no se muestran contraseñas.
 
-En **Registrarse**, la persona puede mandar su solicitud. No se aprueba automáticamente y los puntos se reconocen después de que BellaShop confirma la primera compra.
+**Es importante verificar la identidad.** Saber nombre y teléfono no autoriza a otra persona a consultar compras ajenas.
 
-## ¿Cómo apruebo a alguien después de su primera compra?
+## Primera compra e inscripción
 
-En el administrador, abre **Solicitudes de ingreso**. Busca su solicitud, comprueba que ya haya hecho una compra de verdad, anota el **valor de productos** y aprueba. Factura y canal son opcionales. Los pedidos por WhatsApp y domicilio cuentan. No hay campo de transporte.
+En Administrador → **Solicitudes de ingreso**, revisa la solicitud de inscripción, comprueba la primera compra y registra el valor de productos; factura y canal son opcionales. La aprobación crea la cuenta, registra los puntos que correspondan y no genera claves para la clienta.
 
-Cuando apruebes, el sistema:
-
-- Crea su membresía autorizada.
-- Registra la primera compra con sus puntos correspondientes.
-- Muestra una **clave privada**. Debes entregársela solamente a la titular después de verificar su identidad.
-
-Puedes pulsar **Copiar mensaje para WhatsApp** y pegarlo en la conversación correcta. El botón no envía mensajes solo; tampoco se envía ningún correo. La clave desaparece de la pantalla al cerrar, pero puedes generar otra cuando sea necesario.
-
-## ¿Qué hago si la clienta pierde la clave?
-
-Ve a **Clientas → Buscar por celular → Ver ficha → Generar nueva clave**. La anterior dejará de permitir nuevos ingresos y podrás copiar la nueva para comunicársela por WhatsApp o entregarla en el local.
-
-**Nunca entregues una clave simplemente porque alguien diga que es otra persona**. Verifica primero a quién pertenece la cuenta.
+La clienta luego podrá usar el botón **Iniciar sesión** y solicitar la autorización de acceso desde su dispositivo.
 
 ## ¿Cómo registro una compra sin tanta información?
 
@@ -53,4 +44,4 @@ En el administrador se crean/actualizan los productos de premios, fotografías, 
 
 ## Antes de lanzar públicamente
 
-La política de datos de BellaShop sigue en borrador; la jefa debe terminarla y aprobarla antes de promocionar solicitudes. También conviene realizar una prueba real autorizada de aprobación, entrega de clave, inicio desde celular y consulta de compras. No usamos ejemplos ficticios en los registros.
+La política de datos de BellaShop sigue en borrador; la jefa debe terminarla y aprobarla antes de promocionar solicitudes. También conviene probar con una clienta real autorizada la aprobación del primer ingreso, la autorización desde el administrador y la consulta del historial.
