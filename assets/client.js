@@ -1,15 +1,7 @@
 import {CONFIG,HAS_BACKEND} from './config.js';
-import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl,demoWarning} from './core.js';
+import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
-let cart={}; let preview=false; let sendingPhone=''; let giftClaims=[];
-const fakeCustomer={id:'ejemplo',full_name:'María Fernanda',phone:'+573000000000',category:'manicurista'};
-const fakeRewards=[
-  {id:'demo1',name:'Pincel decorativo',product_ref:'EJEMPLO-01',points_cost:10,stock:6,reserved:0,audience:'todas',active:true},
-  {id:'demo2',name:'Decoraciones para uñas',product_ref:'EJEMPLO-02',points_cost:5,stock:12,reserved:0,audience:'todas',active:true},
-  {id:'demo3',name:'Set de pinceles',product_ref:'EJEMPLO-03',points_cost:20,stock:3,reserved:0,audience:'todas',active:true},
-];
-const SAMPLE_CYCLE='ciclo-ejemplo';
-
+let cart={}; let sendingPhone=''; let giftClaims=[];
 async function run(q, label='Ocurrió un error') {
   const { data,error }=await q;
   if(error) throw new Error(error.message || label);
@@ -28,7 +20,7 @@ function phoneNumber(raw) {
 }
 async function sendOtp(event){
   event.preventDefault();const btn=$('#phoneForm button[type=submit]');
-  try{if(!CONFIG.legalPolicyApproved)throw new Error('El registro real está pendiente de la política de datos de BellaShop. Usa por ahora la demostración.');setLoading(btn,true);sendingPhone=phoneNumber($('#phone').value);await run(sb.auth.signInWithOtp({phone:sendingPhone,options:{shouldCreateUser:true}}));$('#phoneForm').classList.add('hidden');$('#otpForm').classList.remove('hidden');notify('Te enviamos el código por SMS.');}
+  try{if(!CONFIG.legalPolicyApproved)throw new Error('Las inscripciones todavía no están habilitadas. Vuelve pronto.');setLoading(btn,true);sendingPhone=phoneNumber($('#phone').value);await run(sb.auth.signInWithOtp({phone:sendingPhone,options:{shouldCreateUser:true}}));$('#phoneForm').classList.add('hidden');$('#otpForm').classList.remove('hidden');notify('Te enviamos el código por SMS.');}
   catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function verifyOtp(event){
@@ -38,14 +30,14 @@ async function verifyOtp(event){
 }
 async function saveProfile(event){
   event.preventDefault();const btn=$('#signupForm button[type=submit]');
-  try{if(!CONFIG.legalPolicyApproved)throw new Error('Antes de admitir registros reales, BellaShop debe aprobar su política de datos y activar el registro en assets/config.js.');setLoading(btn,true);await run(sb.rpc('bl_register',{
+  try{if(!CONFIG.legalPolicyApproved)throw new Error('Las inscripciones todavía no están habilitadas.');setLoading(btn,true);await run(sb.rpc('bl_register',{
     p_name:$('#fullName').value.trim(),p_category:$('#customerType').value,p_teacher_code:$('#teacherCode').value.trim()||null,
     p_marketing:$('#marketing').checked,p_accept:$('#privacy').checked,
   }));await loadUser();notify('¡Bienvenida a BellaLovers! Tu cuenta está lista.');}
   catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function loadUser(){
-  preview=false;session=(await sb.auth.getUser()).data.user;
+  session=(await sb.auth.getUser()).data.user;
   if(!session){show('login');return;}
   const profile=await run(sb.from('bl_profiles').select('*').eq('id',session.id).maybeSingle());
   if(!profile){
@@ -70,7 +62,6 @@ async function refreshAccount(){
   cart={};renderAccount();
 }
 function availablePoints() {
-  if(preview) return 35;
   const today=Date.now();
   const validIds=new Set(cycles.filter(c=>!c.closed_at && new Date(c.grace_until).getTime()>today).map(c=>c.id));
   return Math.max(0,ledger.filter(p=>validIds.has(p.cycle_id)).reduce((s,p)=>s+Number(p.delta),0));
@@ -78,14 +69,14 @@ function availablePoints() {
 function renderAccount(){
   const points=availablePoints(),unlock=rules.unlock_points||50,missing=Math.max(0,unlock-points);
   $('#accountGreeting').textContent=`¡Hola, ${customer.full_name.split(' ')[0]}! ♡`;
-  $('#accountSub').textContent=preview?'Esta cuenta es un ejemplo de cómo se verá BellaLovers.':'Esta es tu cuenta de BellaLovers.';
+  $('#accountSub').textContent='Este es tu espacio BellaLovers.';
   $('#balance').textContent=points;
   $('#progressBar').style.width=`${Math.min(100,Math.max(0,points/unlock*100))}%`;
   $('#pointsTip').textContent=missing>0 ? `¡Te faltan ${missing} puntos para desbloquear tus recompensas!` : '¡Ya puedes seleccionar recompensas disponibles!';
   $('#myType').textContent=TYPE[customer.category]||customer.category;
   const today=Date.now(); const activeCycle=cycles.filter(c=>!c.closed_at && new Date(c.grace_until).getTime()>today).sort((a,b)=>new Date(a.expires_at)-new Date(b.expires_at))[0];
-  $('#myExpires').textContent=preview?'20 dic. 2027':date(activeCycle?.expires_at);
-  $('#myStatus').textContent=preview?'Demostración':customer.blocked?'Cuenta suspendida':points>=unlock?'Recompensas disponibles':'Acumulando';
+  $('#myExpires').textContent=date(activeCycle?.expires_at);
+  $('#myStatus').textContent=customer.blocked?'Cuenta suspendida':points>=unlock?'Recompensas disponibles':'Acumulando';
   $('#teacherCodeRow').hidden=!(customer.category==='profesora');
   $('#myTeacherCode').textContent=teacherCode || 'Pendiente de validación';
   const refpts=ledger.filter(x=>x.kind==='referido').reduce((s,x)=>s+x.delta,0);
@@ -94,10 +85,10 @@ function renderAccount(){
   if(customer.category==='estudiante') {
     const eligible=purchases.some(p=>p.status==='confirmada'&&p.welcome_eligible);
     const claimed=giftClaims.length>0;
-    welcome.textContent=preview?'Las estudiantes reciben regalo en su primera compra desde $150.000.':claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde $150.000 puede darte un regalo de bienvenida.';
+    welcome.textContent=claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde $150.000 puede darte un regalo de bienvenida.';
   }
-  $('#rewardHint').textContent=preview?'Recompensas ilustrativas (no se pueden solicitar).':points>=unlock?'Puedes solicitar tus premios. Se reservarán hasta revisión de BellaShop.':`Necesitas ${unlock} puntos para solicitar recompensas.`;
-  $('#logout').textContent=preview?'Salir del ejemplo':'Cerrar sesión';
+  $('#rewardHint').textContent=points>=unlock?'Puedes solicitar tus premios. Se reservarán hasta revisión de BellaShop.':`Necesitas ${unlock} puntos para solicitar recompensas.`;
+  $('#logout').textContent='Cerrar sesión';
   $('#storeLink').href=safeUrl(rules.shop_url||CONFIG.shopUrl)||CONFIG.shopUrl;
   renderRewards();renderLedger();renderPurchases();renderRequests();
 }
@@ -108,26 +99,25 @@ function renderRewards(){
   $('#rewardsGrid').innerHTML=filtered.length? filtered.map(r=>{
     const max=Math.max(0,r.stock-r.reserved);const qty=cart[r.id]||0;
     return `<article class="reward-card"><div class="reward-image">${imageCard(r)}</div><div class="reward-info"><h4>${esc(r.name)}</h4><p>Ref. ${esc(r.product_ref)} · ${max>0?`${max} disponibles`:'Agotado'}</p><div class="reward-foot"><span class="points-cost">${r.points_cost} puntos</span><div class="qty-controls"><button type="button" data-minus="${esc(r.id)}" ${qty<=0?'disabled':''} aria-label="Restar">−</button><span>${qty}</span><button type="button" data-plus="${esc(r.id)}" ${qty>=max||total<unlock?'disabled':''} aria-label="Agregar">+</button></div></div></div></article>`;
-  }).join('') : '<div class="empty">Próximamente encontrarás aquí los premios seleccionados por BellaShop.</div>';
+  }).join('') : '<div class="empty">Actualmente no hay recompensas publicadas.</div>';
   for(const btn of $$('[data-plus]')) btn.addEventListener('click',()=>{const r=rewards.find(x=>x.id===btn.dataset.plus);const max=r.stock-r.reserved;cart[r.id]=Math.min(max,(cart[r.id]||0)+1);renderRewards();});
   for(const btn of $$('[data-minus]')) btn.addEventListener('click',()=>{cart[btn.dataset.minus]=Math.max(0,(cart[btn.dataset.minus]||0)-1);renderRewards();});
   const pts=Object.entries(cart).reduce((s,[id,qty])=>s+(rewards.find(r=>r.id===id)?.points_cost||0)*qty,0);
   $('#cartTotal').textContent=`${pts} punto${pts===1?'':'s'} seleccionados`;
-  $('#cartNote').textContent=preview?'Vista de ejemplo · no se guardarán solicitudes':pts>total?'Seleccionaste más puntos de los que tienes':`Saldo después de solicitar: ${Math.max(0,total-pts)} puntos`;
-  $('#submitRedeem').disabled=preview||!pts||pts>total||total<unlock||customer.blocked;
+  $('#cartNote').textContent=pts>total?'Seleccionaste más puntos de los que tienes':`Saldo después de solicitar: ${Math.max(0,total-pts)} puntos`;
+  $('#submitRedeem').disabled=!pts||pts>total||total<unlock||customer.blocked;
 }
 function renderLedger(){
-  const items=preview?[{id:'1',created_at:new Date().toISOString(),kind:'compra',delta:10,detail:'Factura de ejemplo'},{id:'2',created_at:new Date().toISOString(),kind:'compra',delta:25,detail:'Compra de ejemplo'}]:ledger;
+  const items=ledger;
   $('#pointsTable').innerHTML=items.length?items.map(x=>`<div class="data-row"><div><strong>${esc(({compra:'Compra confirmada',referido:'Referido verificado',redencion:'Recompensa solicitada',reintegro:'Puntos reintegrados',reverso:'Compra anulada',ajuste:'Ajuste administrativo',vencimiento:'Puntos vencidos'})[x.kind]||x.kind)}</strong><small>${date(x.created_at)} · ${esc(x.detail||'')}</small></div><strong class="${x.delta>=0?'positive':'negative'} nowrap">${x.delta>0?'+':''}${x.delta} pts</strong></div>`).join(''):'<div class="empty">Todavía no tienes movimientos. Tus compras confirmadas aparecerán aquí.</div>';
 }
 function renderPurchases(){
-  $('#purchaseList').innerHTML=preview?'<div class="empty">Las compras reales aparecen cuando BellaShop las confirma.</div>':purchases.length?purchases.map(p=>`<div class="data-row"><div><strong>Factura ${esc(p.invoice)}</strong><small>${date(p.created_at)} · ${p.status==='confirmada'?'Confirmada':'Anulada'}${p.special_discount?' · Con descuento especial':''}</small></div><div class="right"><strong>${fmt(p.products_total)}</strong><small>+${p.points_awarded} puntos</small></div></div>`).join(''):'<div class="empty">Aún no tienes compras registradas.</div>';
+  $('#purchaseList').innerHTML=purchases.length?purchases.map(p=>`<div class="data-row"><div><strong>Factura ${esc(p.invoice)}</strong><small>${date(p.created_at)} · ${p.status==='confirmada'?'Confirmada':'Anulada'}${p.special_discount?' · Con descuento especial':''}</small></div><div class="right"><strong>${fmt(p.products_total)}</strong><small>+${p.points_awarded} puntos</small></div></div>`).join(''):'<div class="empty">Aún no tienes compras registradas.</div>';
 }
 function renderRequests(){
-  $('#requestsList').innerHTML=preview?'<div class="empty">Cuando solicites un premio, verás aquí su seguimiento.</div>':requests.length?requests.map(r=>`<div class="data-row"><div><strong>Solicitud ${esc(r.id.slice(0,8).toUpperCase())}</strong><small>${date(r.created_at)} · ${r.total_points} puntos</small></div>${r.status==='aprobada'?'<span class="status green">Aprobada</span>':r.status==='rechazada'?'<span class="status red">Rechazada</span>':'<span class="status">En revisión</span>'}</div>`).join(''):'<div class="empty">Todavía no has solicitado recompensas.</div>';
+  $('#requestsList').innerHTML=requests.length?requests.map(r=>`<div class="data-row"><div><strong>Solicitud ${esc(r.id.slice(0,8).toUpperCase())}</strong><small>${date(r.created_at)} · ${r.total_points} puntos</small></div>${r.status==='aprobada'?'<span class="status green">Aprobada</span>':r.status==='rechazada'?'<span class="status red">Rechazada</span>':'<span class="status">En revisión</span>'}</div>`).join(''):'<div class="empty">Todavía no has solicitado recompensas.</div>';
 }
 async function submitRedemption(){
-  if(preview) return notify('Estás viendo un ejemplo; ninguna solicitud se envió.');
   const selected=Object.entries(cart).filter(([,qty])=>qty>0).map(([reward_id,qty])=>({reward_id,qty}));
   if(!selected.length) return;
   if(!confirm('¿Confirmas que deseas reservar estos premios usando tus puntos?')) return;
@@ -135,21 +125,19 @@ async function submitRedemption(){
   catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function logOut(){
-  if(!preview&&sb) await sb.auth.signOut();preview=false;customer=null;$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');$('#otp').value='';show('login');location.hash='#acceso';
-}
-function demo(){
-  preview=true;customer=fakeCustomer;rules={...DEFAULT_RULES};cycles=[];purchases=[];ledger=[];requests=[];rewards=fakeRewards;teacherCode=null;giftClaims=[];cart={};renderAccount();show('account');
+  if(sb) await sb.auth.signOut();customer=null;$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');$('#otp').value='';show('login');location.hash='#acceso';
 }
 function setup(){
   $('#phoneForm').addEventListener('submit',sendOtp);$('#otpForm').addEventListener('submit',verifyOtp);$('#signupForm').addEventListener('submit',saveProfile);
   $('#changePhone').addEventListener('click',()=>{$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');});
   $('#customerType').addEventListener('change',()=>$('#teacherField').classList.toggle('hidden',$('#customerType').value!=='estudiante'));
-  $('#previewAccount').addEventListener('click',demo);$('#logout').addEventListener('click',logOut);$('#submitRedeem').addEventListener('click',submitRedemption);
+  $('#logout').addEventListener('click',logOut);$('#submitRedeem').addEventListener('click',submitRedemption);
   $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{ $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));$$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==`tab-${btn.dataset.tab}`));}));
   const ref=new URLSearchParams(location.search).get('ref');if(ref) $('#teacherCode').value=ref.slice(0,30);
-  $('#previewLogin').classList.remove('hidden');
-  if(!CONFIG.legalPolicyApproved) $('#phoneForm').classList.add('hidden');
-  if(!HAS_BACKEND) return;
+  const enrollmentReady=HAS_BACKEND && CONFIG.legalPolicyApproved;
+  $('#phoneForm').classList.toggle('hidden',!enrollmentReady);
+  $('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);
+  if(!HAS_BACKEND)return;
   db().then(async x=>{sb=x;const {data}=await sb.auth.getSession();if(data.session) await loadUser();}).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
 setup();
