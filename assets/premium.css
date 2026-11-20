@@ -1246,3 +1246,22 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
 
 /* Los avisos de error/éxito deben verse delante de la ventana emergente. */
 .toast{z-index:200;}
+
+
+/* Aprobación manual sin contraseñas ni SMS en la ventana de clientas. */
+.auth-verification{padding:18px;background:linear-gradient(145deg,#fff8fb,#f8e7f0);}
+.auth-verification strong{display:block;color:#80506b;font-size:14px;margin-bottom:8px;}
+.auth-verification-loading{
+ display:flex;align-items:center;gap:9px;margin:15px 0;padding:11px 13px;
+ border:1px solid #eacbda;border-radius:11px;background:#fff;
+ color:#865974;font-size:12px;font-weight:700;
+}
+.auth-verification-loading span{font-size:20px;color:#ac698e;}
+.auth-verification #cancelMemberLogin{
+ background:#fff;border:1px solid #d9aac1;color:#8c4e6d;font-size:12px;
+ min-height:41px;
+}
+#loginRequestsCard{border:1px solid #e6c0d1;}
+#loginRequestsCard #loginRequestsTable{overflow-x:auto;}
+#loginRequestsCard .account-actions{display:flex;flex-wrap:wrap;gap:6px;}
+#loginRequestsCard .account-actions .btn{white-space:nowrap;min-height:35px;font-size:11px;}
