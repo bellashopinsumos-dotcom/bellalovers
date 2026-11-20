@@ -269,9 +269,33 @@ async function saveStaff(e){
 }
 function renderAll(){renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){e.preventDefault();if(!requireLive())return;const btn=$('#purchaseForm button[type=submit]');try{setLoading(btn,true);const p=await rpc('bl_purchase_channel',{p_channel:$('#purchaseChannel').value,p_customer:$('#purchaseCustomer').value,p_invoice:$('#purchaseInvoice').value.trim(),p_amount:+$('#purchaseAmount').value,p_discount:$('#purchaseDiscount').checked,p_delivery:+$('#purchaseDelivery').value,p_notes:$('#purchaseNotes').value.trim()});notify(`Compra registrada: ${p.points} puntos${p.referral_points?`, ${p.referral_points} para profesora`:''}${p.welcome_eligible?'. Con derecho a regalo de bienvenida.':''}`);e.target.reset();await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
-async function rewardSubmit(e){e.preventDefault();if(!requireLive()||!checkManager())return;const btn=$('#rewardForm button[type=submit]');const payload={name:$('#rewardName').value.trim(),product_ref:$('#rewardRef').value.trim(),points_cost:+$('#rewardPoints').value,stock:+$('#rewardStock').value,unit_cost:+$('#rewardCost').value,audience:$('#rewardAudience').value,image_url:$('#rewardImage').value.trim()||null,active:$('#rewardActive').checked};
+async function rewardSubmit(e){
+ e.preventDefault();if(!requireLive()||!checkManager())return;
+ const btn=$('#rewardForm button[type=submit]');
+ const payload={name:$('#rewardName').value.trim(),product_ref:$('#rewardRef').value.trim(),points_cost:Number($('#rewardPoints').value),
+  stock:Number($('#rewardStock').value),unit_cost:Number($('#rewardCost').value),audience:$('#rewardAudience').value,
+  image_url:$('#rewardImage').value.trim()||null,active:$('#rewardActive').checked};
  if(payload.image_url&&!/^https:\/\//i.test(payload.image_url))return notify('La fotografía debe usar HTTPS.','error');
- try{setLoading(btn,true);const id=$('#rewardId').value;await run(id?sb.from('bl_rewards').update(payload).eq('id',id):sb.from('bl_rewards').insert(payload));notify(id?'Recompensa actualizada':'Recompensa agregada');e.target.reset();$('#rewardId').value='';await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
+ const photo=$('#rewardPhoto').files[0];
+ if(photo&&(!['image/jpeg','image/png','image/webp'].includes(photo.type)||photo.size>3145728)){
+  return notify('La foto debe ser JPG, PNG o WEBP de máximo 3 MB.','error');
+ }
+ try{
+  setLoading(btn,true,'Guardando premio…');
+  if(photo){
+   const ext=photo.type==='image/png'?'png':photo.type==='image/webp'?'webp':'jpg';
+   const destination='premios/'+crypto.randomUUID()+'.'+ext;
+   const {error}=await sb.storage.from('bellalovers-premios').upload(destination,photo,{contentType:photo.type,upsert:false});
+   if(error)throw error;
+   payload.image_url=sb.storage.from('bellalovers-premios').getPublicUrl(destination).data.publicUrl;
+  }
+  const id=$('#rewardId').value;
+  await run(id?sb.from('bl_rewards').update(payload).eq('id',id):sb.from('bl_rewards').insert(payload));
+  notify(id?'Premio actualizado: visible en la vitrina':'Premio guardado para las clientas');
+  e.target.reset();$('#rewardId').value='';updateRewardPhotoPreview(null);await loadAll();
+ }catch(err){notify('No se pudo guardar: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
 async function giftSubmit(e){e.preventDefault();if(!requireLive()||!checkManager())return;const btn=$('#giftForm button[type=submit]');const payload={name:$('#giftName').value.trim(),product_ref:$('#giftRef').value.trim(),stock:+$('#giftStock').value,unit_cost:+$('#giftCost').value,active:true};try{setLoading(btn,true);const id=$('#giftId').value;await run(id?sb.from('bl_gift_options').update(payload).eq('id',id):sb.from('bl_gift_options').insert(payload));notify('Regalo guardado');e.target.reset();$('#giftId').value='';await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
 async function giftDeliverySubmit(e){e.preventDefault();if(!requireLive())return;const student=$('#giftStudent').value,gift=$('#giftChoice').value;if(!confirm('¿El regalo ya fue entregado físicamente a la estudiante?'))return;try{await rpc('bl_deliver_welcome',{p_student:student,p_gift:gift});notify('Regalo de bienvenida entregado y stock actualizado');await loadAll();}catch(err){notify(err.message,'error');}}
 async function saveSettings(e){e.preventDefault();if(!requireLive()||!checkManager())return;const payload={};for(const key of ['min_purchase','point_value','unlock_points','student_gift_min','cycle_months','grace_days'])payload[key]=Number($('#rule_'+key).value);
