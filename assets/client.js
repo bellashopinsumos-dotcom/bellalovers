@@ -65,19 +65,38 @@ async function sendJoinRequest(event) {
  }catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function sendMemberAccess(event){
- event.preventDefault();const btn=$('#memberLoginForm button[type=submit]');
+ event.preventDefault();
+ const btn=$('#memberLoginForm button[type=submit]'),info=$('#memberLoginFeedback');
+ const identifier=$('#memberIdentifier').value.trim();
+ const fullName=$('#memberFullName').value.trim();
+ const validEmail=/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(identifier);
+ const digits=identifier.replace(/\D/g,'');
+ const validPhone=/^3\d{9}$/.test(digits)||/^573\d{9}$/.test(digits);
+ if(!validEmail&&!validPhone){
+  info.classList.remove('hidden');info.textContent='Escribe un correo válido o un celular colombiano de 10 dígitos.';
+  return;
+ }
+ if(fullName.replace(/\s+/g,' ').length<3){
+  info.classList.remove('hidden');info.textContent='Escribe tu nombre y apellido tal como fueron registrados.';
+  return;
+ }
  try{
   if(!sb)throw new Error('No se pudo conectar al sistema.');
-  setLoading(btn,true,'Enviando enlace…');
-  const {error}=await sb.auth.signInWithOtp({
-   email:$('#memberEmail').value.trim().toLowerCase(),
-   options:{shouldCreateUser:false,emailRedirectTo:new URL('./index.html',location.href).href}
+  setLoading(btn,true,'Verificando datos…');
+  const {data,error}=await sb.functions.invoke('bellalovers-acceso',{
+   body:{identifier,full_name:fullName}
   });
   if(error)throw error;
-  notify('Si tu membresía fue aprobada, llegará un enlace a tu correo. Revisa también spam.');
- }catch(err){notify('No se pudo enviar el enlace: '+err.message,'error');}
- finally{setLoading(btn,false);}
+  info.classList.remove('hidden');
+  info.textContent=data?.message||'Si tu membresía está aprobada, recibirás un enlace seguro en el correo asociado. Revisa también spam.';
+  notify('Revisa el correo vinculado a tu membresía para entrar de forma segura.');
+ }catch(err){
+  info.classList.remove('hidden');
+  info.textContent='No se pudo procesar el acceso. Intenta nuevamente en unos minutos o consulta con BellaShop.';
+  console.warn('Solicitud de acceso:',err.message);
+ }finally{setLoading(btn,false);}
 }
+
 async function loadUser(){
   session=(await sb.auth.getUser()).data.user;
   if(!session){show('login');return;}
@@ -113,6 +132,7 @@ function renderAccount(){
 
   $('#memberName').textContent=customer.full_name;
   $('#memberCategory').textContent=TYPE[customer.category]||customer.category;
+  $('#myJoinedDate').textContent=date(customer.created_at);
   $('#memberCode').textContent='BL-'+String(customer.id).slice(0,8).toUpperCase();
   const pending=requests.filter(r=>r.status==='solicitada').length;
   const expiring=cycles.filter(c=>!c.closed_at && Date.parse(c.expires_at)>Date.now()
@@ -142,25 +162,60 @@ function renderAccount(){
     const claimed=giftClaims.length>0;
     welcome.textContent=claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde $150.000 puede darte un regalo de bienvenida.';
   }
-  $('#rewardHint').textContent=points>=unlock?'Puedes solicitar tus premios. Se reservarán hasta revisión de BellaShop.':`Necesitas ${unlock} puntos para solicitar recompensas.`;
+  const matchingRewards=rewards.filter(r=>r.active&&(r.audience==='todas'||r.audience===customer.category));
+  $('#rewardHint').textContent=!matchingRewards.length?'Los productos de recompensa aparecerán aquí cuando BellaShop los publique.':
+    points>=unlock?'¡Meta alcanzada! Ya puedes solicitar las recompensas que puedas pagar con tus puntos.':
+    'Acumula '+Math.max(0,unlock-points)+' puntos más para desbloquear los canjes.';
   $('#logout').textContent='Cerrar sesión';
   $('#storeLink').href=safeUrl(rules.shop_url||CONFIG.shopUrl)||CONFIG.shopUrl;
   renderRewards();renderLedger();renderPurchases();renderRequests();
 }
 function imageCard(r){const url=r.image_url&&safeUrl(r.image_url);return url ? `<img src="${esc(url)}" alt="${esc(r.name)}" loading="lazy" onerror="this.style.display='none'">` : '♡';}
 function renderRewards(){
-  const total=availablePoints(), unlock=rules.unlock_points||50;
-  const filtered=rewards.filter(r=>r.active && (r.audience==='todas'||r.audience===customer.category));
-  $('#rewardsGrid').innerHTML=filtered.length? filtered.map(r=>{
-    const max=Math.max(0,r.stock-r.reserved);const qty=cart[r.id]||0;
-    return `<article class="reward-card"><div class="reward-image">${imageCard(r)}</div><div class="reward-info"><h4>${esc(r.name)}</h4><p>Ref. ${esc(r.product_ref)} · ${max>0?`${max} disponibles`:'Agotado'}</p><div class="reward-foot"><span class="points-cost">${r.points_cost} puntos</span><div class="qty-controls"><button type="button" data-minus="${esc(r.id)}" ${qty<=0?'disabled':''} aria-label="Restar">−</button><span>${qty}</span><button type="button" data-plus="${esc(r.id)}" ${qty>=max||total<unlock?'disabled':''} aria-label="Agregar">+</button></div></div></div></article>`;
-  }).join('') : '<div class="empty">Actualmente no hay recompensas publicadas.</div>';
-  for(const btn of $$('[data-plus]')) btn.addEventListener('click',()=>{const r=rewards.find(x=>x.id===btn.dataset.plus);const max=r.stock-r.reserved;cart[r.id]=Math.min(max,(cart[r.id]||0)+1);renderRewards();});
-  for(const btn of $$('[data-minus]')) btn.addEventListener('click',()=>{cart[btn.dataset.minus]=Math.max(0,(cart[btn.dataset.minus]||0)-1);renderRewards();});
-  const pts=Object.entries(cart).reduce((s,[id,qty])=>s+(rewards.find(r=>r.id===id)?.points_cost||0)*qty,0);
-  $('#cartTotal').textContent=`${pts} punto${pts===1?'':'s'} seleccionados`;
-  $('#cartNote').textContent=pts>total?'Seleccionaste más puntos de los que tienes':`Saldo después de solicitar: ${Math.max(0,total-pts)} puntos`;
-  $('#submitRedeem').disabled=!pts||pts>total||total<unlock||customer.blocked;
+ const total=availablePoints(),unlock=rules.unlock_points||50;
+ const unlocked=total>=unlock&&!customer.blocked;
+ const filtered=rewards.filter(r=>r.active&&(r.audience==='todas'||r.audience===customer.category));
+ const lock=$('#rewardsLock'),bar=$('#redeemBar');
+ if(!filtered.length){
+  lock.classList.remove('hidden');
+  lock.innerHTML='<span class="reward-lock-icon" aria-hidden="true">♡</span><strong>Próximamente tendremos recompensas para ti</strong><p>BellaShop está preparando sus premios. Cuando los publique en el administrador, aparecerán en esta sección.</p>';
+  $('#rewardsGrid').innerHTML='';
+  bar.classList.add('hidden');cart={};
+  return;
+ }
+ lock.classList.remove('hidden');
+ lock.innerHTML=unlocked?
+  '<span class="reward-lock-icon" aria-hidden="true">✧</span><strong>¡Ya desbloqueaste tus recompensas!</strong><p>Escoge tus premios según tus puntos y existencias. BellaShop confirmará tu solicitud.</p>':
+  '<span class="reward-lock-icon" aria-hidden="true">🔒</span><strong>Premios bloqueados hasta '+unlock+' puntos</strong><p>Actualmente tienes '+total+' puntos. Te faltan '+Math.max(0,unlock-total)+' para empezar a canjear. Sigue acumulando con tus compras válidas.</p>';
+ bar.classList.toggle('hidden',!unlocked);
+ if(!unlocked)cart={};
+ $('#rewardsGrid').innerHTML=filtered.map(r=>{
+  const max=Math.max(0,r.stock-r.reserved);
+  const qty=cart[r.id]||0;
+  const used=Object.entries(cart).reduce((n,[id,q])=>n+(rewards.find(x=>x.id===id)?.points_cost||0)*q,0);
+  const canAdd=unlocked&&max>qty&&used+r.points_cost<=total;
+  const badge=!unlocked?'🔒 Bloqueada':max===0?'Agotada':r.points_cost>total?'Necesitas más puntos':'Lista para canjear';
+  return '<article class="reward-card '+(!unlocked?'reward-card-locked':'')+'">'+
+   '<div class="reward-image">'+imageCard(r)+'</div>'+
+   '<div class="reward-info"><span class="reward-lock-label">'+esc(badge)+'</span>'+
+   '<h4>'+esc(r.name)+'</h4><p>Ref. '+esc(r.product_ref)+' · '+(max>0?max+' disponibles':'Agotado')+'</p>'+
+   '<div class="reward-foot"><span class="points-cost">'+r.points_cost+' puntos</span>'+
+   '<div class="qty-controls"><button type="button" data-minus="'+esc(r.id)+'" '+(!unlocked||qty<=0?'disabled':'')+' aria-label="Restar">−</button>'+
+   '<span>'+qty+'</span><button type="button" data-plus="'+esc(r.id)+'" '+(!canAdd?'disabled':'')+' aria-label="Agregar">+</button></div></div></div></article>';
+ }).join('');
+ for(const btn of $$('[data-plus]'))btn.addEventListener('click',()=>{
+  const r=rewards.find(x=>x.id===btn.dataset.plus);if(!r||!unlocked)return;
+  const max=Math.max(0,r.stock-r.reserved),selected=Object.entries(cart).reduce((n,[id,q])=>n+(rewards.find(x=>x.id===id)?.points_cost||0)*q,0);
+  if(selected+r.points_cost>total||cart[r.id]>=max)return;
+  cart[r.id]=Math.min(max,(cart[r.id]||0)+1);renderRewards();
+ });
+ for(const btn of $$('[data-minus]'))btn.addEventListener('click',()=>{
+  cart[btn.dataset.minus]=Math.max(0,(cart[btn.dataset.minus]||0)-1);renderRewards();
+ });
+ const pts=Object.entries(cart).reduce((n,[id,qty])=>n+(rewards.find(r=>r.id===id)?.points_cost||0)*qty,0);
+ $('#cartTotal').textContent=pts+' punto'+(pts===1?'':'s')+' seleccionados';
+ $('#cartNote').textContent=pts>total?'Seleccionaste más puntos de los que tienes':'Saldo después de solicitar: '+Math.max(0,total-pts)+' puntos';
+ $('#submitRedeem').disabled=!pts||pts>total||!unlocked;
 }
 function renderLedger(){
   const items=ledger;
@@ -211,6 +266,7 @@ async function loadJoinStatus(){
 function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
+ $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)refreshAccount().then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
 
  $('#logout').addEventListener('click',logOut);
  $('#submitRedeem').addEventListener('click',submitRedemption);
