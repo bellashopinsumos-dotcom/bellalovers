@@ -932,3 +932,12 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  .member-card{min-height:198px;padding:23px;}
  .member-notices{padding:19px;}
 }
+
+
+/* Seguridad de la zona administrativa */
+.admin-login-security{
+ margin:16px 0 12px;padding:14px 16px;
+ border-radius:12px;background:#f9e8ef;border:1px solid #ebc6d7;
+ color:#794d63;font-size:12px;line-height:1.7;
+}
+.admin-login-security span{margin-right:5px;}
