@@ -8,7 +8,7 @@ GitHub Pages está configurado para publicar desde `main` / `root`.
 
 ## Qué ya está listo en el código
 - Diseño rosado pastel optimizado para celulares.
-- Vitrina pública sincronizada de premios reales, sin necesidad de iniciar sesión.
+- Premios visibles **solo dentro de las cuentas de clientas** que hayan iniciado sesión y en el administrador. No hay vitrina pública en el inicio.
 - Panel que permite crear, editar y publicar premios con fotografía y existencias.
 - Registro de compras facturadas por tienda, WhatsApp, web, domicilio y otros canales; el costo de transporte se excluye, no el valor de los productos.
 - Gestión de clientas, restauración de cuentas, roles, anulación de facturas, puntos y auditoría.
@@ -30,9 +30,9 @@ El registro público está cerrado hasta los pasos 3–5. **No hemos pagado ni c
 
 ## Reglas para la jefa
 
-Las compras confirmadas de productos por WhatsApp **sí suman puntos** bajo las mismas condiciones que las realizadas presencialmente. El envío a domicilio no invalida la compra: solo su tarifa no suma puntos. Si la compra tiene descuento especial, se aplica la exclusión configurada en BellaLovers.
+Una compra elegible de productos por **$50.000 da 5 puntos**; cada **$10.000 completos adicionales da 1 punto más**. Las compras confirmadas por WhatsApp **sí suman puntos** bajo las mismas condiciones que las realizadas presencialmente. El envío a domicilio no invalida la compra: solo su tarifa no suma puntos. Si la compra tiene descuento especial, se aplica la exclusión configurada en BellaLovers.
 
-Los premios se muestran en la vitrina pública cuando están activos y tienen stock disponible. El costo interno del premio no se expone.
+Los premios se muestran en el área privada de cada BellaLover cuando están activos y disponibles. En el inicio de la web no aparece un catálogo de premios. El costo interno solo se administra desde el panel.
 
 **Seguridad:** nunca colocar claves privadas ni contraseñas de usuarios en GitHub. No editar proyectos Supabase de RutaYa, Master Viviana ni BellaShop Inventario.
 
