@@ -1,0 +1,55 @@
+name: BellaLovers - publicar demostracion
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release/BellaLovers.zip'
+      - '.github/workflows/publicar.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+      - name: Extraer BellaLovers y comprobar las reglas
+        shell: bash
+        run: |
+          unzip -oq release/BellaLovers.zip -d "$RUNNER_TEMP/bellalovers"
+          cp -a "$RUNNER_TEMP/bellalovers/BellaLovers/." .
+          npm test
+      - name: Guardar codigo fuente editable
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html admin.html politica-datos.html assets/ supabase/ tests/ package.json LEEME-PRIMERO.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Incorporar codigo editable de BellaLovers [skip ci]"
+            git push || echo "::warning::No se pudo guardar automaticamente el codigo en main; la demo aun puede publicarse."
+          fi
+      - name: Preparar archivos publicos
+        shell: bash
+        run: |
+          mkdir -p public/assets
+          cp index.html admin.html politica-datos.html public/
+          cp -a assets/. public/assets/
+          touch public/.nojekyll
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Cargar sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - name: Publicar sitio
+        uses: actions/deploy-pages@v4
+        id: deployment
