@@ -31,4 +31,18 @@ assert.match(clientJs, /shouldCreateUser:false/, 'Nadie crea una cuenta solo sol
 assert.match(adminHtml, /id="section-joins"/, 'Panel de revisión de solicitudes');
 assert.match(adminJs, /bl_join_requests/, 'Admin consulta solicitudes desde Supabase');
 assert.match(adminJs, /bellalovers-aprobar/, 'El alta requiere aprobación protegida y factura');
-console.log('OK: 29 verificaciones BellaLovers (sin SMS, con aprobación manual)');
+assert.match(publicHtml, /<select id="joinTeacherCode"/,
+  'La selección de profesora afiliada debe ser una lista, no un texto libre');
+assert.doesNotMatch(publicHtml, /<option value="profesora">Profesora de uñas<\/option>/,
+  'Nadie debe afiliarse como profesora por la inscripción pública');
+assert.match(clientJs, /bl_list_affiliated_teachers/,
+  'Solo cargar profesoras desde el directorio autorizado');
+assert.match(adminHtml, /id="affiliateForm"/,
+  'El administrador debe incorporar profesoras afiliadas');
+assert.match(adminHtml, /id="affiliatesTable"/,
+  'El administrador debe ver el directorio de profesoras');
+assert.match(adminJs, /bl_manage_affiliated_teacher/,
+  'La edición de afiliación debe pasar por una función segura');
+assert.match(adminJs, /data-affiliate-retire/,
+  'Debe ser posible retirar a una profesora sin borrar su historial');
+console.log('OK: 36 verificaciones BellaLovers (profesoras afiliadas controladas por BellaShop)');
