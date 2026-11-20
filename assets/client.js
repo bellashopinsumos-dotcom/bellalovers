@@ -8,6 +8,7 @@ function configureHomeNavigation() {
  // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
  document.addEventListener('click', event => {
   const link=event.target.closest?.('a[href^="#"]');
+  if(link?.dataset.openAuth)setAuthScreen(link.dataset.openAuth);
   if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   const destination=link.getAttribute('href');
   if (!destination || destination==='#') return;
@@ -39,10 +40,30 @@ async function run(q, label='Ocurrió un error') {
   return data;
 }
 function show(which) {
-  ['#loginPanel','#account'].forEach(s=>$(s).classList.add('hidden'));
-  if(which==='login') $('#loginPanel').classList.remove('hidden');
-  if(which==='account') {$('#account').classList.remove('hidden');$('#account').scrollIntoView({behavior:'smooth',block:'start'});}
+  ['#loginPanel','#account'].forEach(selector=>$(selector).classList.add('hidden'));
+  $('#acceso').classList.toggle('hidden',which==='account');
+  const nav=$('#navCuenta');
+  if(which==='login'){
+    $('#loginPanel').classList.remove('hidden');
+    if(nav){nav.href='#acceso';nav.dataset.openAuth='signin';nav.innerHTML='Iniciar sesión <span aria-hidden="true">♡</span>';}
+  }
+  if(which==='account'){
+    $('#account').classList.remove('hidden');
+    if(nav){nav.href='#account';delete nav.dataset.openAuth;nav.innerHTML='Mi cuenta <span aria-hidden="true">♡</span>';}
+    $('#account').scrollIntoView({behavior:'smooth',block:'start'});
+  }
 }
+function setAuthScreen(screen){
+ const registering=screen==='register';
+ $('#memberLoginView').classList.toggle('hidden',registering);
+ $('#registerView').classList.toggle('hidden',!registering);
+ $('[data-auth-screen]').forEach(btn=>{
+  const active=btn.dataset.authScreen===(registering?'register':'signin');
+  btn.classList.toggle('active',active);
+  if(btn.hasAttribute('aria-pressed'))btn.setAttribute('aria-pressed',String(active));
+ });
+}
+
 function normalPhone(raw) {
  const digits=String(raw??'').replace(/[^0-9]/g,'');
  if(!/^3[0-9]{9}$/.test(digits))throw new Error('Escribe un celular colombiano válido de diez dígitos.');
@@ -54,7 +75,7 @@ async function sendJoinRequest(event) {
  try{
   if(!requestsOpen)throw new Error('Las solicitudes todavía no están abiertas por BellaShop.');
   const payload={p_name:$('#joinName').value.trim(),p_phone:normalPhone($('#joinPhone').value),
-   p_email:$('#joinEmail').value.trim().toLowerCase(),p_category:$('#joinCategory').value,
+   p_email:'',p_category:$('#joinCategory').value,
    p_teacher_code:$('#joinTeacherCode').value.trim()||null,
    p_marketing:$('#joinMarketing').checked,p_accept:$('#joinPrivacy').checked};
   setLoading(btn,true,'Enviando solicitud…');
@@ -67,33 +88,29 @@ async function sendJoinRequest(event) {
 async function sendMemberAccess(event){
  event.preventDefault();
  const btn=$('#memberLoginForm button[type=submit]'),info=$('#memberLoginFeedback');
- const identifier=$('#memberIdentifier').value.trim();
- const fullName=$('#memberFullName').value.trim();
- const validEmail=/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(identifier);
- const digits=identifier.replace(/\D/g,'');
- const validPhone=/^3\d{9}$/.test(digits)||/^573\d{9}$/.test(digits);
- if(!validEmail&&!validPhone){
-  info.classList.remove('hidden');info.textContent='Escribe un correo válido o un celular colombiano de 10 dígitos.';
-  return;
- }
- if(fullName.replace(/\s+/g,' ').length<3){
-  info.classList.remove('hidden');info.textContent='Escribe tu nombre y apellido tal como fueron registrados.';
-  return;
- }
  try{
-  if(!sb)throw new Error('No se pudo conectar al sistema.');
-  setLoading(btn,true,'Verificando datos…');
-  const {data,error}=await sb.functions.invoke('bellalovers-acceso',{
-   body:{identifier,full_name:fullName}
+  if(!sb)throw new Error('No fue posible conectar con BellaLovers.');
+  const phone=normalPhone($('#memberPhone').value);
+  const accessKey=$('#memberAccessKey').value.trim().toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{12}$/.test(accessKey))throw new Error('Revisa tu clave BellaLovers de 12 caracteres.');
+  setLoading(btn,true,'Ingresando a tu cuenta…');
+  info.classList.add('hidden');
+  const {data,error}=await sb.functions.invoke('bellalovers-ingresar',{
+   body:{phone,access_key:accessKey}
   });
-  if(error)throw error;
-  info.classList.remove('hidden');
-  info.textContent=data?.message||'Si tu membresía está aprobada, recibirás un enlace seguro en el correo asociado. Revisa también spam.';
-  notify('Revisa el correo vinculado a tu membresía para entrar de forma segura.');
+  if(error||!data?.success||!data.access_token||!data.refresh_token){
+   throw new Error(data?.error||'Celular o clave incorrectos. Verifica tus datos o consulta con BellaShop.');
+  }
+  const {error:sessionError}=await sb.auth.setSession({
+   access_token:data.access_token,refresh_token:data.refresh_token
+  });
+  if(sessionError)throw sessionError;
+  $('#memberAccessKey').value='';
+  await loadUser();
+  notify('¡Bienvenida a tu cuenta BellaLovers!');
  }catch(err){
   info.classList.remove('hidden');
-  info.textContent='No se pudo procesar el acceso. Intenta nuevamente en unos minutos o consulta con BellaShop.';
-  console.warn('Solicitud de acceso:',err.message);
+  info.textContent=err.message||'No pudimos ingresar. Consulta con BellaShop.';
  }finally{setLoading(btn,false);}
 }
 
@@ -274,6 +291,10 @@ async function loadJoinStatus(){
 function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
+ $('[data-auth-screen]').forEach(button=>button.addEventListener('click',()=>{
+  setAuthScreen(button.dataset.authScreen);
+  if(!location.hash||location.hash!=='#acceso')$('#acceso').scrollIntoView({behavior:'smooth',block:'start'});
+ }));
  $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)refreshAccount().then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
 
  $('#logout').addEventListener('click',logOut);
@@ -284,6 +305,7 @@ function setup(){
  }));
 
  $('#joinForm').classList.add('hidden');$('#joinClosed').classList.remove('hidden');
+ setAuthScreen('signin');
  if(!HAS_BACKEND)return;
  db().then(async x=>{
   sb=x;
