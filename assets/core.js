@@ -6,7 +6,7 @@ export async function db(area = 'client') {
   if (!clientPromise) {
     clientPromise = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.16/+esm')
       .then(({createClient}) => createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
-        auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: area === 'admin', storageKey: area === 'admin' ? 'bellalovers-admin-auth' : 'bellalovers-client-auth' },
+        auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, storageKey: area === 'admin' ? 'bellalovers-admin-auth' : 'bellalovers-client-auth' },
       }));
   }
   return clientPromise;
