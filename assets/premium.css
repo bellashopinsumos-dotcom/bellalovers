@@ -1046,3 +1046,55 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  #section-teachers .affiliate-actions{min-width:175px;}
  #section-teachers .affiliate-actions .btn{font-size:10px;}
 }
+
+
+/* Área de clientas BellaLovers: acceso seguro, membresía y recompensas */
+.member-login-fold{
+  background:linear-gradient(145deg,#fff8fb 0%,#f8e6ee 100%);
+  border:1px solid #e9c0d2;
+  box-shadow:0 10px 24px rgba(142,82,111,.07);
+}
+.member-login-fold input{
+  min-height:48px;border-radius:12px;border:1px solid #dfb7c8;
+  background:#fff;color:#694456;font-size:14px;
+}
+.member-login-fold label{font-size:12px;color:#81506a;font-weight:750;}
+.member-login-fold .btn-primary{
+  color:#fff;background:#a6547b;border:1px solid #a6547b;font-weight:800;
+  min-height:48px;
+}
+.member-login-fold .btn-primary:hover{background:#914066;color:#fff;}
+.member-login-feedback{
+  background:#faeaf1;border:1px solid #e5c2d3;padding:12px 15px;border-radius:11px;
+  font-size:12px;color:#7e4c64;line-height:1.75;margin-top:14px;
+}
+#account .section-min-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;}
+#refreshMemberRewards{white-space:nowrap;min-height:38px;font-size:11px;}
+.member-reward-lock{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;
+  background:linear-gradient(125deg,#f8e3ec,#fffbfd);
+  border:1px solid #e5bdd0;border-radius:16px;
+  color:#774e64;padding:17px 21px;margin:18px 0 21px;
+}
+.member-reward-lock .reward-lock-icon{
+  display:flex;align-items:center;justify-content:center;
+  background:#efd0de;border-radius:50%;width:42px;height:42px;font-size:22px;
+}
+.member-reward-lock strong{font-size:14px;font-weight:800;flex:1;}
+.member-reward-lock p{width:100%;font-size:12px;line-height:1.75;margin:0;color:#806477;}
+.reward-card-locked{border-color:#eed6df;opacity:.88;}
+.reward-card-locked .reward-image img{filter:saturate(.8);}
+.reward-card-locked .qty-controls{opacity:.55;}
+.reward-lock-label{
+  display:inline-flex;font-size:10px;color:#825269;background:#f7e5ed;border-radius:20px;
+  padding:5px 10px;font-weight:750;margin-bottom:9px;
+}
+#myJoinedDate{font-size:13px;}
+@media(max-width:690px){
+ .member-login-fold{padding:19px 15px;}
+ .member-reward-lock{padding:15px;gap:8px 10px;}
+ .member-reward-lock strong{font-size:13px;}
+ .member-reward-lock p{font-size:11px;}
+ #account .section-min-heading{align-items:flex-start;gap:12px;}
+ #refreshMemberRewards{width:auto;max-width:100%;}
+}
