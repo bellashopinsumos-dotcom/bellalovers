@@ -44,13 +44,10 @@ Deno.serve(async (req: Request) => {
  const {data:invoiceExists}=await userClient.from("bl_purchases").select("id").eq("invoice",invoice).maybeSingle();
  if(invoiceExists)return send({error:"Esa factura ya está registrada"},409);
  const adminClient=createClient(SUPABASE_URL,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
- const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
- const random=new Uint8Array(12);
- crypto.getRandomValues(random);
- const accessKey=Array.from(random,n=>alphabet[n%alphabet.length]).join("");
- // Crear la membresía sin enviar correo o SMS; BellaShop entregará la clave directamente.
+ // Crear membresía aprobada sin contraseña, envío de SMS ni invitación por correo.
+ // El acceso posterior requiere revisión humana y un enlace interno de uso único.
  const {data:created,error:createError}=await adminClient.auth.admin.createUser({
-  email:pending.email,password:accessKey,email_confirm:true
+  email:pending.email,email_confirm:true
  });
  if(createError||!created?.user?.id){
   return send({error:"No fue posible activar la cuenta de esta clienta. Comprueba su solicitud.",detail:createError?.message},422);
@@ -64,10 +61,9 @@ Deno.serve(async (req: Request) => {
   });
   if(error)throw error;
   return send({success:true,purchase:data,reference:invoice,internal_reference:!submittedInvoice,
-   access_key:accessKey,phone:pending.phone,
-   notice:"Membresía aprobada. Entrega la clave privada a la titular verificada; no se enviarán correos ni SMS."});
+   notice:"Membresía aprobada. La clienta solicita acceso con celular o correo y nombre; el administrador verifica identidad y autoriza."});
  } catch(error){
-  // Si la factura falla, eliminar únicamente la cuenta recién creada, sin entregar clave.
+  // Si la factura falla, eliminar únicamente la cuenta recién creada.
   await adminClient.auth.admin.deleteUser(newId);
   return send({error:error instanceof Error?error.message:"No se pudo confirmar la compra"},422);
  }
