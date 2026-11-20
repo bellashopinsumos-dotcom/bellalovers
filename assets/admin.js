@@ -245,7 +245,7 @@ function renderStaff(){
  $('#staffForm')?.classList.remove('hidden');
  container.innerHTML=table(['Correo','Permiso','Estado','Fecha',''],staffDirectory.map(e=>
    `<tr><td><strong>${esc(e.email)}</strong></td><td>${esc(e.role)}</td><td>${e.active?pill('Activo','green'):pill('Suspendido','red')}</td><td>${date(e.created_at)}</td><td><button class="btn btn-outline" data-edit-staff="${esc(e.user_id)}">Gestionar</button></td></tr>`));
- $('[data-edit-staff]').forEach(b=>b.onclick=()=>{
+ $$('[data-edit-staff]').forEach(b=>b.onclick=()=>{
    const e=staffDirectory.find(x=>x.user_id===b.dataset.editStaff);if(!e)return;
    $('#staffEmail').value=e.email;$('#staffRole').value=e.role;$('#staffActive').value=String(e.active);
    $('#staffReason').value='';$('#staffEmail').focus();
