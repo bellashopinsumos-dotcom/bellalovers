@@ -281,7 +281,7 @@ async function submitAffiliate(event){
   setLoading(button,true,'Guardando…');
   await rpc('bl_manage_affiliated_teacher',{p_id:id,p_name:name,p_active:active,p_linked_profile:linked});
   notify(id?'Profesora actualizada':'Profesora afiliada agregada. Aparecerá en nuevas solicitudes.');
-  $('#affiliateId').value='';$('#affiliateForm').reset();
+  $('#affiliateId').value='';$('#affiliateForm').reset();$('#affiliateSave').textContent='Agregar profesora afiliada';
   await loadAll();
  }catch(err){notify('No se pudo guardar: '+err.message,'error');}
  finally{setLoading(button,false);}
@@ -359,9 +359,10 @@ function renderJoins(){
  $('#joinPendingBadge').textContent=pending+' pendiente'+(pending===1?'':'s');
  const filter=$('#joinFilter').value;
  const selected=joinRequests.filter(x=>filter==='todas'||x.status===filter);
- tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Correo','Categoría','Estado','Acción'],selected.map(x=>
+ tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Correo','Categoría','Profesora afiliada','Estado','Acción'],selected.map(x=>
   '<tr><td>'+date(x.created_at)+'</td><td><strong>'+esc(x.full_name)+'</strong></td><td>'+esc(x.phone)+'</td>'+
   '<td>'+esc(x.email)+'</td><td>'+esc(TYPE[x.category]||x.category)+'</td><td>'+
+  esc(affiliatedTeachers.find(t=>t.id===x.affiliate_teacher_id)?.display_name||'Ninguna')+'</td><td>'+
   pill(x.status,x.status==='aprobada'?'green':x.status==='rechazada'?'red':'neutral')+'</td><td>'+
   (x.status==='pendiente'?'<div class="account-actions"><button class="btn btn-primary btn-small" data-join-approve="'+esc(x.id)+'">Revisar factura</button><button class="btn btn-outline btn-small" data-join-reject="'+esc(x.id)+'">Rechazar</button></div>':
   x.status==='aprobada'?'Factura aprobada':'Revisada')+'</td></tr>'));
@@ -369,8 +370,10 @@ function renderJoins(){
    const request=joinRequests.find(x=>x.id===btn.dataset.joinApprove);if(!request)return;
    selectedJoinId=request.id;
    $('#joinRequestId').value=request.id;
+   const affiliate=affiliatedTeachers.find(t=>t.id===request.affiliate_teacher_id);
    $('#joinSelectedInfo').textContent=request.full_name+' · '+request.phone+' · '+request.email+
-      ' · '+(TYPE[request.category]||request.category);
+      ' · '+(TYPE[request.category]||request.category)+
+      ' · Profesora: '+(affiliate?.display_name||'Ninguna');
    $('#joinApprovalForm').reset();
    $('#joinRequestId').value=request.id;
    card.classList.remove('hidden');card.scrollIntoView({behavior:'smooth',block:'start'});
