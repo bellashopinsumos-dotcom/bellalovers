@@ -61,7 +61,41 @@
  <div id="rewardPhotoPreview" class="reward-photo-preview" aria-live="polite">La fotografía aparecerá aquí antes de guardarla.</div>
  </div><div class="span2"><label for="rewardImage">O usa un enlace HTTPS de fotografía</label><input id="rewardImage" class="admin-input" type="url" placeholder="https://…"></div><div><label class="checkline"><input id="rewardActive" type="checkbox" checked> Publicar en el catálogo</label></div><div class="span2 admin-actions"><button type="submit" class="btn btn-primary">Guardar recompensa</button><button type="button" id="resetRewardForm" class="btn btn-outline">Limpiar formulario</button></div></form></div><div class="admin-card"><div class="admin-card-header"><div><h2>Premios del club</h2><p>Los premios activos aparecen dentro de la cuenta de las clientas, después de iniciar sesión. No se muestran en la portada pública.</p></div></div><div class="table-scroll" id="rewardsTable"></div></div></section>
 <section class="admin-panel" id="section-redemptions"><div class="admin-card"><h2>Solicitudes de recompensas</h2><p>Las cantidades quedan reservadas al solicitar. Al aprobar, se descuenta del stock de premios; al rechazar, se liberan las unidades y se reintegran puntos.</p><div class="table-scroll" id="redemptionsTable"></div></div></section>
-<section class="admin-panel" id="section-teachers"><div class="admin-card"><h2>Profesoras de uñas</h2><p>Valida a cada profesora antes de habilitar su código y QR. Los puntos por recomendar se registran únicamente cuando una estudiante nueva hace su primera compra válida.</p><div class="table-scroll" id="teachersTable"></div></div><div class="admin-card"><h2>Puntos por primera compra referida</h2><p>Estos rangos pueden editarse desde administración.</p><form id="tierForm" class="admin-form" ><div id="tiersFields" class="span2"></div><div class="span2"><button class="btn btn-primary" type="submit">Guardar puntos de referidos</button></div></form></div></section>
+<section class="admin-panel" id="section-teachers">
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <div><h2>Profesoras afiliadas a BellaShop</h2>
+      <p><strong>Solo las que tú agregues aquí</strong> aparecen para escoger en el formulario de inscripción. Una persona no puede afiliarse como profesora por su cuenta.</p></div>
+      <span id="affiliateCount" class="status">0 activas</span>
+    </div>
+    <form id="affiliateForm" class="admin-form">
+      <input id="affiliateId" type="hidden">
+      <div><label for="affiliateName">Nombre público de la profesora</label>
+        <input id="affiliateName" class="admin-input" type="text" minlength="3" maxlength="120" required placeholder="Nombre de la profesora"></div>
+      <div><label for="affiliateProfile">Vincular cuenta BellaLovers (opcional)</label>
+        <select id="affiliateProfile" class="admin-input"><option value="">Sin cuenta vinculada aún</option></select>
+        <p class="form-help">Si tiene una membresía aprobada con categoría Profesora, vincúlala para recibir puntos por referidos.</p></div>
+      <div><label class="checkline"><input id="affiliateActive" type="checkbox" checked> Activa: aparecerá en las solicitudes</label></div>
+      <div class="span2 admin-actions">
+        <button id="affiliateSave" class="btn btn-primary" type="submit">Agregar profesora afiliada</button>
+        <button id="affiliateReset" class="btn btn-outline" type="button">Limpiar formulario</button>
+      </div>
+    </form>
+  </div>
+  <div class="admin-card">
+    <h2>Directorio de profesoras</h2>
+    <p>«Retirar del listado» oculta inmediatamente a la profesora en nuevas solicitudes, sin borrar su historial. La puedes volver a activar después.</p>
+    <div id="affiliatesTable" class="table-scroll"></div>
+  </div>
+  <div class="admin-card">
+    <h2>Puntos por primera compra de estudiantes referidas</h2>
+    <p>Solo se reconocen a profesoras afiliadas con una cuenta BellaLovers vinculada. Si aún no la tienen, queda guardado quién recomendó a la estudiante para reconocerlo al vincularla, conforme a las reglas.</p>
+    <form id="tierForm" class="admin-form">
+      <div id="tiersFields" class="span2"></div>
+      <div class="span2"><button class="btn btn-primary" type="submit">Guardar puntos de referidos</button></div>
+    </form>
+  </div>
+</section>
 <section class="admin-panel" id="section-gifts"><div class="admin-card"><h2>Regalos de bienvenida para estudiantes</h2><form id="giftForm" class="admin-form"><input type="hidden" id="giftId"><div><label>Producto de regalo</label><input id="giftName" class="admin-input" required></div><div><label>Referencia BellaShop</label><input id="giftRef" class="admin-input" required></div><div><label>Unidades</label><input id="giftStock" class="admin-input" min="0" type="number" required></div><div><label>Costo interno (COP)</label><input id="giftCost" class="admin-input" min="0" type="number" value="0" required></div><div class="span2 admin-actions"><button class="btn btn-primary" type="submit">Guardar producto de bienvenida</button><button id="resetGiftForm" class="btn btn-outline" type="button">Limpiar</button></div></form><div class="table-scroll" id="giftOptionsTable"></div></div>
 <div class="admin-card"><h2>Registrar entrega de bienvenida</h2><p>Solo para estudiantes cuya primera compra fue de al menos $150.000, sin regalo anterior.</p><form id="giftDeliveryForm" class="admin-form"><div><label>Estudiante con derecho a regalo</label><select class="admin-input" id="giftStudent" required></select></div><div><label>Regalo a entregar</label><select class="admin-input" id="giftChoice" required></select></div><div class="span2"><button type="submit" class="btn btn-primary">Confirmar entrega física</button></div></form><hr><h2>Historial de regalos entregados</h2><div class="table-scroll" id="giftClaimsTable"></div></div></section>
 <section class="admin-panel" id="section-settings"><div class="admin-card"><h2>Reglas del club</h2><p>Estos valores se pueden cambiar sin modificar el código. Los puntos ya otorgados no se recalculan retroactivamente.</p><form id="settingsForm" class="admin-form"><div><label>Compra mínima (COP)</label><input class="admin-input" type="number" min="0" id="rule_min_purchase" required></div><div><label>Pesos COP por punto</label><input class="admin-input" type="number" min="1" id="rule_point_value" required></div><div><label>Puntos para desbloquear recompensas</label><input class="admin-input" type="number" min="1" id="rule_unlock_points" required></div><div><label>Mínimo regalo estudiante (COP)</label><input class="admin-input" type="number" min="0" id="rule_student_gift_min" required></div><div><label>Duración del ciclo (meses)</label><input class="admin-input" type="number" min="1" max="120" id="rule_cycle_months" required></div><div><label>Plazo adicional de redención (días)</label><input class="admin-input" type="number" min="0" max="365" id="rule_grace_days" required></div><div class="span2"><label>URL del catálogo de BellaShop</label><input class="admin-input" type="url" id="rule_shop_url" required></div><div><label class="checkline"><input id="rule_exclude_discounts" type="checkbox"> Excluir compras con descuento especial</label></div><div><label class="checkline"><input id="rule_student_first_no_points" type="checkbox"> Primera compra válida de estudiante sin puntos</label></div><div class="span2 admin-actions"><button type="submit" class="btn btn-primary">Guardar configuración</button><button type="button" id="expirePoints" class="btn btn-outline">Procesar puntos vencidos</button></div></form></div><div class="admin-card"><h2>Recepción de solicitudes</h2>
