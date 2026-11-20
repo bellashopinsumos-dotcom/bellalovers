@@ -6,7 +6,7 @@ Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
 ## Ahora el club funciona por aprobación, SIN SMS
 
-- La persona llena una **solicitud de ingreso** desde la web con nombre, celular, correo y categoría.
+- La persona llena una **solicitud de ingreso** desde la web con nombre, celular, correo, categoría y, si corresponde, **escoge una profesora afiliada de la lista**.
 - Su solicitud aparece en **Administrador → Solicitudes de ingreso**, sin crear membresía ni puntos.
 - Cuando haga la **primera compra**, la jefa verifica la factura, selecciona la solicitud y registra el número de factura, valor de productos, canal y transporte.
 - Al aprobar se registra la membresía junto con esa primera compra; el sistema calcula los puntos que correspondan.
@@ -17,9 +17,21 @@ La primera compra puede ser en **tienda, WhatsApp, web o con domicilio**. El tra
 
 ## Paso necesario antes de recibir solicitudes reales
 
-La política `politica-datos.html` todavía es **un borrador**, así que las solicitudes permanecen desactivadas. La jefa deberá completar los datos legales, revisarla y aprobarla.
+La política `politica-datos.html` sigue siendo **un borrador**. BellaShop debe completarla y aprobarla; verifica en Configuración si la recepción pública está abierta o pausada antes de difundir el formulario. La jefa deberá completar los datos legales, revisarla y aprobarla.
 
 Después, en Administrador → Configuración → Recepción de solicitudes, marca la casilla que certifica la publicación de la política y haz clic en **Abrir recepción de solicitudes**. Las membresías no serán automáticas: siempre habrá que comprobar la primera factura.
+
+## Administrar profesoras afiliadas
+
+En Administrador → **Profesoras**:
+
+1. Escribe el nombre público y pulsa **Agregar profesora afiliada**.
+2. Aparecerá automáticamente entre las profesoras disponibles para elegir en las solicitudes.
+3. Puedes cambiar el nombre con **Editar**, compartir su enlace/QR, usar **Retirar** para quitarla de las nuevas solicitudes y **Reactivar** cuando corresponda.
+4. Para otorgar puntos a la profesora por referidos, vincula su membresía aprobada desde **Vincular cuenta BellaLovers**. Primero debe tener la categoría Profesora en Clientas.
+5. **Retirar no elimina historial**, y ninguna persona puede autorizarse como profesora por sí misma.
+
+Cuando todavía no hay afiliadas, las personas podrán seleccionar «Ninguna».
 
 ## Correos e invitaciones
 
