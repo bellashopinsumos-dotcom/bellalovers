@@ -55,6 +55,19 @@ En Supabase → Authentication → URL Configuration:
 
 Revisar la entrega real de invitaciones y enlaces de acceso. Supabase tiene límites en su proveedor de correo por defecto, así que antes de crecer revisar si hace falta SMTP propio. Ningún correo de clienta debe usarse para pruebas sin permiso.
 
+## Operación diaria desde el celular
+
+Para registrar una compra entra a **Compras**, escribe el **celular de la clienta** y pulsa **Buscar**. Cuando veas su nombre, ingresa el **valor de los productos**. **Factura** y **canal** son opcionales; ya no se pide transporte. Si no tienes factura el sistema genera una referencia interna, que no reemplaza una factura comercial.
+
+Si agregaste puntos para probar y quieres quitarlos, entra a **Clientas → Ver ficha → Ajustes manuales de puntos → Deshacer ajuste**. El saldo se recalcula y queda el movimiento contrario en el historial para que no desaparezca la auditoría.
+
+Para dar de baja una cuenta, en **Clientas → Ver ficha** existen opciones diferentes:
+
+- **Archivar:** reversible; luego puedes restaurar.
+- **Eliminar cuenta y acceso:** desactiva la membresía y elimina los datos de contacto; conserva las facturas y movimientos históricos, pide confirmaciones y solo funciona para administradores. No se puede restaurar con un botón.
+
+No borres manualmente movimientos o facturas de Supabase para intentar cuadrar puntos. Los cambios de puntos deben pasar por las acciones auditadas del administrador.
+
 ## El administrador
 
 Solo pueden entrar cuentas previamente autorizadas en Supabase. El registro público de administradores se retiró y no vuelve a activarse.
