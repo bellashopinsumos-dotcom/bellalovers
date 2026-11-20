@@ -6,18 +6,18 @@ Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
 Proyecto Supabase exclusivo: `xpnfdyfnaromfwkontid`.
 
-## Iniciar sesión: ventana emergente, no sección fija
+## Inicio de sesión SIN clave, correo de confirmación ni SMS
 
-La página muestra normalmente la presentación, productos y beneficios de BellaLovers. **Iniciar sesión** en el menú o portada abre una ventana emergente rosada con **Iniciar sesión**, **Registrarse** y una **X** para cerrarla. Funciona en móvil; se puede cerrar tocando fuera o pulsando Esc.
+La portada se mantiene normal. Al tocar **Iniciar sesión** se abre una ventana con las pestañas **Iniciar sesión**, **Registrarse** y una **X** para cerrar. La clienta escribe únicamente **celular o correo y nombre completo**.
 
-- **Primera pantalla:** la persona escribe **celular o correo** y su **nombre y apellido**, tal como quedó registrada. No se muestra una clave en esa pantalla.
-- **Si ya tiene una sesión aprobada guardada en ese dispositivo:** comprueba los datos y muestra su cuenta directamente, con compras, puntos y recompensas.
-- **Si es un dispositivo nuevo o no hay sesión:** el nombre y celular/correo no demuestran identidad. Para evitar que cualquiera consulte compras y puntos ajenos, la persona debe confirmar su acceso con BellaShop. Si ya le dieron una clave privada, puede introducirla en el segundo paso; no se envían correos ni SMS.
-- El servidor `bellalovers-ingresar` verifica que sea un miembro activo y comprueba identificador, nombre y credencial contra Supabase Auth. La consulta por correo `bl_resolve_member_email` solo está disponible para service_role; nunca se expone el correo de otras personas.
-- **Registrarse** es solicitar ingreso, no crear una cuenta automáticamente. La aprobación requiere una primera compra real verificada y BellaShop puede entregar la clave de acceso sin usar Gmail.
-- **Pérdida de acceso:** el administrador puede generar otra clave desde Clientas tras identificar a la titular. No se cambia el acceso administrativo desde el formulario de clientas.
+- **Sesión previamente autorizada en el mismo dispositivo:** entra directamente si los datos corresponden a la clienta de esa sesión.
+- **Dispositivo nuevo o sin sesión:** se envía una **solicitud temporal de acceso** al administrador; no aparece ninguna clave. En Administrador → **Solicitudes de ingreso → Solicitudes para entrar a Mi cuenta**, BellaShop **comprueba la identidad de la persona por WhatsApp o presencialmente**, pulsa Aprobar o Rechazar y la ventana del dispositivo original se actualiza automáticamente, mientras permanezca abierta.
+- Las solicitudes vencen a los **10 minutos**. El servidor no indica a un desconocido si el celular o correo existe. El reto aleatorio se genera localmente con un generador criptográfico y solo su huella se almacena en la base de datos. Una aprobación solo sirve para ese dispositivo y se consume una vez.
+- Para crear una sesión válida, Supabase genera un enlace de Auth interno y de uso único que se **consume dentro de la función de servidor**; no se envía un correo ni SMS a la clienta. Los tokens de sesión solo se entregan al dispositivo aprobado.
+- El administrador únicamente puede autorizar accesos si tiene la sesión y el rol apropiados. Su aprobación se guarda en auditoría.
+- **Registrarse** sigue siendo solicitar ingreso al club; no equivale a crear una cuenta. La jefa aprueba la membresía cuando verifica la primera compra real.
 
-**Seguridad:** no se muestran datos privados simplemente por introducir nombres y teléfonos, porque podrían ser conocidos por otras personas. Las sesiones previamente verificadas permanecen en el mismo dispositivo. El administrador controla las claves y permisos.
+El endpoint anterior de generar claves de clientas está **desactivado**. Las cuentas previamente aprobadas no pierden su historial, compras ni puntos. No modificar la contraseña del administrador ni exponerla en frontend. Este flujo requiere comprobar extremo a extremo la emisión de sesión Auth con una cuenta real autorizada.
 
 ## Cuenta de BellaLover
 
@@ -37,17 +37,17 @@ Premios: si BellaShop todavía no publicó ninguno aparece **Próximamente**; si
 ## Pendientes antes de difundir masivamente
 
 1. La política publicada `politica-datos.html` todavía es un **borrador**, pendiente de completar por BellaShop y aprobar según la normativa. Debe actualizarse antes de recabar nuevos registros.
-2. Probar el flujo completo con una solicitud y una primera compra **auténticas y autorizadas**: aceptación, aprobación, entrega de clave, inicio desde celular y canjes. No inventar clientas/facturas.
+2. Probar el flujo completo con una primera compra real autorizada: solicitud de ingreso, aprobación, solicitud de acceso desde celular, verificación humana por BellaShop, autorización en admin y consulta de compras y premios.
 3. Configurar mitigación anti-bots en registro y revisar los límites de Supabase Auth. El sistema ya limita intentos de inicio, pero no reemplaza CAPTCHA.
-4. Verificar el horario y funcionamiento del canal WhatsApp de BellaShop para soporte de claves. No se envían automáticamente mensajes a ninguna clienta.
+4. Definir quién en BellaShop atiende por WhatsApp la verificación de identidad antes de autorizar el acceso; no se envían mensajes automáticamente.
 5. En Supabase Auth habilitar, si el plan lo permite, protección contra contraseñas filtradas para el equipo.
 
-El acceso con clave no exige SMTP ni ningún proveedor SMS.
+El acceso con aprobación humana no exige SMTP ni proveedor de SMS. La cuenta se autentica con tokens válidos emitidos por Supabase tras la autorización.
 
 ## Archivos y despliegue
 
 - UI: `index.html`, `assets/client.js`, `assets/premium.css`, `admin.html`, `assets/admin.js`.
-- Auth clientas: `supabase/functions/bellalovers-ingresar/index.ts`, `supabase/functions/bellalovers-clave/index.ts`, `supabase/functions/bellalovers-aprobar/index.ts`.
+- Auth clientas: `supabase/functions/bellalovers-ingresar/index.ts`, `supabase/functions/bellalovers-aprobar/index.ts` y la tabla `bl_login_requests`; `bellalovers-clave` permanece deshabilitada (HTTP 410).
 - Función antigua de correo (deshabilitada): `supabase/functions/bellalovers-acceso/index.ts`.
 - Scripts SQL en `supabase/migrations/` y configuración en `assets/config.js` (solo clave pública).
 - Pruebas automáticas: `npm test` y GitHub Actions.
