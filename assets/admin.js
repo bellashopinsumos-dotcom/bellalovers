@@ -121,11 +121,11 @@ function renderCustomers(){
  const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
  const chosen=$('#customerStatusFilter')?.value||'all';
  const filtered=profiles.filter(p=>{
-   const match=(p.full_name+' '+p.phone).toLowerCase().includes(term);
-   const status=p.archived_at?'archived':p.blocked?'blocked':'active';
+   const match=(p.full_name+' '+(p.phone||'')).toLowerCase().includes(term);
+   const status=p.deleted_at?'deleted':p.archived_at?'archived':p.blocked?'blocked':'active';
    return match&&(chosen==='all'||chosen===status);
  });
- const status=p=>p.archived_at?pill('Archivada','neutral'):p.blocked?pill('Bloqueada','red'):pill('Activa','green');
+ const status=p=>p.deleted_at?pill('Eliminada','red'):p.archived_at?pill('Archivada','neutral'):p.blocked?pill('Bloqueada','red'):pill('Activa','green');
  $('#customersTable').innerHTML=table(['Nombre','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>
    `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
  $$('[data-view-customer]').forEach(b=>b.onclick=()=>{
@@ -150,54 +150,97 @@ async function manageCustomer(p,action,category=null){
 function renderCustomerDetail(){
  const p=profiles.find(x=>x.id===selectedCustomerId);
  if(!p){$('#selectedCustomer').innerHTML='<p>Selecciona una clienta para revisar su historial y administrar su cuenta.</p>';return;}
- const archived=Boolean(p.archived_at);
+ const archived=!!p.archived_at,deleted=!!p.deleted_at;
  const cycle=cycles.filter(c=>c.customer_id===p.id&&!c.closed_at).sort((a,b)=>new Date(a.expires_at)-new Date(b.expires_at))[0];
- const movements=points.filter(x=>x.customer_id===p.id).slice(0,8)
-   .map(x=>`<li>${date(x.created_at)}: ${x.delta>0?'+':''}${x.delta} puntos · ${esc(x.kind)}</li>`).join('');
- const status=archived?'Archivada':p.blocked?'Bloqueada':'Activa';
- $('#selectedCustomer').innerHTML=`
- <div class="admin-form">
-  <div><p class="form-help">Clienta y celular verificado</p><strong>${esc(p.full_name)}</strong><p>${esc(p.phone)}</p><p class="admin-tag">Estado: ${esc(status)}</p></div>
-  <div><p class="form-help">Puntos e historial</p><strong>${ubalance(p.id)} puntos</strong><p>Próximo vencimiento: ${date(cycle?.expires_at)}</p></div>
-  <div><label for="editCustomerCategory">Categoría</label><select class="admin-input" id="editCustomerCategory" ${archived?'disabled':''}>
-   <option value="estudiante" ${p.category==='estudiante'?'selected':''}>Estudiante</option>
-   <option value="manicurista" ${p.category==='manicurista'?'selected':''}>Manicurista</option>
-   <option value="profesora" ${p.category==='profesora'?'selected':''}>Profesora</option>
-  </select></div>
-  <div><p class="form-help">Registro y trazabilidad</p><p>Inscrita: ${date(p.created_at)}</p><p>${archived?'Archivada: '+date(p.archived_at):'Cuenta conservada con historial completo'}</p></div>
-  <div class="span2 account-actions">
-   <button class="btn btn-outline" id="saveCustomerCategory" ${archived?'disabled':''}>Cambiar categoría</button>
-   ${archived?'<button class="btn btn-primary" id="restoreCustomer">Restaurar cuenta</button>':
-   `<button class="btn btn-outline" id="toggleCustomerBlock">${p.blocked?'Desbloquear':'Bloquear'} cuenta</button>
-    <button class="btn btn-outline admin-danger" id="archiveCustomer">Archivar sin borrar</button>`}
-   <button class="btn btn-outline" id="adjustPointsBtn" ${p.blocked||archived?'disabled':''}>Ajustar puntos</button>
-  </div>
-  <div class="span2"><p class="form-help">Últimos movimientos</p><ul class="list-compact">${movements||'<li>Sin movimientos registrados</li>'}</ul></div>
- </div>`;
- $('#saveCustomerCategory').onclick=()=>{
-   const c=$('#editCustomerCategory').value;
-   if(c===p.category)return notify('No hay cambio de categoría.');
-   manageCustomer(p,'category',c);
- };
- if(archived){
-   $('#restoreCustomer').onclick=()=>manageCustomer(p,'restore');
- }else{
+ const own=points.filter(x=>x.customer_id===p.id);
+ const movements=own.slice(0,12).map(x=>'<li>'+date(x.created_at)+': '+(x.delta>0?'+':'')+x.delta+' puntos · '+esc(x.kind)+(x.detail?' · '+esc(x.detail):'')+'</li>').join('');
+ const status=deleted?'Eliminada':archived?'Archivada':p.blocked?'Bloqueada':'Activa';
+ const categoryOptions=['estudiante','manicurista','profesora'].map(c=>'<option value="'+c+'" '+(p.category===c?'selected':'')+'>'+esc(TYPE[c]||c)+'</option>').join('');
+ const actions=deleted?'<span class="status red">Cuenta eliminada (no se puede restaurar)</span>':
+  archived?'<button class="btn btn-primary" id="restoreCustomer">Restaurar cuenta</button>':
+  '<button class="btn btn-outline" id="toggleCustomerBlock">'+(p.blocked?'Desbloquear':'Bloquear')+' cuenta</button>'+
+  '<button class="btn btn-outline" id="archiveCustomer">Archivar (reversible)</button>';
+ const adjustments=own.filter(x=>x.kind==='ajuste'&&x.delta!==0
+   &&!adjustmentReversals.some(r=>r.original_adjustment_id===x.id)
+   &&!String(x.detail||'').startsWith('Reversión del ajuste manual') &&
+   !String(x.detail||'').startsWith('Reversión del ajuste de prueba'));
+ const adjustmentHtml=adjustments.slice(0,15).map(x=>
+   '<div class="point-adjustment-row"><div><strong>'+(x.delta>0?'+':'')+x.delta+' puntos</strong>'+
+   '<small>'+date(x.created_at)+' · '+esc(x.detail||'Ajuste')+'</small></div>'+
+   '<button class="btn btn-outline btn-small" type="button" data-reverse-adjustment="'+esc(x.id)+'"'+
+   (p.blocked||archived||deleted?' disabled':'')+'>Deshacer ajuste</button></div>').join('');
+ const html=[
+  '<div class="admin-form">',
+  '<div><p class="form-help">Clienta y celular de contacto</p><strong>'+esc(p.full_name)+'</strong><p>'+esc(p.phone||'Sin celular asociado')+'</p><p class="admin-tag">Estado: '+esc(status)+'</p></div>',
+  '<div><p class="form-help">Saldo actual</p><strong>'+ubalance(p.id)+' puntos</strong><p>Próximo vencimiento: '+date(cycle?.expires_at)+'</p></div>',
+  '<div><label for="editCustomerCategory">Categoría</label><select class="admin-input" id="editCustomerCategory" '+(archived||deleted?'disabled':'')+'>'+categoryOptions+'</select></div>',
+  '<div><p class="form-help">Registro y trazabilidad</p><p>Ingreso: '+date(p.created_at)+'</p><p>'+(deleted?'Eliminada: '+date(p.deleted_at):archived?'Archivada: '+date(p.archived_at):'Cuenta con historial completo')+'</p></div>',
+  '<div class="span2 account-actions">',
+  '<button class="btn btn-outline" id="saveCustomerCategory" '+(archived||deleted?'disabled':'')+'>Cambiar categoría</button>',
+  actions,
+  '<button class="btn btn-outline" id="adjustPointsBtn" '+(p.blocked||archived||deleted?'disabled':'')+'>Sumar o descontar puntos</button>',
+  deleted?'':'<button class="btn btn-outline admin-danger" id="deleteCustomer">Eliminar cuenta y acceso</button>',
+  '</div>',
+  '<div class="span2"><h3 class="admin-subsection-heading">Ajustes manuales de puntos</h3>',
+  '<p class="form-help">«Deshacer ajuste» registra el movimiento contrario sin borrar los originales.</p>',
+  '<div class="point-adjustments">'+(adjustmentHtml||'<p class="form-help">Sin ajustes manuales pendientes de reversión.</p>')+'</div></div>',
+  '<div class="span2"><p class="form-help">Últimos movimientos</p><ul class="list-compact">'+(movements||'<li>Sin movimientos registrados</li>')+'</ul></div>',
+  '</div>'
+ ].join('');
+ $('#selectedCustomer').innerHTML=html;
+ $('#saveCustomerCategory').onclick=()=>{const c=$('#editCustomerCategory').value;if(c===p.category)return notify('Ya tiene esa categoría.');manageCustomer(p,'category',c);};
+ if(!deleted){
+  if(archived)$('#restoreCustomer').onclick=()=>manageCustomer(p,'restore');
+  else{
    $('#toggleCustomerBlock').onclick=()=>manageCustomer(p,p.blocked?'unblock':'block');
    $('#archiveCustomer').onclick=()=>manageCustomer(p,'archive');
+  }
+  $('#deleteCustomer').onclick=()=>deleteMemberAccount(p);
  }
  $('#adjustPointsBtn').onclick=async()=>{
-   if(!requireLive()||!checkManager())return;
-   const quantity=prompt('Puntos a ajustar (valor negativo para descontar):');
-   if(quantity===null)return;
-   const number=Number(quantity);
-   if(!Number.isInteger(number)||number===0)return notify('Debe ser un entero distinto de cero.','error');
-   const reason=prompt('Justificación detallada (mínimo 8 caracteres):');
-   if(reason===null)return;
-   if(reason.trim().length<8)return notify('Justificación demasiado corta.','error');
-   if(!confirm('¿Confirmas el ajuste de puntos? Se guardará en la auditoría.'))return;
-   try{await rpc('bl_adjust_points',{p_customer:p.id,p_delta:number,p_reason:reason.trim()});notify('Ajuste registrado');await loadAll();}
-   catch(err){notify(err.message,'error');}
+  if(!requireLive()||!checkManager())return;
+  const quantity=prompt('¿Cuántos puntos sumar o descontar? Usa negativo para descontar, por ejemplo -20:');
+  if(quantity===null)return;
+  const number=Number(quantity);
+  if(!Number.isInteger(number)||number===0)return notify('Escribe un entero distinto de cero.','error');
+  const reason=prompt('Motivo obligatorio del ajuste (mínimo 8 caracteres):');
+  if(reason===null)return;
+  if(reason.trim().length<8)return notify('Explica el motivo con al menos 8 caracteres.','error');
+  if(!confirm('¿Guardar un ajuste de '+number+' puntos? Quedará registrado en auditoría.'))return;
+  try{await rpc('bl_adjust_points',{p_customer:p.id,p_delta:number,p_reason:reason.trim()});notify('Ajuste registrado y puntos recalculados.');await loadAll();}
+  catch(err){notify(err.message,'error');}
  };
+ $$('[data-reverse-adjustment]').forEach(button=>button.onclick=async()=>{
+  if(!requireLive()||!checkManager())return;
+  const original=own.find(pt=>pt.id===button.dataset.reverseAdjustment);if(!original)return;
+  const reason=prompt('Motivo para deshacer el ajuste de '+original.delta+' puntos (mínimo 8 caracteres):');
+  if(reason===null)return;
+  if(reason.trim().length<8)return notify('Escribe un motivo de al menos 8 caracteres.','error');
+  if(!confirm('¿Deshacer el ajuste de '+original.delta+' puntos? El movimiento quedará en auditoría.'))return;
+  try{
+   const result=await rpc('bl_reverse_manual_adjustment',{p_point:original.id,p_reason:reason.trim()});
+   notify('Ajuste revertido: '+result.reverted_points+' puntos.');await loadAll();
+  }catch(err){notify('No se pudo deshacer: '+err.message,'error');}
+ });
+}
+async function deleteMemberAccount(p){
+ if(!requireLive()||!checkManager())return;
+ const typed=prompt('ELIMINACIÓN DE CUENTA: escribe ELIMINAR para desactivar su acceso, quitar sus datos de contacto y conservar las facturas/movimientos necesarios. No podrá restaurarse después.');
+ if(typed===null)return;
+ if(typed!=='ELIMINAR')return notify('Operación cancelada: escribe ELIMINAR.','error');
+ const reason=prompt('Motivo de la eliminación (mínimo 8 caracteres):');
+ if(reason===null)return;
+ if(reason.trim().length<8)return notify('Describe el motivo con al menos 8 caracteres.','error');
+ if(!confirm('Confirmación definitiva: ¿eliminar acceso y datos personales de contacto de '+p.full_name+'? Los registros contables permanecerán.'))return;
+ try{
+  const {data,error}=await sb.functions.invoke('bellalovers-eliminar',{body:{customer_id:p.id,reason:reason.trim()}});
+  if(error)throw error;
+  if(!data?.success){
+   if(data?.account_closed){notify('Cuenta bloqueada y datos anonimizados. Supabase Auth necesita revisión técnica para terminar el cierre.','error');await loadAll();return;}
+   throw new Error(data?.error||'No se completó la eliminación');
+  }
+  selectedCustomerId=null;notify('Cuenta eliminada, datos de contacto retirados e historial contable conservado.');await loadAll();
+ }catch(err){notify('No se pudo eliminar: '+err.message,'error');}
 }
 
 function renderPurchases(){
