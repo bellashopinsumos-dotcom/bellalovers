@@ -10,7 +10,7 @@
 <header class="site-header"><div class="wrap nav-bar">
   <a class="brand" href="#inicio" aria-label="BellaLovers, inicio"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>de BellaShop</small></span></a>
   <nav class="nav-links" aria-label="Principal"><a href="#beneficios">Beneficios</a><a href="#como-funciona">Cómo funciona</a><a href="#acceso" id="navCuenta">Mi cuenta</a></nav>
-  <a href="#acceso" class="btn btn-small btn-outline">Acceso clientas <span aria-hidden="true">♡</span></a>
+  <a href="#acceso" class="btn btn-small btn-outline">Solicitar ingreso <span aria-hidden="true">♡</span></a>
 </div></header>
 <main>
 <section class="hero" id="inicio">
@@ -85,29 +85,59 @@
       </div>
     </div>
     <div class="steps-grid">
-      <article class="step"><span class="step-num">01</span><div class="step-body"><span class="step-icon" aria-hidden="true">♡</span><h3>Únete a BellaLovers</h3><p>Regístrate gratis y verifica tu celular para cuidar tu cuenta.</p></div></article>
+      <article class="step"><span class="step-num">01</span><div class="step-body"><span class="step-icon" aria-hidden="true">♡</span><h3>Envía tu solicitud</h3><p>Déjanos tu nombre y datos. BellaShop aprobará tu ingreso al confirmar tu primera compra.</p></div></article>
       <article class="step"><span class="step-num">02</span><div class="step-body"><span class="step-icon" aria-hidden="true">✧</span><h3>Compra y suma puntos</h3><p>Una compra válida de $50.000 genera 5 puntos y cada $10.000 completos adicionales suman 1 punto. También cuentan las ventas por WhatsApp.</p></div></article>
       <article class="step"><span class="step-num">03</span><div class="step-body"><span class="step-icon" aria-hidden="true">✦</span><h3>Elige tu recompensa</h3><p>Al alcanzar 50 puntos puedes solicitar regalos disponibles, sujetos a existencias y confirmación de BellaShop.</p></div></article>
     </div>
   </div>
 </section>
 <section class="section section-access" id="acceso"><div class="wrap access-grid">
-  <div class="access-intro"><span class="kicker">TU ESPACIO PERSONAL</span><h2>Todo lo bonito de ser <em>BellaLover</em>, en un solo lugar.</h2><p>Cuando habilitemos el ingreso seguro, podrás consultar desde tu celular tus compras, puntos y premios en un solo lugar.</p>
-    <div class="access-promise"><span>✓</span> Tus datos protegidos con verificación por celular</div><div class="access-promise"><span>✓</span> Recompensas sujetas a disponibilidad real</div><div class="access-promise"><span>✓</span> Tu historial siempre a la vista</div>
+  <div class="access-intro"><span class="kicker">TU ESPACIO PERSONAL</span><h2>Todo lo bonito de ser <em>BellaLover</em>, en un solo lugar.</h2><p>Solicita tu ingreso y empieza a sumar cuando BellaShop confirme tu primera compra. Después consulta tus puntos por correo, sin mensajes SMS.</p>
+    <div class="access-promise"><span>✓</span> Solo BellaShop aprueba después de tu primera compra</div><div class="access-promise"><span>✓</span> Recompensas sujetas a disponibilidad real</div><div class="access-promise"><span>✓</span> Tu historial siempre a la vista</div>
   </div>
-  <div class="access-panel" id="loginPanel"><div class="access-panel-top"><span aria-hidden="true">♡</span><span>ACCESO DE CLIENTAS</span></div><span class="panel-overline">BIENVENIDA</span><h3>Accede con tu celular</h3><p class="muted">El ingreso será con un código de verificación por SMS. No necesitas crear una contraseña.</p>
-    <form id="phoneForm" class="stack"><label for="phone">Número de celular</label><div class="phone-input"><span>+57</span><input id="phone" name="phone" type="tel" autocomplete="tel-national" inputmode="numeric" maxlength="10" minlength="10" pattern="[0-9]{10}" required placeholder="300 123 4567"></div><button class="btn btn-primary btn-full" type="submit">Enviar código de verificación</button></form>
-    <form id="otpForm" class="stack hidden"><label for="otp">Código que recibiste</label><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" required placeholder="000000"><button class="btn btn-primary btn-full" type="submit">Verificar y continuar</button><button type="button" class="btn btn-text" id="changePhone">Cambiar celular</button></form>
-    <div id="enrollmentStatus" class="enrollment-status hidden" role="status"><strong>El acceso de clientas todavía no está habilitado</strong><p>Para proteger tu cuenta, necesitamos terminar la verificación por SMS. Cuando esté activa, podrás ingresar escribiendo tu celular y el código que recibas, sin contraseña.</p></div>
-    <p class="fineprint">El registro no otorga puntos automáticamente. <a href="#condiciones">Conoce las condiciones.</a></p>
-  </div>
-  <div class="access-panel hidden" id="signupPanel"><span class="panel-overline">UN PASO MÁS</span><h3>Completa tu inscripción</h3><p class="muted">Tu celular ya está verificado. Ahora cuéntanos sobre ti.</p>
-    <form id="signupForm" class="stack"><label for="fullName">Nombre completo</label><input id="fullName" maxlength="120" minlength="3" autocomplete="name" required placeholder="Tu nombre y apellido">
-      <label for="customerType">¿Cómo participas en el mundo de las uñas?</label><select id="customerType" required><option value="">Selecciona una opción</option><option value="estudiante">Soy estudiante de uñas</option><option value="manicurista">Soy manicurista / clienta frecuente</option><option value="profesora">Soy profesora de uñas</option></select>
-      <div id="teacherField" class="hidden"><label for="teacherCode">Código de la profesora que te recomendó (opcional)</label><input id="teacherCode" maxlength="30" placeholder="Ej. BL-ABC12345"><p class="helper">Si tu profesora tiene un enlace de referido, el código aparecerá aquí.</p></div>
-      <label class="checkline"><input type="checkbox" id="privacy" required><span>He leído y acepto la <a href="./politica-datos.html" target="_blank" rel="noopener">política de tratamiento de datos</a>.</span></label>
-      <label class="checkline"><input type="checkbox" id="marketing"><span>Deseo recibir promociones por WhatsApp (opcional).</span></label>
-      <button type="submit" class="btn btn-primary btn-full">Crear mi cuenta BellaLovers</button></form>
+  <div class="access-panel" id="loginPanel">
+   <div class="access-panel-top"><span aria-hidden="true">♡</span><span>SOLICITA TU INGRESO</span></div>
+   <span class="panel-overline">BIENVENIDA A BELLALOVERS</span>
+   <h3>Primero solicita. Después disfruta.</h3>
+   <p class="muted">Déjanos tus datos y cuando hagas tu primera compra, BellaShop comprobará tu factura y aprobará tu membresía. <strong>Solicitar no significa estar inscrita.</strong></p>
+   <form id="joinForm" class="stack hidden">
+    <label for="joinName">Nombre y apellido</label>
+    <input id="joinName" type="text" autocomplete="name" maxlength="120" minlength="3" required placeholder="Tu nombre completo">
+    <label for="joinPhone">Celular de contacto</label>
+    <div class="phone-input"><span>+57</span><input id="joinPhone" type="tel" autocomplete="tel-national" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" required placeholder="3001234567"></div>
+    <label for="joinEmail">Correo para activar tu cuenta cuando te aprueben</label>
+    <input id="joinEmail" type="email" maxlength="254" autocomplete="email" required placeholder="correo@ejemplo.com">
+    <label for="joinCategory">¿Qué categoría te representa?</label>
+    <select id="joinCategory" required>
+     <option value="">Selecciona una</option><option value="estudiante">Estudiante de uñas</option>
+     <option value="manicurista">Manicurista / clienta frecuente</option><option value="profesora">Profesora de uñas</option>
+    </select>
+    <div id="joinTeacherField" class="hidden"><label for="joinTeacherCode">Código de tu profesora (opcional)</label>
+    <input id="joinTeacherCode" maxlength="30" placeholder="Solo si te recomendó una profesora BellaLovers"></div>
+    <label class="checkline"><input id="joinPrivacy" type="checkbox" required><span>Autorizo el tratamiento de mis datos según la <a href="./politica-datos.html" target="_blank" rel="noopener">política de BellaShop</a>.</span></label>
+    <label class="checkline"><input id="joinMarketing" type="checkbox"><span>Quiero recibir promociones por WhatsApp (opcional).</span></label>
+    <div class="join-honeypot" aria-hidden="true"><label for="joinWebsite">Sitio web</label><input id="joinWebsite" tabindex="-1" autocomplete="off"></div>
+    <button class="btn btn-primary btn-full" type="submit">Enviar solicitud a BellaShop ♡</button>
+    <p class="fineprint">BellaShop revisará tu primera compra antes de aprobarte. Tu solicitud no genera puntos.</p>
+   </form>
+   <div id="joinClosed" class="enrollment-status hidden" role="status">
+     <strong>Solicitudes temporalmente cerradas</strong><p>Estamos terminando los preparativos. BellaShop abrirá las solicitudes aquí mismo.</p>
+   </div>
+   <div id="joinSent" class="join-confirmation hidden" role="status">
+     <strong>♡ ¡Recibimos tu solicitud!</strong>
+     <p>Cuando hagas tu primera compra, BellaShop podrá comprobar la factura y aprobar tu ingreso. Conserva el correo que registraste.</p>
+   </div>
+   <div class="member-login-fold">
+    <span class="kicker">¿YA ERES BELLALOVER?</span>
+    <h4>Consulta tus puntos y beneficios</h4>
+    <p>Si BellaShop ya aprobó tu primera compra, puedes recibir un enlace privado para entrar a tu cuenta. No necesitas SMS.</p>
+    <form id="memberLoginForm" class="stack">
+      <label for="memberEmail">Correo de tu membresía aprobada</label>
+      <input id="memberEmail" type="email" autocomplete="email" maxlength="254" required placeholder="Tu correo registrado">
+      <button type="submit" class="btn btn-outline btn-full">Enviar enlace de acceso</button>
+    </form>
+    <p class="fineprint">Solo pueden ingresar las membresías aprobadas por BellaShop.</p>
+   </div>
   </div>
 </div></section>
 <section class="section section-dashboard hidden" id="account"><div class="wrap">
@@ -144,5 +174,5 @@
 </main>
 <footer><div class="wrap footer-content"><span class="brand brand-footer"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>de BellaShop</small></span></span><span>Un detalle especial para nuestra comunidad de belleza.</span><span>Hecho con cariño en BellaShop ♡</span></div></footer>
 <div id="toast" class="toast" aria-live="polite"></div>
-<script type="module" src="./assets/client.js?v=inicio20261120fix3"></script>
+<script type="module" src="./assets/client.js?v=solicitudes20261120a"></script>
 </body></html>
