@@ -1017,3 +1017,32 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  #section-joins .account-actions{flex-wrap:wrap;}
  .join-selected-info{font-size:11px;padding:12px;}
 }
+
+
+/* Profesoras afiliadas: directorio privado, edición sencilla en celular. */
+#section-teachers #affiliateForm{
+  margin-top:18px;
+  padding:19px;
+  border-radius:17px;
+  border:1px solid #eccbd8;
+  background:linear-gradient(130deg,#fffafd,#fcecf2);
+}
+#section-teachers #affiliateForm label:not(.checkline){font-size:12px;color:#83516b;font-weight:750;}
+#section-teachers #affiliateForm .checkline{padding:8px 0 4px;font-size:13px;color:#765365;}
+#section-teachers .affiliate-actions{display:flex;flex-wrap:wrap;gap:7px;min-width:240px;}
+#section-teachers .affiliate-actions .btn{font-size:11px;padding:8px 10px;white-space:nowrap;min-height:35px;}
+#section-teachers #affiliateCount{font-size:11px;white-space:nowrap;}
+#section-teachers #affiliatesTable{overflow-x:auto;}
+#section-teachers #affiliatesTable code{
+  font-size:12px;letter-spacing:.05em;font-weight:800;
+  color:#8d4d6d;background:#f9e5ed;border-radius:6px;padding:5px 7px;
+}
+#joinTeacherField select{width:100%;min-height:46px;background:#fff;border-color:#dcb3c4;color:#674456;}
+#joinTeacherField .helper{font-size:11px;color:#806376;line-height:1.6;}
+@media(max-width:690px){
+ #section-teachers #affiliateForm{padding:15px 13px;}
+ #section-teachers #affiliateForm .admin-actions{display:flex;flex-direction:column;}
+ #section-teachers #affiliateForm .admin-actions .btn{width:100%;}
+ #section-teachers .affiliate-actions{min-width:175px;}
+ #section-teachers .affiliate-actions .btn{font-size:10px;}
+}
