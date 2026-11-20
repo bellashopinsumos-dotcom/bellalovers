@@ -13,9 +13,9 @@ Sistema de fidelización de BellaShop: **rosado pastel, dorado champagne, interf
 
 **Página pública**
 - Bienvenida, explicación de requisitos y categorías (estudiantes, frecuentes/manicuristas, profesoras).
-- Panel de ejemplo para revisar puntos, vencimientos, compras y recompensas.
+- Área de clientas conectada a datos reales: puntos, vencimientos, compras y recompensas; no se cargan cuentas ficticias.
 - Autenticación de clientas mediante SMS OTP una vez que el operador de SMS y la política estén habilitados.
-- Catálogo de recompensas y redenciones vinculadas a facturas y puntos del servidor (en modo real).
+- Catálogo de recompensas y redenciones vinculado a facturas y puntos del servidor cuando existan registros reales.
 
 **Panel administrativo**
 - Gestión de clientas y filtros por estado (activas, bloqueadas, archivadas).
@@ -61,7 +61,7 @@ Compra mínima elegible: $50.000 COP; 1 punto por $10.000 completos en productos
 5. Cargar recompensas reales con costos y stock aprobados por la jefa. Integración con el inventario central de BellaShop pendiente.
 6. Probar operaciones completas con usuarios de prueba autorizados y supervisión de la jefa; validar correos de recuperación y auditorías.
 
-**Estado al 20/11/2026:** backend creado y conectado, migraciones aplicadas, código y diseño publicados; registro público intencionalmente desactivado y sin ningún usuario autorizado inicial. La **vista de demostración** está disponible sin crear cuentas reales.
+**Estado al 20/11/2026:** backend creado y conectado, migraciones aplicadas, código y diseño publicados. Se eliminaron los datos y accesos de demostración. La base está vacía: no hay aún clientas, compras, premios ni administradores. El registro público continúa desactivado hasta configurar SMS y aprobar el tratamiento de datos.
 
 ## Instalación de otra instancia
 
