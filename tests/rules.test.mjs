@@ -85,7 +85,7 @@ assert.match(approvalFn, /auth\.admin\.createUser/, 'Nueva membresía creada sin
 assert.doesNotMatch(approvalFn, /inviteUserByEmail/, 'Aprobación sin enviar invitaciones por correo');
 assert.match(adminHtml, /id="memberKeyDialog"/, 'Clave mostrada al administrador solamente');
 assert.match(adminJs, /bellalovers-clave/, 'Generar nueva clave exclusivamente desde admin');
-assert.match(adminJs, /Copiar mensaje/, 'Entrega de clave mediante mensaje preparado');
-assert.match(keyFn, /staff\.role!=="admin"/, 'Solo administrador puede restablecer una clave');
+assert.match(adminHtml, /id="copyMemberKey"/, 'Entrega de clave mediante mensaje preparado');
+assert.match(keyFn, /staff\?\.role!=="admin"/, 'Solo administrador puede restablecer una clave');
 assert.match(loginFn, /refresh_token/, 'El servidor devuelve una sesión de miembro autenticado');
 console.log('OK: 74 verificaciones BellaLovers (acceso al inicio sin correo, SMS ni autoconfirmación)');
