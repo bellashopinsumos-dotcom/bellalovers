@@ -45,14 +45,40 @@
     </form>
   </div>
 </section>
-<section class="admin-panel" id="section-customers"><div class="admin-card"><div class="admin-card-header"><h2>Clientas registradas</h2><button id="csvCustomers" class="btn btn-outline btn-small">Exportar CSV</button></div><div class="admin-tools"><input id="searchCustomers" class="admin-input admin-search" placeholder="Buscar por nombre o celular…" aria-label="Buscar clientas"><select id="customerStatusFilter" class="admin-input" aria-label="Filtrar por estado"><option value="all">Todos los estados</option><option value="active">Activas</option><option value="blocked">Bloqueadas</option><option value="archived">Archivadas</option></select></div><div class="table-scroll" id="customersTable"></div></div><div class="admin-card" id="selectedCustomerCard"><h2>Ficha de clienta</h2><div id="selectedCustomer"><p>Selecciona una clienta para revisar su historial, bloquearla, archivarla o restaurarla con seguridad.</p></div></div></section>
-<section class="admin-panel" id="section-purchases"><div class="admin-card"><h2>Registrar compra confirmada</h2><p>Se contabilizan las compras facturadas en tienda, WhatsApp, página web y con entrega a domicilio. Solo el costo del transporte queda excluido de puntos; los productos sí cuentan.</p>
-  <form id="purchaseForm" class="admin-form"><div><label for="purchaseCustomer">Clienta</label><select id="purchaseCustomer" class="admin-input" required></select></div><div><label for="purchaseInvoice">Número de factura (único)</label><input id="purchaseInvoice" class="admin-input" required maxlength="80" placeholder="Ej. BS-2035"></div><div><label for="purchaseAmount">Valor pagado por productos (COP)</label><input id="purchaseAmount" class="admin-input" type="number" min="0" required placeholder="150000"></div><div><label for="purchaseChannel">¿Por dónde compró?</label>
-   <select id="purchaseChannel" class="admin-input" required>
-     <option value="tienda">En tienda</option><option value="whatsapp">Por WhatsApp</option>
-     <option value="domicilio">Pedido con domicilio</option><option value="web">Por la página web</option>
-     <option value="otro">Otro canal</option>
-   </select></div><div><label for="purchaseDelivery">Costo del transporte (COP; no suma puntos)</label><input id="purchaseDelivery" class="admin-input" type="number" min="0" value="0" required></div><div><label class="checkline"><input id="purchaseDiscount" type="checkbox"> Tiene descuento especial</label></div><div><label for="purchaseNotes">Observaciones (opcional)</label><input id="purchaseNotes" class="admin-input" maxlength="200" placeholder="Observación interna"></div><div class="span2"><button class="btn btn-primary" type="submit">Confirmar factura y calcular puntos</button></div></form>
+<section class="admin-panel" id="section-customers"><div class="admin-card"><div class="admin-card-header"><h2>Clientas registradas</h2><button id="csvCustomers" class="btn btn-outline btn-small">Exportar CSV</button></div><div class="admin-tools"><input id="searchCustomers" class="admin-input admin-search" placeholder="Buscar por nombre o celular…" aria-label="Buscar clientas"><select id="customerStatusFilter" class="admin-input" aria-label="Filtrar por estado"><option value="all">Todos los estados</option><option value="active">Activas</option><option value="blocked">Bloqueadas</option><option value="archived">Archivadas</option><option value="deleted">Eliminadas</option></select></div><div class="table-scroll" id="customersTable"></div></div><div class="admin-card" id="selectedCustomerCard"><h2>Ficha de clienta</h2><div id="selectedCustomer"><p>Selecciona una clienta para gestionar sus puntos, movimientos, estado y cuenta.</p></div></div></section>
+<section class="admin-panel" id="section-purchases"><div class="admin-card"><h2>Registrar compra confirmada</h2><p>Busca a la clienta por celular, escribe cuánto pagó por los productos y guarda. Las compras de WhatsApp también cuentan; no necesitas registrar el transporte.</p>
+  <form id="purchaseForm" class="admin-form admin-simple-purchase">
+  <div class="span2 purchase-lookup">
+   <label for="purchasePhone">Buscar clienta por celular</label>
+   <div class="purchase-lookup-input">
+    <input id="purchasePhone" class="admin-input" type="tel" inputmode="numeric" autocomplete="off"
+     placeholder="Ej. 3123456789" required aria-describedby="purchaseLookupResult">
+    <button type="button" id="purchaseFind" class="btn btn-outline">Buscar</button>
+   </div>
+   <div id="purchaseLookupResult" class="purchase-lookup-result" role="status">Escribe el celular de la clienta y pulsa Buscar.</div>
+   <input id="purchaseCustomer" type="hidden">
+  </div>
+  <div><label for="purchaseAmount">Valor de productos pagados (COP)</label>
+   <input id="purchaseAmount" class="admin-input" type="number" min="1" max="500000000" step="1" required placeholder="Ej. 60000">
+   <p class="form-help">Desde $50.000 acumula 5 puntos; cada $10.000 completos adicionales, 1 punto más.</p>
+  </div>
+  <div><label for="purchaseInvoice">Número de factura <span class="field-optional">(opcional)</span></label>
+   <input id="purchaseInvoice" class="admin-input" maxlength="80" placeholder="Deja vacío si no tienes factura">
+   <p class="form-help">Si lo dejas vacío, guardaremos una referencia interna única, no una factura comercial.</p>
+  </div>
+  <div><label for="purchaseChannel">¿Por dónde compró? <span class="field-optional">(opcional)</span></label>
+   <select id="purchaseChannel" class="admin-input">
+    <option value="">No especificado</option>
+    <option value="tienda">En tienda</option><option value="whatsapp">Por WhatsApp</option>
+    <option value="domicilio">Pedido con domicilio</option><option value="web">Por la página web</option>
+    <option value="otro">Otro canal</option>
+   </select>
+  </div>
+  <div><label class="checkline"><input id="purchaseDiscount" type="checkbox"> Compra con descuento especial (no acumula puntos)</label></div>
+  <div class="span2"><label for="purchaseNotes">Observación <span class="field-optional">(opcional)</span></label>
+   <input id="purchaseNotes" class="admin-input" maxlength="200" placeholder="Detalle interno si es necesario"></div>
+  <div class="span2"><button class="btn btn-primary" type="submit">Guardar compra y calcular puntos</button></div>
+ </form>
   </div><div class="admin-card"><div class="admin-card-header"><h2>Historial de compras</h2><button id="csvPurchases" class="btn btn-outline btn-small">Exportar CSV</button></div><div id="purchasesTable" class="table-scroll"></div></div></section>
 <section class="admin-panel" id="section-rewards"><div class="admin-card"><h2>Crear o editar recompensa</h2><p>Selecciona un producto existente de BellaShop, usa su referencia y fotografía, y asigna los puntos. El stock aquí se controla manualmente hasta conectar el inventario central.</p>
 <form id="rewardForm" class="admin-form"><input type="hidden" id="rewardId"><div><label for="rewardName">Nombre del producto</label><input id="rewardName" class="admin-input" required></div><div><label for="rewardRef">Referencia BellaShop</label><input id="rewardRef" class="admin-input" required></div><div><label for="rewardPoints">Puntos necesarios</label><input id="rewardPoints" class="admin-input" type="number" min="1" required></div><div><label for="rewardStock">Existencias disponibles</label><input id="rewardStock" class="admin-input" type="number" min="0" required></div><div><label for="rewardCost">Costo interno unitario (COP)</label><input id="rewardCost" class="admin-input" type="number" min="0" required value="0"></div><div><label for="rewardAudience">Disponible para</label><select id="rewardAudience" class="admin-input"><option value="todas">Todas</option><option value="estudiante">Estudiantes</option><option value="manicurista">Manicuristas / frecuentes</option><option value="profesora">Profesoras</option></select></div><div class="span2">
