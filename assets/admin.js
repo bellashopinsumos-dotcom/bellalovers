@@ -264,6 +264,75 @@ async function saveStaff(e){
  catch(err){notify('No se pudo actualizar: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
+function renderJoins(){
+ const tableEl=$('#joinRequestsTable'),card=$('#joinApprovalCard');
+ if(!tableEl)return;
+ if(staff?.role!=='admin'){
+  tableEl.innerHTML='<p class="admin-feedback">Solo el administrador puede revisar solicitudes y aprobar nuevas membresías.</p>';
+  card.classList.add('hidden');return;
+ }
+ const pending=joinRequests.filter(x=>x.status==='pendiente').length;
+ $('#joinPendingBadge').textContent=pending+' pendiente'+(pending===1?'':'s');
+ const filter=$('#joinFilter').value;
+ const selected=joinRequests.filter(x=>filter==='todas'||x.status===filter);
+ tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Correo','Categoría','Estado','Acción'],selected.map(x=>
+  '<tr><td>'+date(x.created_at)+'</td><td><strong>'+esc(x.full_name)+'</strong></td><td>'+esc(x.phone)+'</td>'+
+  '<td>'+esc(x.email)+'</td><td>'+esc(TYPE[x.category]||x.category)+'</td><td>'+
+  pill(x.status,x.status==='aprobada'?'green':x.status==='rechazada'?'red':'neutral')+'</td><td>'+
+  (x.status==='pendiente'?'<div class="account-actions"><button class="btn btn-primary btn-small" data-join-approve="'+esc(x.id)+'">Revisar factura</button><button class="btn btn-outline btn-small" data-join-reject="'+esc(x.id)+'">Rechazar</button></div>':
+  x.status==='aprobada'?'Factura aprobada':'Revisada')+'</td></tr>'));
+ $('[data-join-approve]').forEach(btn=>btn.onclick=()=>{
+   const request=joinRequests.find(x=>x.id===btn.dataset.joinApprove);if(!request)return;
+   selectedJoinId=request.id;
+   $('#joinRequestId').value=request.id;
+   $('#joinSelectedInfo').textContent=request.full_name+' · '+request.phone+' · '+request.email+
+      ' · '+(TYPE[request.category]||request.category);
+   $('#joinApprovalForm').reset();
+   $('#joinRequestId').value=request.id;
+   card.classList.remove('hidden');card.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ $('[data-join-reject]').forEach(btn=>btn.onclick=()=>rejectJoin(btn.dataset.joinReject));
+ if(!joinRequests.some(x=>x.id===selectedJoinId&&x.status==='pendiente'))card.classList.add('hidden');
+}
+async function rejectJoin(id){
+ if(!requireLive()||!checkManager())return;
+ const req=joinRequests.find(x=>x.id===id);if(!req)return;
+ const reason=prompt('Motivo de rechazo para '+req.full_name+' (mínimo 8 caracteres)');
+ if(reason===null)return;
+ if(reason.trim().length<8)return notify('Escribe un motivo de 8 caracteres como mínimo.','error');
+ if(!confirm('¿Rechazar esta solicitud? No se creará una membresía.'))return;
+ try{
+  await rpc('bl_reject_join_request',{p_request:id,p_reason:reason.trim()});
+  notify('Solicitud rechazada; quedó en el historial.');selectedJoinId=null;await loadAll();
+ }catch(err){notify('No se pudo rechazar: '+err.message,'error');}
+}
+async function approveJoin(e){
+ e.preventDefault();if(!requireLive()||!checkManager())return;
+ const req=joinRequests.find(x=>x.id===$('#joinRequestId').value&&x.status==='pendiente');
+ if(!req)return notify('Selecciona una solicitud pendiente.','error');
+ const payload={
+  request_id:req.id,invoice:$('#joinInvoice').value.trim(),
+  products_total:Number($('#joinProductsTotal').value),
+  delivery_fee:Number($('#joinDelivery').value),
+  special_discount:$('#joinDiscount').checked,
+  channel:$('#joinChannel').value,notes:$('#joinNotes').value.trim()
+ };
+ if(!payload.invoice||!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
+  return notify('Debes comprobar una factura real con el valor de sus productos.','error');
+ if(!confirm('¿Ya comprobaste la factura '+payload.invoice+' en BellaShop? Al aprobar se registrará la compra y se enviará una invitación privada a '+req.email+'.'))return;
+ const btn=$('#joinApprovalForm button[type=submit]');
+ try{
+  setLoading(btn,true,'Aprobando y enviando invitación…');
+  const {data,error}=await sb.functions.invoke('bellalovers-aprobar',{body:payload});
+  if(error)throw error;
+  if(!data?.success)throw new Error(data?.error||'El servidor no pudo confirmar la membresía');
+  notify('Membresía aprobada, factura registrada e invitación enviada por correo.');
+  selectedJoinId=null;$('#joinApprovalCard').classList.add('hidden');
+  $('#joinApprovalForm').reset();await loadAll();
+ }catch(err){notify('No se aprobó la solicitud: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
+
 function renderAll(){renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){e.preventDefault();if(!requireLive())return;const btn=$('#purchaseForm button[type=submit]');try{setLoading(btn,true);const p=await rpc('bl_purchase_channel',{p_channel:$('#purchaseChannel').value,p_customer:$('#purchaseCustomer').value,p_invoice:$('#purchaseInvoice').value.trim(),p_amount:+$('#purchaseAmount').value,p_discount:$('#purchaseDiscount').checked,p_delivery:+$('#purchaseDelivery').value,p_notes:$('#purchaseNotes').value.trim()});notify(`Compra registrada: ${p.points} puntos${p.referral_points?`, ${p.referral_points} para profesora`:''}${p.welcome_eligible?'. Con derecho a regalo de bienvenida.':''}`);e.target.reset();await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
 async function rewardSubmit(e){
@@ -369,6 +438,11 @@ async function saveJoinStatus(open){
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#adminLoginForm').addEventListener('submit',login);
+ $('#joinFilter').addEventListener('change',renderJoins);
+ $('#joinApprovalForm').addEventListener('submit',approveJoin);
+ $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
+ $('#reloadJoins').addEventListener('click',loadAll);
+
  $('#joinPolicyVerified').addEventListener('change',updateJoinChecklist);
  $('#joinStatusForm').addEventListener('submit',e=>{e.preventDefault();saveJoinStatus(true);});
  $('#joinDisable').addEventListener('click',()=>saveJoinStatus(false));
