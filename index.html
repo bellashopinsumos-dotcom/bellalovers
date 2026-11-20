@@ -9,8 +9,8 @@
 <div class="club-topline"><div class="wrap"><span aria-hidden="true">♡</span> UN CLUB CREADO PARA QUIENES AMAN LA BELLEZA <span class="topline-divider" aria-hidden="true">•</span> BELLASHOP</div></div>
 <header class="site-header"><div class="wrap nav-bar">
   <a class="brand" href="#inicio" aria-label="BellaLovers, inicio"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>de BellaShop</small></span></a>
-  <nav class="nav-links" aria-label="Principal"><a href="#beneficios">Beneficios</a><a href="#como-funciona">Cómo funciona</a><a href="#acceso" id="navCuenta">Mi cuenta</a></nav>
-  <a href="#acceso" class="btn btn-small btn-outline">Solicitar ingreso <span aria-hidden="true">♡</span></a>
+  <nav class="nav-links" aria-label="Principal"><a href="#beneficios">Beneficios</a><a href="#como-funciona">Cómo funciona</a><a href="#acceso" data-open-auth="register">Registrarse</a></nav>
+  <a href="#acceso" id="navCuenta" data-open-auth="signin" class="btn btn-small btn-outline">Iniciar sesión <span aria-hidden="true">♡</span></a>
 </div></header>
 <main>
 <section class="hero" id="inicio">
@@ -21,8 +21,8 @@
       <h1>Tu amor por la belleza <em>merece recompensas.</em></h1>
       <p class="hero-lead">En BellaLovers, cada compra válida es una oportunidad para sumar puntos, descubrir beneficios y recibir detalles pensados especialmente para ti.</p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="#beneficios">Descubrir mis beneficios <span aria-hidden="true">↗</span></a>
-        <a class="text-link" href="#como-funciona">Así funciona el club <span aria-hidden="true">→</span></a>
+        <a class="btn btn-primary" href="#acceso" data-open-auth="signin">Iniciar sesión <span aria-hidden="true">♡</span></a>
+        <a class="text-link" href="#acceso" data-open-auth="register">¿No tienes cuenta? Regístrate <span aria-hidden="true">→</span></a>
       </div>
       <div class="hero-trust">
         <span><span aria-hidden="true">♡</span> Hecho con cariño por BellaShop</span>
@@ -42,6 +42,81 @@
     <div class="club-principle"><strong>+$10.000 = +1 punto</strong><small>Por cada $10.000 completos adicionales</small></div>
     <div class="club-principle"><strong>50 puntos</strong><small>Para empezar a solicitar premios</small></div>
   </div></section>
+<section class="section section-access" id="acceso">
+ <div class="wrap access-grid access-grid-login-first">
+  <div class="access-panel" id="loginPanel">
+   <div class="access-panel-top"><span aria-hidden="true">♡</span><span>MI ESPACIO BELLALOVERS</span></div>
+   <span class="panel-overline">BIENVENIDA A TU CLUB</span>
+   <h3>Tu cuenta, tus puntos ♡</h3>
+   <div class="auth-entry-switch" role="group" aria-label="Iniciar sesión o registrarse">
+     <button type="button" class="active" data-auth-screen="signin" aria-pressed="true">Iniciar sesión</button>
+     <button type="button" data-auth-screen="register" aria-pressed="false">Registrarse</button>
+   </div>
+   <div id="memberLoginView">
+     <p class="muted">¿Ya eres BellaLover? Entra con tu celular y la clave privada que te dio BellaShop al aprobar tu primera compra.</p>
+     <form id="memberLoginForm" class="stack">
+       <label for="memberPhone">Número de celular registrado</label>
+       <div class="phone-input"><span>+57</span><input id="memberPhone" type="tel" inputmode="numeric" autocomplete="tel-national" required minlength="10" maxlength="10" pattern="[0-9]{10}" placeholder="3123456789"></div>
+       <label for="memberAccessKey">Tu clave BellaLovers</label>
+       <input id="memberAccessKey" type="password" autocomplete="current-password" required minlength="12" maxlength="12" placeholder="Clave entregada por BellaShop">
+       <button type="submit" class="btn btn-primary btn-full">Entrar a mi cuenta ♡</button>
+     </form>
+     <p id="memberLoginFeedback" class="member-login-feedback hidden" role="status"></p>
+     <p class="fineprint">Sin correos, sin códigos SMS y sin compras en línea. ¿No tienes tu clave? Pídela a BellaShop por WhatsApp o en la tienda; verificaremos que seas la titular.</p>
+     <p class="auth-entry-prompt">¿Todavía no perteneces al club? <button type="button" data-auth-screen="register" class="auth-inline-link">Regístrate aquí</button></p>
+   </div>
+   <div id="registerView" class="hidden">
+     <p class="muted">Solicita tu membresía gratis. BellaShop revisa la primera compra y decide la aprobación. Enviar este formulario no genera puntos ni abre una cuenta.</p>
+     <form id="joinForm" class="stack hidden">
+       <label for="joinName">Nombre y apellido</label>
+       <input id="joinName" type="text" autocomplete="name" maxlength="120" minlength="3" required placeholder="Como te llamas">
+       <label for="joinPhone">Celular para contactarte por WhatsApp</label>
+       <div class="phone-input"><span>+57</span><input id="joinPhone" type="tel" autocomplete="tel-national" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" required placeholder="3123456789"></div>
+       <label for="joinCategory">¿Qué categoría te representa?</label>
+       <select id="joinCategory" required><option value="">Selecciona una</option><option value="estudiante">Estudiante de uñas</option><option value="manicurista">Manicurista / clienta frecuente</option></select>
+       <div id="joinTeacherField"><label for="joinTeacherCode">¿Qué profesora afiliada te recomendó? (opcional)</label>
+         <select id="joinTeacherCode" aria-describedby="joinTeacherHelp"><option value="">Ninguna / no me recomendó una profesora</option></select>
+         <p class="helper" id="joinTeacherHelp">Solo aparecen las profesoras afiliadas activas de BellaShop.</p>
+       </div>
+       <label class="checkline"><input id="joinPrivacy" type="checkbox" required><span>Autorizo el tratamiento de mis datos según la <a href="./politica-datos.html" target="_blank" rel="noopener">política de BellaShop</a>.</span></label>
+       <label class="checkline"><input id="joinMarketing" type="checkbox"><span>Quiero recibir promociones por WhatsApp (opcional).</span></label>
+       <div class="join-honeypot" aria-hidden="true"><label for="joinWebsite">Sitio web</label><input id="joinWebsite" tabindex="-1" autocomplete="off"></div>
+       <button class="btn btn-primary btn-full" type="submit">Enviar solicitud a BellaShop ♡</button>
+       <p class="fineprint">Cuando confirmemos tu primera compra, BellaShop te entregará tu clave de acceso.</p>
+     </form>
+     <div id="joinClosed" class="enrollment-status hidden" role="status"><strong>Solicitudes temporalmente cerradas</strong><p>BellaShop está preparando la inscripción. Vuelve pronto.</p></div>
+     <div id="joinSent" class="join-confirmation hidden" role="status"><strong>♡ ¡Recibimos tu solicitud!</strong><p>Tu solicitud quedó pendiente. Cuando realices tu primera compra, BellaShop podrá aprobarte y entregarte tu clave de acceso. No necesitas Gmail.</p></div>
+     <p class="auth-entry-prompt">¿Ya eres BellaLover? <button type="button" data-auth-screen="signin" class="auth-inline-link">Inicia sesión</button></p>
+   </div>
+  </div>
+  <div class="access-intro">
+    <span class="kicker">TODO EN TU CELULAR</span><h2>Entra a tu espacio <em>BellaLovers.</em></h2>
+    <p>Consulta tu fecha de ingreso, historial de compras, puntos y premios disponibles. BellaShop administra los canjes y se comunica contigo directamente.</p>
+    <div class="access-promise"><span>✓</span> La jefa aprueba tu membresía después de tu primera compra</div>
+    <div class="access-promise"><span>✓</span> Compras por WhatsApp también cuentan</div>
+    <div class="access-promise"><span>✓</span> Premios desde 50 puntos, sujetos a existencias</div>
+  </div>
+ </div>
+</section>
+
+<section class="section section-dashboard hidden" id="account"><div class="wrap">
+  <div class="account-heading"><div><span class="kicker">MI CUENTA BELLALOVERS</span><h2 id="accountGreeting">¡Hola, BellaLover! ♡</h2><p class="muted" id="accountSub">Aquí puedes ver todo lo que has conseguido.</p></div><button type="button" id="logout" class="btn btn-outline btn-small">Cerrar sesión</button></div>
+  <div class="member-area">
+    <div class="member-card" aria-label="Carné digital BellaLovers">
+      <div class="member-card-top"><strong>BellaLovers ♡</strong><span>MIEMBRO</span></div>
+      <div><small>ESTA BELLEZA ES PARTE DEL CLUB</small><h3 id="memberName">BellaLover</h3><p id="memberCategory">Mi categoría</p></div>
+      <div class="member-card-bottom"><span>BELLA SHOP · CLUB DE BENEFICIOS</span><span id="memberCode">••••••••</span></div>
+    </div>
+    <div class="member-notices" id="accountNotices" aria-live="polite"></div>
+  </div>
+  <div class="account-top"><div class="balance-card"><span class="overline">MIS PUNTOS DISPONIBLES</span><div class="balance-number"><strong id="balance">0</strong><small>puntos</small></div><div class="progress-track"><div id="progressBar" class="progress-fill" style="width:0%"></div></div><p id="pointsTip">Tus puntos aparecerán aquí cuando completes tus compras válidas.</p></div>
+    <div class="status-card"><div class="status-line"><span>Miembro desde</span><strong id="myJoinedDate">—</strong></div><div class="status-line"><span>Categoría</span><strong id="myType">—</strong></div><div class="status-line"><span>Próximo vencimiento</span><strong id="myExpires">—</strong></div><div class="status-line"><span>Estado</span><strong id="myStatus">Acumulando</strong></div><div class="status-line" id="myRefPointsRow" hidden><span>Puntos por referidos</span><strong id="myRefPoints">0 puntos</strong></div><div class="status-line" id="teacherCodeRow" hidden><span>Mi código de profesora</span><strong id="myTeacherCode">—</strong></div></div></div>
+  <p id="welcomeBanner" class="welcome-banner hidden"></p><div class="account-tabs" role="tablist"><button type="button" data-tab="rewards" class="active">Recompensas</button><button type="button" data-tab="transactions">Mis movimientos</button><button type="button" data-tab="purchases">Mis compras</button><button type="button" data-tab="requests">Mis solicitudes</button></div>
+  <div id="tab-rewards" class="account-tab"><div class="section-min-heading"><div><h3>Mis recompensas ♡</h3><p id="rewardHint" class="muted">Disponibles cuando completes 50 puntos.</p></div><button type="button" id="refreshMemberRewards" class="btn btn-outline btn-small">Actualizar premios</button></div><div id="rewardsLock" class="member-reward-lock" role="status"></div><div id="rewardsGrid" class="rewards-grid"></div><div id="redeemBar" class="redeem-bar"><div><strong id="cartTotal">0 puntos seleccionados</strong><p class="fineprint" id="cartNote">Elige las cantidades que quieras reclamar.</p></div><button class="btn btn-primary" id="submitRedeem" type="button">Solicitar recompensa</button></div></div>
+  <div id="tab-transactions" class="account-tab hidden"><h3>Movimientos de puntos</h3><div id="pointsTable" class="data-list"></div></div>
+  <div id="tab-purchases" class="account-tab hidden"><h3>Historial de compras</h3><div id="purchaseList" class="data-list"></div></div>
+  <div id="tab-requests" class="account-tab hidden"><h3>Solicitudes de recompensa</h3><div id="requestsList" class="data-list"></div></div>
+</div></section>
 <section class="section section-soft section-benefits" id="beneficios">
   <div class="wrap">
     <div class="benefits-heading">
@@ -91,80 +166,6 @@
     </div>
   </div>
 </section>
-<section class="section section-access" id="acceso"><div class="wrap access-grid">
-  <div class="access-intro"><span class="kicker">TU ESPACIO PERSONAL</span><h2>Todo lo bonito de ser <em>BellaLover</em>, en un solo lugar.</h2><p>Solicita tu ingreso y empieza a sumar cuando BellaShop confirme tu primera compra. Después consulta tus puntos por correo, sin mensajes SMS.</p>
-    <div class="access-promise"><span>✓</span> Solo BellaShop aprueba después de tu primera compra</div><div class="access-promise"><span>✓</span> Recompensas sujetas a disponibilidad real</div><div class="access-promise"><span>✓</span> Tu historial siempre a la vista</div>
-  </div>
-  <div class="access-panel" id="loginPanel">
-   <div class="access-panel-top"><span aria-hidden="true">♡</span><span>SOLICITA TU INGRESO</span></div>
-   <span class="panel-overline">BIENVENIDA A BELLALOVERS</span>
-   <h3>Primero solicita. Después disfruta.</h3>
-   <p class="muted">Déjanos tus datos y cuando hagas tu primera compra, BellaShop comprobará tu factura y aprobará tu membresía. <strong>Solicitar no significa estar inscrita.</strong></p>
-   <form id="joinForm" class="stack hidden">
-    <label for="joinName">Nombre y apellido</label>
-    <input id="joinName" type="text" autocomplete="name" maxlength="120" minlength="3" required placeholder="Tu nombre completo">
-    <label for="joinPhone">Celular de contacto</label>
-    <div class="phone-input"><span>+57</span><input id="joinPhone" type="tel" autocomplete="tel-national" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" required placeholder="3001234567"></div>
-    <label for="joinEmail">Correo para activar tu cuenta cuando te aprueben</label>
-    <input id="joinEmail" type="email" maxlength="254" autocomplete="email" required placeholder="correo@ejemplo.com">
-    <label for="joinCategory">¿Qué categoría te representa?</label>
-    <select id="joinCategory" required>
-     <option value="">Selecciona una</option><option value="estudiante">Estudiante de uñas</option>
-     <option value="manicurista">Manicurista / clienta frecuente</option>
-    </select>
-    <div id="joinTeacherField"><label for="joinTeacherCode">¿Qué profesora afiliada de BellaShop te recomendó? (opcional)</label>
-      <select id="joinTeacherCode" aria-describedby="joinTeacherHelp">
-        <option value="">Ninguna / no me recomendó una profesora</option>
-      </select>
-      <p class="helper" id="joinTeacherHelp">Solo aparecen las profesoras afiliadas que BellaShop tiene activas. Si no te recomendó ninguna, deja «Ninguna».</p>
-    </div>
-    <label class="checkline"><input id="joinPrivacy" type="checkbox" required><span>Autorizo el tratamiento de mis datos según la <a href="./politica-datos.html" target="_blank" rel="noopener">política de BellaShop</a>.</span></label>
-    <label class="checkline"><input id="joinMarketing" type="checkbox"><span>Quiero recibir promociones por WhatsApp (opcional).</span></label>
-    <div class="join-honeypot" aria-hidden="true"><label for="joinWebsite">Sitio web</label><input id="joinWebsite" tabindex="-1" autocomplete="off"></div>
-    <button class="btn btn-primary btn-full" type="submit">Enviar solicitud a BellaShop ♡</button>
-    <p class="fineprint">BellaShop revisará tu primera compra antes de aprobarte. Tu solicitud no genera puntos.</p>
-   </form>
-   <div id="joinClosed" class="enrollment-status hidden" role="status">
-     <strong>Solicitudes temporalmente cerradas</strong><p>Estamos terminando los preparativos. BellaShop abrirá las solicitudes aquí mismo.</p>
-   </div>
-   <div id="joinSent" class="join-confirmation hidden" role="status">
-     <strong>♡ ¡Recibimos tu solicitud!</strong>
-     <p>Cuando hagas tu primera compra, BellaShop podrá comprobar la factura y aprobar tu ingreso. Conserva el correo que registraste.</p>
-   </div>
-   <div class="member-login-fold">
-    <span class="kicker">¿YA ERES BELLALOVER?</span>
-    <h4>Ingresa a tu cuenta BellaLovers ♡</h4>
-    <p>Escribe tu celular <strong>o</strong> tu correo y tu nombre completo, tal como te inscribiste. BellaShop debe haber aprobado tu primera compra.</p>
-    <form id="memberLoginForm" class="stack">
-      <label for="memberIdentifier">Número de celular o correo electrónico</label>
-      <input id="memberIdentifier" type="text" autocomplete="username" maxlength="254" required placeholder="Ej. 3123456789 o tucorreo@gmail.com">
-      <label for="memberFullName">Nombre y apellido como te registraste</label>
-      <input id="memberFullName" type="text" autocomplete="name" maxlength="120" minlength="3" required placeholder="Ej. María José Carvajal Guerrero">
-      <button type="submit" class="btn btn-primary btn-full">Entrar a mi cuenta ♡</button>
-    </form>
-    <p id="memberLoginFeedback" class="member-login-feedback hidden" role="status"></p>
-    <p class="fineprint">Para proteger tus compras y puntos, recibirás un <strong>enlace de acceso en el correo asociado a tu membresía</strong>, aunque hayas ingresado con celular. No usamos códigos SMS.</p>
-   </div>
-  </div>
-</div></section>
-<section class="section section-dashboard hidden" id="account"><div class="wrap">
-  <div class="account-heading"><div><span class="kicker">MI CUENTA BELLALOVERS</span><h2 id="accountGreeting">¡Hola, BellaLover! ♡</h2><p class="muted" id="accountSub">Aquí puedes ver todo lo que has conseguido.</p></div><button type="button" id="logout" class="btn btn-outline btn-small">Cerrar sesión</button></div>
-  <div class="member-area">
-    <div class="member-card" aria-label="Carné digital BellaLovers">
-      <div class="member-card-top"><strong>BellaLovers ♡</strong><span>MIEMBRO</span></div>
-      <div><small>ESTA BELLEZA ES PARTE DEL CLUB</small><h3 id="memberName">BellaLover</h3><p id="memberCategory">Mi categoría</p></div>
-      <div class="member-card-bottom"><span>BELLA SHOP · CLUB DE BENEFICIOS</span><span id="memberCode">••••••••</span></div>
-    </div>
-    <div class="member-notices" id="accountNotices" aria-live="polite"></div>
-  </div>
-  <div class="account-top"><div class="balance-card"><span class="overline">MIS PUNTOS DISPONIBLES</span><div class="balance-number"><strong id="balance">0</strong><small>puntos</small></div><div class="progress-track"><div id="progressBar" class="progress-fill" style="width:0%"></div></div><p id="pointsTip">Tus puntos aparecerán aquí cuando completes tus compras válidas.</p></div>
-    <div class="status-card"><div class="status-line"><span>Miembro desde</span><strong id="myJoinedDate">—</strong></div><div class="status-line"><span>Categoría</span><strong id="myType">—</strong></div><div class="status-line"><span>Próximo vencimiento</span><strong id="myExpires">—</strong></div><div class="status-line"><span>Estado</span><strong id="myStatus">Acumulando</strong></div><div class="status-line" id="myRefPointsRow" hidden><span>Puntos por referidos</span><strong id="myRefPoints">0 puntos</strong></div><div class="status-line" id="teacherCodeRow" hidden><span>Mi código de profesora</span><strong id="myTeacherCode">—</strong></div></div></div>
-  <p id="welcomeBanner" class="welcome-banner hidden"></p><div class="account-tabs" role="tablist"><button type="button" data-tab="rewards" class="active">Recompensas</button><button type="button" data-tab="transactions">Mis movimientos</button><button type="button" data-tab="purchases">Mis compras</button><button type="button" data-tab="requests">Mis solicitudes</button></div>
-  <div id="tab-rewards" class="account-tab"><div class="section-min-heading"><div><h3>Mis recompensas ♡</h3><p id="rewardHint" class="muted">Disponibles cuando completes 50 puntos.</p></div><button type="button" id="refreshMemberRewards" class="btn btn-outline btn-small">Actualizar premios</button></div><div id="rewardsLock" class="member-reward-lock" role="status"></div><div id="rewardsGrid" class="rewards-grid"></div><div id="redeemBar" class="redeem-bar"><div><strong id="cartTotal">0 puntos seleccionados</strong><p class="fineprint" id="cartNote">Elige las cantidades que quieras reclamar.</p></div><button class="btn btn-primary" id="submitRedeem" type="button">Solicitar recompensa</button></div></div>
-  <div id="tab-transactions" class="account-tab hidden"><h3>Movimientos de puntos</h3><div id="pointsTable" class="data-list"></div></div>
-  <div id="tab-purchases" class="account-tab hidden"><h3>Historial de compras</h3><div id="purchaseList" class="data-list"></div></div>
-  <div id="tab-requests" class="account-tab hidden"><h3>Solicitudes de recompensa</h3><div id="requestsList" class="data-list"></div></div>
-</div></section>
 <section class="section closing" id="condiciones"><div class="wrap closing-inner">
   <div><span class="kicker">TODO MUY CLARO</span><h2>Beneficios claros, <em>en pocos puntos.</em></h2>
     <ul class="club-rules-list">
