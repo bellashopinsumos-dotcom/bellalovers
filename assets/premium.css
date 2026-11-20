@@ -1127,3 +1127,50 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  .point-adjustment-row{flex-wrap:wrap;padding:11px 12px;}
  .point-adjustment-row .btn{width:100%;}
 }
+
+
+/* Acceso BellaLovers arriba: móvil primero, sin correo ni SMS */
+.section-access{padding:50px 0;background:linear-gradient(135deg,#fff7fa 0%,#fffbfd 70%);}
+.section-access .access-grid.access-grid-login-first{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(24px,5vw,80px);align-items:center;}
+.section-access .access-panel{min-width:0;padding:30px 32px;border:1px solid #e5bacd;border-top:3px solid #b57897;border-radius:20px;}
+.section-access .access-intro{min-width:0;padding-left:8px;}
+.section-access .access-intro>p{line-height:1.75;}
+.auth-entry-switch{display:grid;grid-template-columns:1fr 1fr;gap:7px;background:#f9e7ef;padding:5px;border-radius:13px;margin:21px 0 19px;}
+.auth-entry-switch button{border:0;background:transparent;color:#80576d;border-radius:9px;min-height:43px;font-size:13px;font-weight:750;transition:background .2s ease,color .2s ease,box-shadow .2s ease;}
+.auth-entry-switch button.active{color:#844666;background:#fff;box-shadow:0 3px 12px rgba(122,71,99,.13);}
+.auth-entry-switch button:focus-visible,.auth-inline-link:focus-visible{outline:3px solid #c38eaa;outline-offset:2px;}
+#memberLoginView>p.muted,#registerView>p.muted{line-height:1.65;font-size:13px;margin-bottom:10px;color:#806073;}
+#memberLoginForm{margin-top:12px;gap:8px;}
+#memberLoginForm label,#joinForm label:not(.checkline){color:#76536a;font-size:12px;font-weight:750;}
+#memberLoginForm input:not([type=checkbox]),#memberLoginForm .phone-input{min-height:47px;background:#fff;border-color:#e0bccc;}
+#memberLoginForm .btn-primary{background:#a8557b;border-color:#a8557b;color:white;font-size:13px;min-height:48px;}
+#memberLoginForm .btn-primary:hover{background:#934367;}
+#memberLoginForm .fineprint{line-height:1.6;}
+.auth-entry-prompt{font-size:12px;color:#89697c;margin:17px 0 0;text-align:center;}
+.auth-inline-link{border:0;background:none;color:#95496c;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:800;padding:4px;}
+.member-key-backdrop{position:fixed;z-index:150;inset:0;background:rgba(36,21,32,.63);padding:20px;display:flex;justify-content:center;align-items:center;overflow-y:auto;}
+.member-key-card{width:min(100%,490px);max-height:calc(100vh - 40px);overflow:auto;background:#fffafd;border:1px solid #edd3df;border-radius:21px;box-shadow:0 25px 80px rgba(20,11,18,.28);padding:28px;}
+.member-key-card h2{font-size:23px;margin:0 0 12px;color:#73455e;}
+.member-key-card>p{font-size:12px;color:#826677;line-height:1.7;}
+.member-key-recipient{font-size:12px;color:#6f4a60;background:#f9e6ef;padding:12px;border-radius:10px;margin:15px 0 11px;overflow-wrap:anywhere;}
+.member-key-code{border:1px dashed #c79aaf;border-radius:14px;background:#fff;padding:21px 12px;text-align:center;}
+.member-key-code strong{font:800 clamp(19px,5vw,28px)/1.25 ui-monospace,SFMono-Regular,Consolas,monospace;color:#844463;letter-spacing:.07em;overflow-wrap:anywhere;}
+.member-key-actions{margin:20px 0 12px;gap:10px;}
+.member-key-actions .btn{flex:1;min-width:0;}
+@media(max-width:840px){
+ .section-access .access-grid.access-grid-login-first{grid-template-columns:1fr;max-width:650px;margin:auto;}
+ .section-access .access-intro{padding-left:0;max-width:100%;}
+}
+@media(max-width:690px){
+ .section-access{padding:17px 0 33px;}
+ .section-access .access-grid.access-grid-login-first{gap:21px;}
+ .section-access .access-panel{padding:21px 17px;border-radius:17px;}
+ .section-access .access-panel h3{font-size:23px;}
+ .section-access .access-intro h2{font-size:26px;}
+ .section-access .access-intro .kicker{font-size:10px;}
+ .auth-entry-switch{margin:16px 0;}
+ .member-key-backdrop{padding:12px;}
+ .member-key-card{padding:22px 17px;border-radius:17px;}
+ .member-key-actions{flex-direction:column;}
+ .member-key-actions .btn{width:100%;}
+}
