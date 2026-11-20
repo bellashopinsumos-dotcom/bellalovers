@@ -2,6 +2,7 @@ import {CONFIG,HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
 let cart={}; let sendingPhone=''; let giftClaims=[];
+let enrollmentReady=false, publicPrizeList=[],activePrizeFilter='todas';
 async function run(q, label='Ocurrió un error') {
   const { data,error }=await q;
   if(error) throw new Error(error.message || label);
@@ -20,7 +21,7 @@ function phoneNumber(raw) {
 }
 async function sendOtp(event){
   event.preventDefault();const btn=$('#phoneForm button[type=submit]');
-  try{if(!CONFIG.legalPolicyApproved)throw new Error('Las inscripciones todavía no están habilitadas. Vuelve pronto.');setLoading(btn,true);sendingPhone=phoneNumber($('#phone').value);await run(sb.auth.signInWithOtp({phone:sendingPhone,options:{shouldCreateUser:true}}));$('#phoneForm').classList.add('hidden');$('#otpForm').classList.remove('hidden');notify('Te enviamos el código por SMS.');}
+  try{if(!enrollmentReady)throw new Error('BellaShop aún no ha activado las inscripciones.');setLoading(btn,true);sendingPhone=phoneNumber($('#phone').value);await run(sb.auth.signInWithOtp({phone:sendingPhone,options:{shouldCreateUser:true}}));$('#phoneForm').classList.add('hidden');$('#otpForm').classList.remove('hidden');notify('Te enviamos el código por SMS.');}
   catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function verifyOtp(event){
@@ -30,7 +31,7 @@ async function verifyOtp(event){
 }
 async function saveProfile(event){
   event.preventDefault();const btn=$('#signupForm button[type=submit]');
-  try{if(!CONFIG.legalPolicyApproved)throw new Error('Las inscripciones todavía no están habilitadas.');setLoading(btn,true);await run(sb.rpc('bl_register',{
+  try{if(!enrollmentReady)throw new Error('BellaShop aún no ha activado las inscripciones.');setLoading(btn,true);await run(sb.rpc('bl_register',{
     p_name:$('#fullName').value.trim(),p_category:$('#customerType').value,p_teacher_code:$('#teacherCode').value.trim()||null,
     p_marketing:$('#marketing').checked,p_accept:$('#privacy').checked,
   }));await loadUser();notify('¡Bienvenida a BellaLovers! Tu cuenta está lista.');}
@@ -127,17 +128,54 @@ async function submitRedemption(){
 async function logOut(){
   if(sb) await sb.auth.signOut();customer=null;$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');$('#otp').value='';show('login');location.hash='#acceso';
 }
+
+function renderPublicPrizes(){
+ const target=$('#publicRewards');if(!target)return;
+ const shown=publicPrizeList.filter(p=>activePrizeFilter==='todas'||p.audience==='todas'||p.audience===activePrizeFilter);
+ if(!shown.length){
+  target.innerHTML='<div class="public-prize-empty">Por ahora no hay premios disponibles en esta categoría. BellaShop publicará las novedades aquí.</div>';
+  return;
+ }
+ const label={todas:'Para todas',estudiante:'Estudiantes',manicurista:'Manicuristas',profesora:'Profesoras'};
+ target.innerHTML=shown.map(p=>{
+  const img=p.image_url&&/^https:\/\//i.test(p.image_url)?'<img loading="lazy" src="'+esc(p.image_url)+'" alt="'+esc(p.name)+'">':'<span aria-hidden="true">♡</span>';
+  return '<article class="public-prize-card"><div class="public-prize-photo">'+img+'</div><div class="public-prize-info"><span class="public-prize-badge">'+esc(label[p.audience]||'Para todas')+'</span><h3>'+esc(p.name)+'</h3><p>Ref. '+esc(p.product_ref)+'</p><div class="public-prize-foot"><strong>'+Number(p.points_cost)+' puntos</strong><span>'+Number(p.available)+' disponibles</span></div></div></article>';
+ }).join('');
+}
+async function loadPublicPrizes(){
+ const data=await run(sb.rpc('bl_public_rewards'));
+ publicPrizeList=Array.isArray(data)?data:[];
+ renderPublicPrizes();
+}
+async function loadPublicStatus(){
+ const data=await run(sb.rpc('bl_public_status'));
+ enrollmentReady=Array.isArray(data)&&data[0]?.signup_open===true;
+ $('#phoneForm').classList.toggle('hidden',!enrollmentReady);
+ $('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);
+ if(!enrollmentReady)$('#enrollmentStatus').querySelector('p').textContent='Las nuevas cuentas se activarán cuando esté disponible la verificación segura de celular.';
+}
+
 function setup(){
   $('#phoneForm').addEventListener('submit',sendOtp);$('#otpForm').addEventListener('submit',verifyOtp);$('#signupForm').addEventListener('submit',saveProfile);
   $('#changePhone').addEventListener('click',()=>{$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');});
   $('#customerType').addEventListener('change',()=>$('#teacherField').classList.toggle('hidden',$('#customerType').value!=='estudiante'));
   $('#logout').addEventListener('click',logOut);$('#submitRedeem').addEventListener('click',submitRedemption);
   $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{ $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));$$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==`tab-${btn.dataset.tab}`));}));
+  $('[data-public-filter]').forEach(button=>button.addEventListener('click',()=>{
+   activePrizeFilter=button.dataset.publicFilter;
+   $('[data-public-filter]').forEach(x=>x.classList.toggle('active',x===button));
+   renderPublicPrizes();
+  }));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sb)loadPublicPrizes().catch(()=>{});});
   const ref=new URLSearchParams(location.search).get('ref');if(ref) $('#teacherCode').value=ref.slice(0,30);
-  const enrollmentReady=HAS_BACKEND && CONFIG.legalPolicyApproved;
-  $('#phoneForm').classList.toggle('hidden',!enrollmentReady);
-  $('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);
+  $('#phoneForm').classList.add('hidden');
+  $('#enrollmentStatus').classList.remove('hidden');
   if(!HAS_BACKEND)return;
-  db().then(async x=>{sb=x;const {data}=await sb.auth.getSession();if(data.session) await loadUser();}).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
+  db().then(async x=>{
+   sb=x;
+   try{await loadPublicPrizes();}catch(err){console.warn('Premios no disponibles:',err.message);}
+   try{await loadPublicStatus();}catch(err){console.warn('Inscripciones no disponibles:',err.message);}
+   const {data}=await sb.auth.getSession();if(data.session)await loadUser();
+  }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
 setup();
