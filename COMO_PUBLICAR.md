@@ -1,23 +1,20 @@
-# BellaLovers - activación de la página (demostración)
+# BellaLovers — publicación y operación
 
-## Paso único que debe hacer el dueño del repositorio
+La página de demostración se publica desde la rama `main`, carpeta `/(root)` en GitHub Pages:
 
-1. Entrar a **Settings** del repositorio `bellashopinsumos-dotcom/bellalovers`.
-2. Abrir **Pages** en la sección **Code and automation**.
-3. En **Build and deployment**, elegir **Deploy from a branch**.
-4. En **Branch**, seleccionar **main** y la carpeta **/(root)**.
-5. Pulsar **Save**.
+- Página pública: https://bellashopinsumos-dotcom.github.io/bellalovers/
+- Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-URL esperada una vez publicado: https://bellashopinsumos-dotcom.github.io/bellalovers/
+**Actualización 20/11/2026:** el proyecto Supabase BellaLovers YA está creado y conectado mediante clave publicable. La web conserva el modo de demostración; `legalPolicyApproved: false` impide registros públicos mientras no exista política definitiva ni verificación SMS. No se deben usar datos reales todavía.
 
-La página de demostración está en `index.html` y el panel en `admin.html`. Los archivos fuente ya están en `main`; no hay que subir ZIP manualmente.
+## Qué falta para operar
 
-## Antes del lanzamiento comercial
+1. Crear y confirmar en Supabase Authentication al usuario de `bellashopinsumos@gmail.com` y asignarle el rol administrador según `README.md`.
+2. Configurar las URLs de redirección de autenticación y recuperación de contraseña.
+3. Contratar/configurar SMS OTP en Supabase; aprobar la política de tratamiento de datos.
+4. Registrar premios reales y comprobar inventario, rentabilidad, puntos y auditoría.
+5. Realizar pruebas completas con usuarios autorizados antes del lanzamiento.
 
-El registro y los puntos reales permanecen desactivados. Faltan un proyecto de Supabase separado, proveedor SMS, administradores seguros, política de datos aprobada, definición de premios y pruebas de seguridad y facturación. **No registrar datos de clientas reales en la demostración.**
+No se han modificado los proyectos de RutaYa, Master Viviana ni el inventario original de BellaShop.
 
-Las reglas originales y el SQL de preparación están en `LEEME-PRIMERO.md` y `supabase/schema.sql`. El inventario de BellaShop no está conectado y no deben anunciarse premios reales hasta validarlos.
-
-## Aviso sobre GitHub Actions
-
-Se incluyó un flujo de publicación automática, pero GitHub no permitió habilitar Pages desde la integración. Por eso la **primera activación de Pages debe hacerse en Settings**, como se explica arriba. La publicación desde la rama principal evita depender de esa automatización.
+La migración de restauración y gestión de empleados está en `supabase/migrations/20261120_restauracion_y_equipo.sql` y ya está aplicada en el proyecto BellaLovers.
