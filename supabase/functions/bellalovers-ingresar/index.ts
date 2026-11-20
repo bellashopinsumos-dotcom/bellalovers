@@ -57,12 +57,10 @@ Deno.serve(async req=>{
   let selectedId:string|null=null;
   let personEmail:string|null=null;
   if(email){
-   // Auth administrator list used only on server. No account identifiers returned to caller.
-   const {data:list,error:listError}=await service.auth.admin.listUsers({page:1,perPage:1000});
-   if(listError)return reply({error:generic},401);
-   const match=list?.users?.find(u=>u.email?.toLowerCase()===email);
-   if(!match)return reply({error:generic},401);
-   selectedId=match.id;personEmail=match.email||null;
+   // Service-role-only SQL resolves email without listing all Auth accounts.
+   const {data:memberId,error:resolveError}=await service.rpc("bl_resolve_member_email",{p_email:email});
+   if(resolveError||!memberId)return reply({error:generic},401);
+   selectedId=memberId;personEmail=email;
   }
   const {data:profile,error:profileError}=await service.from("bl_profiles")
    .select("id,full_name,blocked,archived_at,deleted_at")
