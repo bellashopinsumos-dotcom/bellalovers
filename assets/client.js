@@ -147,7 +147,9 @@ function setup(){
   $('#previewAccount').addEventListener('click',demo);$('#logout').addEventListener('click',logOut);$('#submitRedeem').addEventListener('click',submitRedemption);
   $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{ $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));$$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==`tab-${btn.dataset.tab}`));}));
   const ref=new URLSearchParams(location.search).get('ref');if(ref) $('#teacherCode').value=ref.slice(0,30);
-  if(!HAS_BACKEND){$('#phoneForm').classList.add('hidden');$('#previewLogin').classList.remove('hidden');return;}
+  $('#previewLogin').classList.remove('hidden');
+  if(!CONFIG.legalPolicyApproved) $('#phoneForm').classList.add('hidden');
+  if(!HAS_BACKEND) return;
   db().then(async x=>{sb=x;const {data}=await sb.auth.getSession();if(data.session) await loadUser();}).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
 setup();
