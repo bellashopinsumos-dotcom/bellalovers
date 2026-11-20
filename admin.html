@@ -1,20 +1,10 @@
-<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#fff7f9"><title>Administración | BellaLovers</title><link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=club20261120e"></head><body class="admin-body">
+<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5d8e2"><title>Administración | BellaLovers</title><link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=club20261120e"></head><body class="admin-body">
 <div id="adminLogin" class="admin-login"><div class="access-panel"><a href="./index.html" class="brand"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>de BellaShop</small></span></a><span class="kicker">ÁREA PRIVADA</span><h1>Administración</h1><p class="muted">El centro de control de BellaLovers. Todo lo importante, claro, seguro y en un solo lugar.</p>
   <form id="adminLoginForm" class="stack"><label for="adminEmail">Correo del administrador</label><input type="email" autocomplete="username" id="adminEmail" placeholder="Correo autorizado" required><label for="adminPassword">Contraseña</label><input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Tu contraseña"><button type="submit" class="btn btn-primary btn-full">Ingresar al administrador</button></form>
   <button type="button" id="sendRecoveryEmail" class="btn btn-text btn-full" style="margin-top:9px">¿Olvidaste la contraseña? Recuperar acceso</button>
   <form id="passwordRecoveryPanel" class="password-recovery-panel hidden"><h3>Crear nueva contraseña</h3><label for="newAdminPassword">Nueva contraseña (mínimo 12 caracteres)</label><input id="newAdminPassword" type="password" required minlength="12" autocomplete="new-password"><label for="confirmAdminPassword">Confirma tu contraseña</label><input id="confirmAdminPassword" type="password" required minlength="12" autocomplete="new-password"><button class="btn btn-primary btn-full" type="submit">Actualizar mi contraseña</button></form>
   
-  <button id="openAdminSetup" type="button" class="btn btn-outline btn-full" style="margin-top:12px">Primer ingreso: activar cuenta BellaShop</button>
-  <form id="adminSetupForm" class="stack hidden" autocomplete="on">
-    <h3>Crear acceso del negocio</h3>
-    <p>Solo el correo oficial de BellaShop puede activar la primera cuenta administrativa. Recibirás un mensaje para verificarlo.</p>
-    <label for="setupEmail">Correo autorizado</label><input type="email" id="setupEmail" autocomplete="email" value="bellashopinsumos@gmail.com" readonly>
-    <label for="setupPassword">Crea una contraseña privada</label><input id="setupPassword" autocomplete="new-password" type="password" minlength="12" required placeholder="Mínimo 12 caracteres">
-    <label for="setupPasswordConfirm">Repite la contraseña</label><input id="setupPasswordConfirm" autocomplete="new-password" type="password" minlength="12" required>
-    <button type="submit" class="btn btn-primary btn-full">Crear acceso y enviar verificación</button>
-    <p id="setupMessage" role="status" class="fineprint"></p>
-    <p class="fineprint">Si el enlace de verificación no te regresa al administrador, revisa las URL autorizadas en <a href="https://supabase.com/dashboard/project/xpnfdyfnaromfwkontid/auth/url-configuration" target="_blank" rel="noopener">Supabase</a>.</p>
-  </form>
+  <p class="admin-login-security"><span aria-hidden="true">🔒</span> Acceso exclusivo para personal autorizado por BellaShop. Las cuentas se habilitan únicamente desde la configuración privada.</p>
   <p class="fineprint"><a href="./index.html">← Volver al club</a></p></div></div>
 <div class="admin-shell hidden" id="adminApp"><aside class="admin-side"><a href="./index.html" class="brand"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>ADMINISTRACIÓN</small></span></a>
   <nav class="admin-menu" id="adminNav" aria-label="Secciones de administración">
