@@ -49,16 +49,28 @@ Compra mínima elegible: $50.000 COP; 1 punto por $10.000 completos en productos
 - Carné digital y avisos de vencimientos/solicitudes en cuentas que hayan iniciado sesión.
 - Nueva migración: `supabase/migrations/20261120_premios_canales_registro.sql`.
 
-## Activación del primer administrador
+## Activación del primer administrador (segura, SOLO Supabase)
 
-Desde `admin.html` pulsa **Primer ingreso: activar cuenta BellaShop**. La aplicación solo permite iniciar el proceso para `bellashopinsumos@gmail.com`, requiere una contraseña robusta de 12 o más caracteres y un correo confirmado. Supabase enviará un enlace de verificación. Una vez confirmado, se puede ingresar desde la misma página. La RPC `bl_claim_first_admin` da el primer permiso únicamente a ese correo confirmado, y solo mientras no exista otro administrador activo.
+**No existe registro público de administradores.** Para evitar que alguien se otorgue permisos desde `admin.html`, eliminamos la opción de primer ingreso y las funciones RPC `bl_claim_first_admin` / `claim_first_admin`.
 
-**Antes de crear la cuenta**, en Supabase → Authentication → URL Configuration establece:
+Solo quien ya tiene permiso en el **panel privado de Supabase del proyecto BellaLovers** puede crear y autorizar la cuenta del negocio:
 
-- Site URL: `https://bellashopinsumos-dotcom.github.io/bellalovers/`
-- Additional Redirect URL: `https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html`
+1. En `https://supabase.com/dashboard/project/xpnfdyfnaromfwkontid/auth/users`, seleccionar **Add user → Create new user** con correo `bellashopinsumos@gmail.com` y contraseña robusta. Confirmar la dirección desde el correo correspondiente.
+2. Una vez exista y esté confirmado, ejecutar en el SQL Editor de **BellaLovers exclusivamente**:
+   ```sql
+   insert into public.bl_staff(user_id,role,active)
+   select id,'admin',true
+   from auth.users
+   where lower(email)='bellashopinsumos@gmail.com'
+     and email_confirmed_at is not null
+   on conflict (user_id) do update
+     set role='admin',active=true;
+   ```
+3. Abrir `https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html` e iniciar sesión con esas credenciales.
 
-Si el correo de confirmación no llega, revisa los límites de envío de Supabase y la configuración de proveedor de correo. No compartas la contraseña ni llaves secretas en archivos del sitio.
+No compartir contraseñas por chat ni colocar llaves secretas en GitHub. Quien solo conozca la URL del panel no puede leer ni cambiar las tablas: la API valida un usuario autorizado en `bl_staff` y RLS en el servidor. **Ocultar el enlace al administrador es solo estética, no sustituye estos permisos.**
+
+Advertencia: el último análisis de seguridad de Supabase reportó **protección contra contraseñas filtradas desactivada**. Revisar Authentication → Settings → Password Security para habilitarla si el plan lo permite. Recomendado activar MFA para administradores antes del uso diario y probar el acceso.
 
 ## Inscripciones de clientas: preparados, NO ABIERTAS
 
