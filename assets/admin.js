@@ -281,7 +281,7 @@ function renderJoins(){
   pill(x.status,x.status==='aprobada'?'green':x.status==='rechazada'?'red':'neutral')+'</td><td>'+
   (x.status==='pendiente'?'<div class="account-actions"><button class="btn btn-primary btn-small" data-join-approve="'+esc(x.id)+'">Revisar factura</button><button class="btn btn-outline btn-small" data-join-reject="'+esc(x.id)+'">Rechazar</button></div>':
   x.status==='aprobada'?'Factura aprobada':'Revisada')+'</td></tr>'));
- $('[data-join-approve]').forEach(btn=>btn.onclick=()=>{
+ $$('[data-join-approve]').forEach(btn=>btn.onclick=()=>{
    const request=joinRequests.find(x=>x.id===btn.dataset.joinApprove);if(!request)return;
    selectedJoinId=request.id;
    $('#joinRequestId').value=request.id;
@@ -291,7 +291,7 @@ function renderJoins(){
    $('#joinRequestId').value=request.id;
    card.classList.remove('hidden');card.scrollIntoView({behavior:'smooth',block:'start'});
  });
- $('[data-join-reject]').forEach(btn=>btn.onclick=()=>rejectJoin(btn.dataset.joinReject));
+ $$('[data-join-reject]').forEach(btn=>btn.onclick=()=>rejectJoin(btn.dataset.joinReject));
  if(!joinRequests.some(x=>x.id===selectedJoinId&&x.status==='pendiente'))card.classList.add('hidden');
 }
 async function rejectJoin(id){
