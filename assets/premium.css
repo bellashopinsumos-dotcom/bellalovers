@@ -712,3 +712,25 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  .ticket-title{font-size:24px;}
  .hero-trust{justify-content:flex-start;}
 }
+
+/* Estado de inscripciones: sin cuentas de muestra ni estadísticas ficticias. */
+.enrollment-status{
+  border-radius:16px;
+  border:1px solid #e7bfcd;
+  background:linear-gradient(128deg,#f9e5ed,#fdf5f8);
+  padding:19px 22px;
+  color:#765266;
+}
+.enrollment-status strong{
+  display:block;
+  font-size:15px;
+  font-weight:800;
+  color:#82435f;
+  margin-bottom:5px;
+}
+.enrollment-status p{
+  font-size:12px;
+  line-height:1.75;
+  margin:0;
+  color:#795766;
+}
