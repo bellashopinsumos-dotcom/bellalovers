@@ -1,9 +1,9 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
-let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
+let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'Otro'};
-const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
+const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
 function ubalance(id){
   const validCycles=cycles.filter(c=>c.customer_id===id&&!c.closed_at&&Date.parse(c.grace_until)>Date.now()).map(c=>c.id);
@@ -50,6 +50,7 @@ async function loadAll(){if(mode!=='live')return;
   ['redemptions',sb.from('bl_redemptions').select('*').order('created_at',{ascending:false}).limit(1000)],
   ['redemptionItems',sb.from('bl_redemption_items').select('*')],
   ['teachers',sb.from('bl_teacher_codes').select('*')],
+  ...(staff?.role==='admin'?[['affiliatedTeachers',sb.from('bl_affiliated_teachers').select('*').order('display_name')],['affiliateAttributions',sb.from('bl_affiliate_attributions').select('*')]]:[]),
   ['referrals',sb.from('bl_referrals').select('*')],
   ['tiers',sb.from('bl_referral_tiers').select('*').order('min_amount')],
   ['giftOptions',sb.from('bl_gift_options').select('*').order('name')],
@@ -60,7 +61,7 @@ async function loadAll(){if(mode!=='live')return;
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -205,14 +206,97 @@ function renderRedemptions(){
 }
 async function decide(id,approve){if(!requireLive())return;const reason=approve?'Premio entregado':prompt('Motivo para rechazar:');if(reason===null)return;if(!confirm(approve?'¿Confirmas que el premio fue entregado?':'¿Rechazar solicitud y reintegrar puntos?'))return;try{await rpc('bl_decide_redemption',{p_redemption:id,p_approve:approve,p_reason:reason});notify(approve?'Recompensa entregada y descontada del stock.':'Solicitud rechazada y puntos reintegrados.');await loadAll();}catch(e){notify(e.message,'error');}}
 function renderTeachers(){
- const profs=profiles.filter(p=>p.category==='profesora');
- $('#teachersTable').innerHTML=table(['Profesora','Celular','Código','Verificada','Puntos por referidos',''],profs.map(p=>{const c=teachers.find(t=>t.teacher_id===p.id);const pts=points.filter(x=>x.customer_id===p.id&&x.kind==='referido').reduce((s,x)=>s+x.delta,0);return `<tr><td>${esc(p.full_name)}</td><td>${esc(p.phone)}</td><td>${esc(c?.code||'—')}</td><td>${pill(p.teacher_verified?'Sí':'Pendiente',p.teacher_verified?'green':'')}</td><td>${pts}</td><td><button class="btn btn-outline" data-teacher="${esc(p.id)}">${c?'Ver enlace / actualizar':'Habilitar código'}</button></td></tr>`;}));
- $$('[data-teacher]').forEach(b=>b.onclick=async()=>{const p=profiles.find(x=>x.id===b.dataset.teacher);const c=teachers.find(x=>x.teacher_id===p.id);
-   if(c){showTeacherQR(p,c);return;}
-   if(!requireLive()||!checkManager())return;const label=prompt('Nombre público de la profesora:',p.full_name);if(!label)return;
-   try{const code=await rpc('bl_activate_teacher',{p_customer:p.id,p_label:label});notify('Profesora habilitada, código: '+code);await loadAll();}catch(e){notify(e.message,'error');}
- });
- $('#tiersFields').innerHTML=tiers.map(t=>`<div style="display:inline-block;margin:0 14px 15px 0;max-width:200px"><label>Desde ${fmt(t.min_amount)}</label><input class="admin-input mini-input" type="number" min="0" max="100" data-tier="${t.min_amount}" value="${t.points}"></div>`).join('');
+ const tableEl=$('#affiliatesTable');
+ if(staff?.role!=='admin'){
+  tableEl.innerHTML='<div class="admin-feedback">Solo el administrador principal puede agregar o retirar profesoras afiliadas.</div>';
+  $('#affiliateForm').classList.add('hidden');
+ }else{
+  $('#affiliateForm').classList.remove('hidden');
+  const total=affiliatedTeachers.filter(t=>t.active).length;
+  $('#affiliateCount').textContent=total+' activa'+(total===1?'':'s');
+  const selectedId=$('#affiliateProfile').value;
+  const chosen=affiliatedTeachers.find(t=>t.id===$('#affiliateId').value);
+  const available=profiles.filter(p=>p.category==='profesora'&&!p.blocked&&!p.archived_at);
+  const select=$('#affiliateProfile');
+  select.replaceChildren(new Option('Sin cuenta vinculada aún',''));
+  available.forEach(p=>{
+   const occupied=affiliatedTeachers.some(t=>t.linked_profile_id===p.id&&t.id!==chosen?.id);
+   if(!occupied)select.append(new Option(p.full_name+' · '+p.phone,p.id));
+  });
+  if([...select.options].some(o=>o.value===selectedId))select.value=selectedId;
+  tableEl.innerHTML=table(['Profesora','Código','Estado','Cuenta de puntos','Referidos','Acciones'],
+   affiliatedTeachers.map(t=>{
+    const linked=profiles.find(p=>p.id===t.linked_profile_id);
+    const totalRef=affiliateAttributions.filter(x=>x.affiliate_id===t.id).length;
+    const waiting=affiliateAttributions.filter(x=>x.affiliate_id===t.id&&!x.awarded_at).length;
+    const waitingText=waiting?' · '+waiting+' sin abonar':'';
+    return '<tr><td><strong>'+esc(t.display_name)+'</strong></td>'+
+     '<td><code>'+esc(t.code)+'</code></td><td>'+pill(t.active?'Activa':'Retirada',t.active?'green':'neutral')+'</td>'+
+     '<td>'+esc(linked?.full_name||'No vinculada')+'</td>'+
+     '<td>'+totalRef+esc(waitingText)+'</td><td class="affiliate-actions">'+
+     '<button class="btn btn-outline btn-small" data-affiliate-edit="'+esc(t.id)+'">Editar</button>'+
+     (t.active?'<button class="btn btn-outline btn-small admin-danger" data-affiliate-retire="'+esc(t.id)+'">Retirar</button>':
+      '<button class="btn btn-outline btn-small" data-affiliate-restore="'+esc(t.id)+'">Reactivar</button>')+
+     (t.active?'<button class="btn btn-outline btn-small" data-affiliate-share="'+esc(t.id)+'">Enlace/QR</button>':'')+
+     '</td></tr>';
+   }));
+  $$('[data-affiliate-edit]').forEach(b=>b.onclick=()=>selectAffiliate(b.dataset.affiliateEdit));
+  $$('[data-affiliate-retire]').forEach(b=>b.onclick=()=>changeAffiliateStatus(b.dataset.affiliateRetire,false));
+  $$('[data-affiliate-restore]').forEach(b=>b.onclick=()=>changeAffiliateStatus(b.dataset.affiliateRestore,true));
+  $$('[data-affiliate-share]').forEach(b=>b.onclick=()=>{
+    const t=affiliatedTeachers.find(x=>x.id===b.dataset.affiliateShare);
+    if(t)showTeacherQR({full_name:t.display_name},{code:t.code});
+  });
+ }
+ $('#tiersFields').innerHTML=tiers.map(t=>'<div style="display:inline-block;margin:0 14px 15px 0;max-width:200px"><label>Desde '+fmt(t.min_amount)+'</label><input class="admin-input mini-input" type="number" min="0" max="100" data-tier="'+esc(t.min_amount)+'" value="'+esc(t.points)+'"></div>').join('');
+}
+function resetAffiliateForm(){
+ $('#affiliateForm').reset();
+ $('#affiliateId').value='';
+ $('#affiliateActive').checked=true;
+ $('#affiliateSave').textContent='Agregar profesora afiliada';
+ renderTeachers();
+}
+function selectAffiliate(id){
+ const t=affiliatedTeachers.find(x=>x.id===id);
+ if(!t)return;
+ $('#affiliateId').value=t.id;
+ $('#affiliateName').value=t.display_name;
+ $('#affiliateActive').checked=t.active;
+ renderTeachers();
+ $('#affiliateProfile').value=t.linked_profile_id||'';
+ $('#affiliateSave').textContent='Guardar cambios';
+ $('#affiliateForm').scrollIntoView({behavior:'smooth',block:'start'});
+ $('#affiliateName').focus();
+}
+async function submitAffiliate(event){
+ event.preventDefault();
+ if(!requireLive()||!checkManager())return;
+ const name=$('#affiliateName').value.trim(),id=$('#affiliateId').value||null;
+ const linked=$('#affiliateProfile').value||null,active=$('#affiliateActive').checked;
+ if(name.length<3)return notify('Escribe el nombre de la profesora afiliada.','error');
+ if(!confirm(id?'¿Guardar los cambios de la profesora afiliada?':'¿Agregar esta profesora al directorio de BellaShop?'))return;
+ const button=$('#affiliateSave');
+ try{
+  setLoading(button,true,'Guardando…');
+  await rpc('bl_manage_affiliated_teacher',{p_id:id,p_name:name,p_active:active,p_linked_profile:linked});
+  notify(id?'Profesora actualizada':'Profesora afiliada agregada. Aparecerá en nuevas solicitudes.');
+  $('#affiliateId').value='';$('#affiliateForm').reset();
+  await loadAll();
+ }catch(err){notify('No se pudo guardar: '+err.message,'error');}
+ finally{setLoading(button,false);}
+}
+async function changeAffiliateStatus(id,active){
+ if(!requireLive()||!checkManager())return;
+ const t=affiliatedTeachers.find(x=>x.id===id);if(!t)return;
+ if(!confirm(active?'¿Reactivar a '+t.display_name+' en el listado de solicitudes?':
+   '¿Retirar a '+t.display_name+'? Dejará de aparecer para nuevas solicitudes, pero no se borrará su historial.'))return;
+ try{
+  await rpc('bl_manage_affiliated_teacher',{p_id:id,p_name:t.display_name,p_active:active,p_linked_profile:t.linked_profile_id||null});
+  notify(active?'Profesora reactivada':'Profesora retirada del listado público.');
+  if($('#affiliateId').value===id)resetAffiliateForm();
+  await loadAll();
+ }catch(err){notify('No se pudo cambiar el estado: '+err.message,'error');}
 }
 function showTeacherQR(p,c){
  const link=new URL('./index.html',location.href);link.searchParams.set('ref',c.code);
@@ -456,6 +540,8 @@ function setup(){
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
+ $('#affiliateForm').addEventListener('submit',submitAffiliate);
+ $('#affiliateReset').addEventListener('click',resetAffiliateForm);
  $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';updateRewardPhotoPreview(null);};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
  $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
