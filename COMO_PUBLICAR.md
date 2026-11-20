@@ -4,16 +4,15 @@
 
 **Administrador:** https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-## ¿Cómo entra una BellaLover desde su celular?
+## ¿Cómo se ve el inicio de sesión?
 
-Entra a la página y lo primero que verá es **Iniciar sesión**. Escribe:
+La página muestra normalmente su portada. Arriba hay un botón **Iniciar sesión**: al tocarlo se abre una **ventanita** con dos pestañas, **Iniciar sesión** y **Registrarse**, más una **X** para cerrar.
 
-1. Su celular de 10 dígitos.
-2. Su **clave BellaLovers de 12 caracteres**, entregada por BellaShop cuando se aprobó su membresía.
+En **Iniciar sesión**, la persona escribe su **celular o correo** y su **nombre completo**, como quedó registrado. No se pide Gmail ni se muestra clave inicialmente.
 
-Pulsa **Entrar a mi cuenta** para ver fecha de ingreso, compras, puntos, recompensas y solicitudes. **No necesita Gmail, correo, SMS ni comprar por Internet.**
+Si su dispositivo ya tiene una sesión válida, puede entrar a consultar directamente sus compras, puntos y premios. Si es nuevo, BellaShop debe confirmar que es la titular; si ya recibió una clave de acceso puede ponerla en el paso de verificación. Eso evita que otra persona vea sus compras solo con conocer su nombre y número.
 
-Si todavía no tiene cuenta, pulsa **Registrarse** en el mismo recuadro. Introduce nombre, celular, categoría, profesora afiliada (si tiene) y acepta el tratamiento de datos. Eso solo crea una **solicitud**.
+En **Registrarse**, la persona puede mandar su solicitud. No se aprueba automáticamente y los puntos se reconocen después de que BellaShop confirma la primera compra.
 
 ## ¿Cómo apruebo a alguien después de su primera compra?
 
