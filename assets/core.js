@@ -40,4 +40,3 @@ export function setLoading(btn, state, label='Procesando…') {
 export function safeUrl(url) { try { const u=new URL(url,location.href); return ['https:','http:'].includes(u.protocol) ? u.href : ''; }catch{return '';} }
 export function putText(selector,text) { const e=$(selector); if(e) e.textContent=text; }
 export function pill(text, alt='') { return `<span class="status ${alt}">${esc(text)}</span>`; }
-export function demoWarning() { return '<span class="demo-chip">VISTA DE DEMOSTRACIÓN · datos de ejemplo</span>'; }
