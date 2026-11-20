@@ -19,4 +19,7 @@ assert.doesNotMatch(adminJs, /(?<!\$)\$\(['"][^'"]+['"]\)\.forEach\(/,
   'El selector de un elemento no se puede recorrer con forEach; usar $');
 assert.match(adminJs, /\$\$\('\[data-edit-staff\]'\)\.forEach\(/,
   'El listado de personal necesita querySelectorAll');
-console.log('OK: 20 verificaciones de reglas y administración BellaLovers');
+const clientJs = readFileSync(new URL('../assets/client.js', import.meta.url), 'utf8');
+assert.match(clientJs, /configureHomeNavigation\(\);/, 'La portada debe controlar restauración al recargar');
+assert.match(clientJs, /history\.replaceState\(/, 'Al navegar por secciones hay que evitar conservar el ancla en URL');
+console.log('OK: 22 verificaciones de BellaLovers');
