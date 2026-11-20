@@ -1,20 +1,41 @@
-# BellaLovers — publicación y operación
+# BellaLovers — estado y apertura del club
 
-La página de BellaLovers se publica desde la rama `main`, carpeta `/(root)` en GitHub Pages:
+GitHub Pages está configurado para publicar desde `main` / `root`.
 
-- Página pública: https://bellashopinsumos-dotcom.github.io/bellalovers/
+- Club: https://bellashopinsumos-dotcom.github.io/bellalovers/
 - Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
+- Supabase: https://supabase.com/dashboard/project/xpnfdyfnaromfwkontid
 
-**Actualización 20/11/2026:** el proyecto Supabase BellaLovers YA está creado y conectado mediante clave publicable. Los datos y botones ficticios fueron retirados. No hay clientas, compras ni premios cargados; `legalPolicyApproved: false` impide registros públicos mientras no exista política definitiva ni verificación SMS. La activación del registro requiere primero pruebas autorizadas y la política de tratamiento de datos.
+## Qué ya está listo en el código
+- Diseño rosado pastel optimizado para celulares.
+- Vitrina pública sincronizada de premios reales, sin necesidad de iniciar sesión.
+- Panel que permite crear, editar y publicar premios con fotografía y existencias.
+- Registro de compras facturadas por tienda, WhatsApp, web, domicilio y otros canales; el costo de transporte se excluye, no el valor de los productos.
+- Gestión de clientas, restauración de cuentas, roles, anulación de facturas, puntos y auditoría.
+- Carné digital y mensajes dentro de cada cuenta.
+- Alta del primer administrador vinculada al correo verificado de BellaShop.
 
-## Qué falta para operar
+## Lo primero que debe hacer BellaShop
 
-1. Crear y confirmar en Supabase Authentication al usuario de `bellashopinsumos@gmail.com` y asignarle el rol administrador según `README.md`.
-2. Configurar las URLs de redirección de autenticación y recuperación de contraseña.
-3. Contratar/configurar SMS OTP en Supabase; aprobar la política de tratamiento de datos.
-4. Registrar premios reales y comprobar inventario, rentabilidad, puntos y auditoría.
-5. Realizar pruebas completas con usuarios autorizados antes del lanzamiento.
+1. En Supabase → Authentication → URL Configuration, indicar:
+   Site URL: https://bellashopinsumos-dotcom.github.io/bellalovers/
+   Redirect URLs: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
+2. Abrir la página de administrador, pulsar **Primer ingreso: activar cuenta BellaShop**, escoger contraseña segura y confirmar el correo `bellashopinsumos@gmail.com`. La app concederá el primer rol admin únicamente al dueño de esa cuenta verificada.
+3. Configurar **SMS OTP para Colombia** en Supabase y comprobarlo, incluidos sus costos y límites de envío.
+4. Completar y aprobar la política `politica-datos.html` (actualmente es un borrador; falta identidad legal, dirección, vigencia y otros detalles).
+5. Desde administrador → Configuración, confirmar esos dos requisitos y pulsar **Abrir inscripciones**.
+6. Cargar premios reales y sus fotografías desde administrador → Recompensas.
 
-No se han modificado los proyectos de RutaYa, Master Viviana ni el inventario original de BellaShop.
+El registro público está cerrado hasta los pasos 3–5. **No hemos pagado ni contratado un proveedor de SMS.** La base de datos no contiene clientas ni premios ficticios.
 
-La migración de restauración y gestión de empleados está en `supabase/migrations/20261120_restauracion_y_equipo.sql` y ya está aplicada en el proyecto BellaLovers.
+## Reglas para la jefa
+
+Las compras confirmadas de productos por WhatsApp **sí suman puntos** bajo las mismas condiciones que las realizadas presencialmente. El envío a domicilio no invalida la compra: solo su tarifa no suma puntos. Si la compra tiene descuento especial, se aplica la exclusión configurada en BellaLovers.
+
+Los premios se muestran en la vitrina pública cuando están activos y tienen stock disponible. El costo interno del premio no se expone.
+
+**Seguridad:** nunca colocar claves privadas ni contraseñas de usuarios en GitHub. No editar proyectos Supabase de RutaYa, Master Viviana ni BellaShop Inventario.
+
+## Migraciones de base de datos versionadas
+`supabase/schema.sql` → `supabase/migrations/20261120_restauracion_y_equipo.sql` → `supabase/migrations/20261120_premios_canales_registro.sql`.
+Estas migraciones ya se aplicaron en BellaLovers y no se deben repetir en otros proyectos.
