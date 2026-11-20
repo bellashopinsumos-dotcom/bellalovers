@@ -1,41 +1,48 @@
-# BellaLovers — estado y apertura del club
+# BellaLovers: cómo abrirlo y usarlo
 
-GitHub Pages está configurado para publicar desde `main` / `root`.
+Página: https://bellashopinsumos-dotcom.github.io/bellalovers/
 
-- Club: https://bellashopinsumos-dotcom.github.io/bellalovers/
-- Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
-- Supabase: https://supabase.com/dashboard/project/xpnfdyfnaromfwkontid
+Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-## Qué ya está listo en el código
-- Diseño rosado pastel optimizado para celulares.
-- Premios visibles **solo dentro de las cuentas de clientas** que hayan iniciado sesión y en el administrador. No hay vitrina pública en el inicio.
-- Panel que permite crear, editar y publicar premios con fotografía y existencias.
-- Registro de compras facturadas por tienda, WhatsApp, web, domicilio y otros canales; el costo de transporte se excluye, no el valor de los productos.
-- Gestión de clientas, restauración de cuentas, roles, anulación de facturas, puntos y auditoría.
-- Carné digital y mensajes dentro de cada cuenta.
-- Acceso administrativo exclusivo para usuarios autorizados previamente en Supabase (no hay formulario de alta pública).
+## Ahora el club funciona por aprobación, SIN SMS
 
-## Lo primero que debe hacer BellaShop
+- La persona llena una **solicitud de ingreso** desde la web con nombre, celular, correo y categoría.
+- Su solicitud aparece en **Administrador → Solicitudes de ingreso**, sin crear membresía ni puntos.
+- Cuando haga la **primera compra**, la jefa verifica la factura, selecciona la solicitud y registra el número de factura, valor de productos, canal y transporte.
+- Al aprobar se registra la membresía junto con esa primera compra; el sistema calcula los puntos que correspondan.
+- La clienta recibe un **correo de invitación** y puede acceder a sus puntos mediante un enlace seguro a su correo.
+- No se necesita SMS ni contraseña para la clienta. BellaShop puede rechazar solicitudes con motivo.
 
-1. En Supabase → Authentication → URL Configuration, indicar:
-   Site URL: https://bellashopinsumos-dotcom.github.io/bellalovers/
-   Redirect URLs: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
-2. Desde el panel **privado** de Supabase → Authentication → Users, crear el usuario `bellashopinsumos@gmail.com`, con contraseña robusta, y confirmar el correo. Después autorizarlo desde el SQL Editor del proyecto BellaLovers ejecutando el SQL indicado en `README.md`. **Solo entonces** ingresar en `admin.html`. Nunca se debe otorgar el primer rol mediante una página pública.
-3. Configurar **SMS OTP para Colombia** en Supabase y comprobarlo, incluidos sus costos y límites de envío.
-4. Completar y aprobar la política `politica-datos.html` (actualmente es un borrador; falta identidad legal, dirección, vigencia y otros detalles).
-5. Desde administrador → Configuración, confirmar esos dos requisitos y pulsar **Abrir inscripciones**.
-6. Cargar premios reales y sus fotografías desde administrador → Recompensas.
+La primera compra puede ser en **tienda, WhatsApp, web o con domicilio**. El transporte no suma puntos, pero los productos del pedido sí. Compras desde $50.000 = 5 puntos; cada $10.000 completos adicionales = 1 punto. Para estudiantes se aplica la excepción de primera compra prevista en el programa.
 
-El registro público está cerrado hasta los pasos 3–5. **No hemos pagado ni contratado un proveedor de SMS.** La base de datos no contiene clientas ni premios ficticios.
+## Paso necesario antes de recibir solicitudes reales
 
-## Reglas para la jefa
+La política `politica-datos.html` todavía es **un borrador**, así que las solicitudes permanecen desactivadas. La jefa deberá completar los datos legales, revisarla y aprobarla.
 
-Una compra elegible de productos por **$50.000 da 5 puntos**; cada **$10.000 completos adicionales da 1 punto más**. Las compras confirmadas por WhatsApp **sí suman puntos** bajo las mismas condiciones que las realizadas presencialmente. El envío a domicilio no invalida la compra: solo su tarifa no suma puntos. Si la compra tiene descuento especial, se aplica la exclusión configurada en BellaLovers.
+Después, en Administrador → Configuración → Recepción de solicitudes, marca la casilla que certifica la publicación de la política y haz clic en **Abrir recepción de solicitudes**. Las membresías no serán automáticas: siempre habrá que comprobar la primera factura.
 
-Los premios se muestran en el área privada de cada BellaLover cuando están activos y disponibles. En el inicio de la web no aparece un catálogo de premios. El costo interno solo se administra desde el panel.
+## Correos e invitaciones
 
-**Seguridad:** nunca colocar claves privadas ni contraseñas de usuarios en GitHub. No editar proyectos Supabase de RutaYa, Master Viviana ni BellaShop Inventario.
+En Supabase → Authentication → URL Configuration:
 
-## Migraciones de base de datos versionadas
-`supabase/schema.sql` → `supabase/migrations/20261120_restauracion_y_equipo.sql` → `supabase/migrations/20261120_premios_canales_registro.sql` → `supabase/migrations/20261120_seguridad_admin.sql`.
-Estas migraciones ya se aplicaron en BellaLovers y no se deben repetir en otros proyectos.
+- Site URL: https://bellashopinsumos-dotcom.github.io/bellalovers/
+- Redirect URLs: https://bellashopinsumos-dotcom.github.io/bellalovers/
+
+Revisar la entrega real de invitaciones y enlaces de acceso. Supabase tiene límites en su proveedor de correo por defecto, así que antes de crecer revisar si hace falta SMTP propio. Ningún correo de clienta debe usarse para pruebas sin permiso.
+
+## El administrador
+
+Solo pueden entrar cuentas previamente autorizadas en Supabase. El registro público de administradores se retiró y no vuelve a activarse.
+
+El administrador puede gestionar solicitudes, compras, recompensas, puntos, bloqueos, restauraciones, permisos y auditoría. Las fotografías de los premios se suben desde el panel; los premios solo se muestran después de iniciar sesión como clienta aprobada.
+
+## Qué se completó y qué no
+
+**Preparado en código y Supabase:** solicitudes pendientes, bandeja de revisión, aprobación por factura, invitación por correo, acceso sin SMS, rechazo con motivo, registro de WhatsApp, premios, carné y control de puntos.
+
+**Pendiente de verificación antes de abrir al público:** política definitiva, envío efectivo de correo, URL de autenticación, protección anti-bots y una compra real autorizada de prueba.
+
+No se añadieron clientas o facturas ficticias. No se alteraron otros proyectos.
+
+Migración versionada: `supabase/migrations/20261120_solicitudes_y_primera_compra.sql`.
+Función server: `supabase/functions/bellalovers-aprobar/index.ts`.
