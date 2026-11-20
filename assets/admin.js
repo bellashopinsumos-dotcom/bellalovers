@@ -1,9 +1,9 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
-let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],settings={...DEFAULT_RULES},selectedCustomerId=null;
+let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'Otro'};
-const titles={overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
+const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
 function ubalance(id){
   const validCycles=cycles.filter(c=>c.customer_id===id&&!c.closed_at&&Date.parse(c.grace_until)>Date.now()).map(c=>c.id);
@@ -56,10 +56,11 @@ async function loadAll(){if(mode!=='live')return;
   ['giftClaims',sb.from('bl_gift_claims').select('*').order('delivered_at',{ascending:false})],
   ['audit',sb.from('bl_audit').select('*').order('created_at',{ascending:false}).limit(150)],
   ['settings',sb.from('bl_settings').select('*').eq('id',1).single()],
+  ...(staff?.role==='admin'?[['joinRequests',sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000)]]:[]),
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -68,7 +69,7 @@ function renderOverview(){
  const earned=points.filter(p=>p.delta>0&&['compra','referido'].includes(p.kind)).reduce((s,p)=>s+p.delta,0);
  const claimsCost=giftClaims.reduce((s,g)=>s+(giftOptions.find(o=>o.id===g.gift_id)?.unit_cost||0),0);
  const prizesCost=redemptions.filter(r=>r.status==='aprobada').reduce((s,r)=>s+redemptionItems.filter(i=>i.redemption_id===r.id).reduce((a,i)=>a+i.qty*(rewards.find(w=>w.id===i.reward_id)?.unit_cost||0),0),0);
- $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',earned);
+ $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',earned)+statTile('Solicitudes por revisar',joinRequests.filter(x=>x.status==='pendiente').length);
  $('#recentPurchases').innerHTML=table(['Factura','Canal','Clienta','Productos','Puntos','Estado'],purchases.slice(0,7).map(p=>`<tr><td>${esc(p.invoice)}</td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.points_awarded}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td></tr>`));
  if(!$('#additionalStats')) {const card=document.createElement('div');card.className='admin-card';card.id='additionalStats';$('#section-overview').append(card);}
  const repeat=profiles.filter(c=>valid.filter(p=>p.customer_id===c.id).length>1).length;
@@ -229,7 +230,7 @@ function renderGifts(){
  $('#giftClaimsTable').innerHTML=table(['Estudiante','Regalo','Fecha'],giftClaims.map(g=>`<tr><td>${esc(uname(g.student_id))}</td><td>${esc(giftOptions.find(x=>x.id===g.gift_id)?.name||'Regalo')}</td><td>${date(g.delivered_at)}</td></tr>`));
 }
 function renderSettings(){
- const lbl=$('#signupStatusLabel');if(lbl){lbl.textContent=settings.signup_open?'Inscripciones abiertas':'Inscripciones cerradas';lbl.className='status '+(settings.signup_open?'green':'neutral');}
+ const lbl=$('#joinStatusLabel');if(lbl){lbl.textContent=settings.join_requests_open?'Solicitudes abiertas':'Solicitudes pausadas';lbl.className='status '+(settings.join_requests_open?'green':'neutral');}
  for(const key of ['min_purchase','point_value','unlock_points','student_gift_min','cycle_months','grace_days','shop_url'])$('#rule_'+key).value=settings[key]??'';
  for(const key of ['exclude_discounts','student_first_no_points'])$('#rule_'+key).checked=Boolean(settings[key]);
 }
@@ -263,7 +264,7 @@ async function saveStaff(e){
  catch(err){notify('No se pudo actualizar: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
-function renderAll(){renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
+function renderAll(){renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){e.preventDefault();if(!requireLive())return;const btn=$('#purchaseForm button[type=submit]');try{setLoading(btn,true);const p=await rpc('bl_purchase_channel',{p_channel:$('#purchaseChannel').value,p_customer:$('#purchaseCustomer').value,p_invoice:$('#purchaseInvoice').value.trim(),p_amount:+$('#purchaseAmount').value,p_discount:$('#purchaseDiscount').checked,p_delivery:+$('#purchaseDelivery').value,p_notes:$('#purchaseNotes').value.trim()});notify(`Compra registrada: ${p.points} puntos${p.referral_points?`, ${p.referral_points} para profesora`:''}${p.welcome_eligible?'. Con derecho a regalo de bienvenida.':''}`);e.target.reset();await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
 async function rewardSubmit(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
@@ -351,26 +352,26 @@ function showRecoveryForm(){
 }
 
 
-function updateSignupChecklist(){
- $('#signupEnable').disabled=!($('#signupSmsVerified').checked&&$('#signupPolicyVerified').checked);
+function updateJoinChecklist(){
+ $('#joinEnable').disabled=!$('#joinPolicyVerified').checked;
 }
-async function saveSignupStatus(open){
+async function saveJoinStatus(open){
  if(!requireLive()||!checkManager())return;
- if(open&&(!$('#signupSmsVerified').checked||!$('#signupPolicyVerified').checked))return notify('Confirma primero SMS y política de datos.','error');
- if(!confirm(open?'¿La política oficial ya fue publicada y el SMS funciona en Colombia? ¿Abrir inscripciones reales?':'¿Cerrar las inscripciones nuevas?'))return;
+ if(open&&!$('#joinPolicyVerified').checked)return notify('Confirma primero la política de datos definitiva.','error');
+ if(!confirm(open?'¿BellaShop aprobó su política definitiva? ¿Abrir solicitudes de ingreso?':'¿Pausar solicitudes de ingreso?'))return;
  try{
-  await run(sb.from('bl_settings').update({signup_open:open}).eq('id',1));
-  notify(open?'Inscripciones habilitadas':'Inscripciones cerradas');
+  await run(sb.from('bl_settings').update({join_requests_open:open,signup_open:false}).eq('id',1));
+  notify(open?'Solicitudes abiertas (sin SMS)':'Solicitudes pausadas');
   await loadAll();
  }catch(err){notify(err.message,'error');}
 }
+
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#adminLoginForm').addEventListener('submit',login);
- $('#signupSmsVerified').addEventListener('change',updateSignupChecklist);
- $('#signupPolicyVerified').addEventListener('change',updateSignupChecklist);
- $('#signupStatusForm').addEventListener('submit',e=>{e.preventDefault();saveSignupStatus(true);});
- $('#signupDisable').addEventListener('click',()=>saveSignupStatus(false));
+ $('#joinPolicyVerified').addEventListener('change',updateJoinChecklist);
+ $('#joinStatusForm').addEventListener('submit',e=>{e.preventDefault();saveJoinStatus(true);});
+ $('#joinDisable').addEventListener('click',()=>saveJoinStatus(false));
  $('#rewardPhoto').addEventListener('change',()=>{
   if(photoPreviewUrl)URL.revokeObjectURL(photoPreviewUrl);
   const file=$('#rewardPhoto').files[0];photoPreviewUrl=file?URL.createObjectURL(file):null;
