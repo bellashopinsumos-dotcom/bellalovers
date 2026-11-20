@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.47.16";
+import {createClient} from "npm:@supabase/supabase-js@2.47.16";
 
 const URL=Deno.env.get("SUPABASE_URL")!;
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -6,85 +6,116 @@ const SECRET=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ORIGIN="https://bellashopinsumos-dotcom.github.io";
 const HEADERS={
  "Access-Control-Allow-Origin":ORIGIN,
- "Access-Control-Allow-Methods":"POST,OPTIONS",
  "Access-Control-Allow-Headers":"authorization,apikey,content-type,x-client-info",
+ "Access-Control-Allow-Methods":"POST,OPTIONS",
  "Content-Type":"application/json; charset=utf-8",
+ "Cache-Control":"no-store",
  "Vary":"Origin"
 };
-const reply=(obj:unknown,status=200)=>new Response(JSON.stringify(obj),{status,headers:HEADERS});
-const generic="No se pudo verificar tu acceso. Revisa tus datos o consulta con BellaShop.";
-async function digest(input:string){
- const bytes=new TextEncoder().encode(SECRET+"|"+input);
- const hash=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
- return Array.from(hash).map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-function phoneOf(value:string){
- const digits=value.replace(/[^0-9]/g,"");
+const send=(obj:unknown,status=200)=>new Response(JSON.stringify(obj),{status,headers:HEADERS});
+const generic="Si tus datos corresponden a una BellaLover activa, BellaShop recibirá la solicitud de acceso. Espera la aprobación del administrador.";
+const service=createClient(URL,SECRET,{auth:{persistSession:false,autoRefreshToken:false}});
+const anon=createClient(URL,ANON,{auth:{persistSession:false,autoRefreshToken:false}});
+function phoneOf(raw:string){
+ const digits=raw.replace(/\D/g,"");
  const phone=digits.startsWith("57")&&digits.length===12?digits.slice(2):digits;
  return /^3[0-9]{9}$/.test(phone)?"+57"+phone:null;
 }
+function emailOf(raw:string){return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(raw)?raw.toLowerCase():null;}
 function normName(value:string){
  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toLocaleLowerCase("es-CO");
 }
-function emailOf(raw:string){return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(raw)?raw.toLowerCase():null;}
-
+async function digest(value:string){
+ const b=new TextEncoder().encode(SECRET+"|"+value);
+ return [...new Uint8Array(await crypto.subtle.digest("SHA-256",b))]
+ .map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+async function throttle(input:string,max:number){
+ const {data,error}=await service.rpc("bl_limit_member_access",{
+  p_key:await digest(input),p_max:max
+ });
+ return !error&&data===true;
+}
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:HEADERS});
- if(req.method!=="POST")return reply({error:"Método no permitido"},405);
- if(req.headers.get("origin")!==ORIGIN)return reply({error:"Origen no autorizado"},403);
- let body:Record<string,unknown>;
- try{body=await req.json();}catch{return reply({error:generic},400);}
- const identifier=String(body.identifier||body.phone||"").trim().toLowerCase();
- const email=emailOf(identifier),phone=email?null:phoneOf(identifier);
- const name=String(body.full_name||"").trim();
- const key=String(body.access_key||"").trim().toUpperCase();
- if((!phone&&!email)||name.length<3||name.length>120||!name.includes(" ")||
-   !/^[A-HJ-NP-Z2-9]{12}$/.test(key))return reply({error:generic},401);
- const service=createClient(URL,SECRET,{auth:{persistSession:false,autoRefreshToken:false}});
- try{
-  // The rate limit is checked even if the customer is unknown.
-  const {data:allowed,error:limitError}=await service.rpc("bl_limit_member_access",{
-   p_key:await digest("access:"+(email||phone)),p_max:12
-  });
-  if(limitError||allowed!==true)return reply({error:"Demasiados intentos. Intenta nuevamente más tarde o contacta a BellaShop."},429);
-  const ip=req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip");
-  if(ip){
-   const {data:ipAllowed}=await service.rpc("bl_limit_member_access",{
-     p_key:await digest("ip:"+ip),p_max:60
+ if(req.method!=="POST")return send({error:"Método inválido"},405);
+ if(req.headers.get("origin")!==ORIGIN)return send({error:"Origen no autorizado"},403);
+ let data:Record<string,unknown>;
+ try{data=await req.json();}catch{return send({error:"Solicitud inválida"},400);}
+ const action=String(data.action||"");
+ const challenge=String(data.challenge||"");
+ if(!/^[A-Za-z0-9_-]{43}$/.test(challenge))return send({error:"Solicitud inválida"},400);
+ if(action==="request"){
+  const identifier=String(data.identifier||"").trim().toLowerCase();
+  const name=String(data.full_name||"").trim();
+  const email=emailOf(identifier),phone=email?null:phoneOf(identifier);
+  if((!phone&&!email)||name.length<3||name.length>120||!name.includes(" "))
+   return send({error:"Escribe tu celular o correo y nombre completo"},400);
+  try{
+   if(!await throttle("request:"+identifier,5))return send({message:generic});
+   const ip=req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip");
+   if(ip&&!await throttle("login-ip:"+ip,60))return send({message:generic});
+   let memberId:string|null=null;
+   if(email){
+    const {data:id}=await service.rpc("bl_resolve_member_email",{p_email:email});
+    memberId=typeof id==="string"?id:null;
+   }else{
+    const {data:p}=await service.from("bl_profiles").select("id").eq("phone",phone).maybeSingle();
+    memberId=p?.id||null;
+   }
+   if(!memberId)return send({message:generic});
+   const {data:p,error:pError}=await service.from("bl_profiles")
+    .select("id,full_name,blocked,archived_at,deleted_at").eq("id",memberId).maybeSingle();
+   if(pError||!p||p.blocked||p.archived_at||p.deleted_at||
+     normName(String(p.full_name))!==normName(name))return send({message:generic});
+   const {data:staff}=await service.from("bl_staff").select("user_id").eq("user_id",memberId).maybeSingle();
+   if(staff)return send({message:generic});
+   const {error:insertError}=await service.from("bl_login_requests").insert({
+    challenge_hash:await digest("challenge:"+challenge),member_id:memberId,
+    expires_at:new Date(Date.now()+10*60*1000).toISOString()
    });
-   if(ipAllowed!==true)return reply({error:"Demasiados intentos. Intenta más tarde."},429);
+   if(insertError)console.error("Login request insert failed",insertError.code||insertError.message);
+   return send({message:generic});
+  }catch(e){
+   console.error("Login request unavailable",e instanceof Error?e.message:"unknown");
+   return send({message:generic});
   }
-  let selectedId:string|null=null;
-  let personEmail:string|null=null;
-  if(email){
-   // Service-role-only SQL resolves email without listing all Auth accounts.
-   const {data:memberId,error:resolveError}=await service.rpc("bl_resolve_member_email",{p_email:email});
-   if(resolveError||!memberId)return reply({error:generic},401);
-   selectedId=memberId;personEmail=email;
-  }
-  const {data:profile,error:profileError}=await service.from("bl_profiles")
-   .select("id,full_name,blocked,archived_at,deleted_at")
-   .eq(phone?"phone":"id",phone||selectedId).maybeSingle();
-  if(profileError||!profile||profile.blocked||profile.archived_at||profile.deleted_at||
-     normName(String(profile.full_name))!==normName(name))return reply({error:generic},401);
-  const {data:staff}=await service.from("bl_staff").select("user_id").eq("user_id",profile.id).maybeSingle();
-  if(staff)return reply({error:generic},401);
-  if(!personEmail){
-   const {data:person,error:userError}=await service.auth.admin.getUserById(profile.id);
-   if(userError||!person?.user?.email)return reply({error:generic},401);
-   personEmail=person.user.email;
-  }
-  const auth=createClient(URL,ANON,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:session,error:signInError}=await auth.auth.signInWithPassword({
-   email:personEmail!,password:key
-  });
-  if(signInError||!session?.session||session.user?.id!==profile.id)return reply({error:generic},401);
-  return reply({
-   success:true,access_token:session.session.access_token,
-   refresh_token:session.session.refresh_token
-  });
- }catch(error){
-  console.error("Member sign in unavailable:",error instanceof Error?error.message:"unexpected");
-  return reply({error:"No se pudo ingresar en este momento. Intenta más tarde."},503);
  }
+ if(action==="status"){
+  try{
+   const hash=await digest("challenge:"+challenge);
+   const {data:item,error:readError}=await service.from("bl_login_requests")
+    .select("id,member_id,status,expires_at").eq("challenge_hash",hash).maybeSingle();
+   if(readError||!item)return send({status:"pendiente"});
+   if(new Date(item.expires_at).getTime()<=Date.now())return send({status:"vencida"});
+   if(item.status==="rechazada")return send({status:"rechazada"});
+   if(item.status==="usada")return send({status:"vencida"});
+   if(item.status!=="aprobada")return send({status:"pendiente"});
+   const {data:p}=await service.from("bl_profiles")
+    .select("id,blocked,archived_at,deleted_at").eq("id",item.member_id).maybeSingle();
+   if(!p||p.blocked||p.archived_at||p.deleted_at)return send({status:"rechazada"});
+   // Only the holder of the cryptographically random challenge can claim the approved request.
+   const {data:claimed,error:claimError}=await service.from("bl_login_requests")
+    .update({status:"usada"}).eq("id",item.id).eq("status","aprobada")
+    .gt("expires_at",new Date().toISOString()).select("member_id").maybeSingle();
+   if(claimError||!claimed)return send({status:"vencida"});
+   const {data:person,error:userError}=await service.auth.admin.getUserById(item.member_id);
+   if(userError||!person?.user?.email)return send({status:"error",message:"No se pudo completar el ingreso. Solicita de nuevo."});
+   // Generate and consume a one-time Auth link entirely on the server. No email or SMS sent.
+   const {data:link,error:linkError}=await service.auth.admin.generateLink({
+    type:"magiclink",email:person.user.email
+   });
+   const tokenHash=link?.properties?.hashed_token;
+   if(linkError||!tokenHash)return send({status:"error",message:"No se pudo completar el ingreso. Solicita de nuevo."});
+   const {data:auth,error:otpError}=await anon.auth.verifyOtp({token_hash:tokenHash,type:"magiclink"});
+   if(otpError||auth?.user?.id!==item.member_id||!auth.session)
+    return send({status:"error",message:"No se pudo completar el ingreso. Solicita de nuevo."});
+   return send({status:"aprobada",access_token:auth.session.access_token,
+    refresh_token:auth.session.refresh_token});
+  }catch(e){
+   console.error("Login verification error",e instanceof Error?e.message:"unknown");
+   return send({status:"error",message:"No se pudo completar el ingreso. Solicita de nuevo."});
+  }
+ }
+ return send({error:"Acción no disponible"},400);
 });
