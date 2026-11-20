@@ -1,8 +1,8 @@
 import {CONFIG,HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
-let cart={}; let sendingPhone=''; let giftClaims=[];
-let enrollmentReady=false;
+let cart={}; let giftClaims=[];
+let requestsOpen=false;
 
 function configureHomeNavigation() {
  // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
@@ -39,41 +39,51 @@ async function run(q, label='Ocurrió un error') {
   return data;
 }
 function show(which) {
-  ['#loginPanel','#signupPanel','#account'].forEach(s=>$(s).classList.add('hidden'));
+  ['#loginPanel','#account'].forEach(s=>$(s).classList.add('hidden'));
   if(which==='login') $('#loginPanel').classList.remove('hidden');
-  if(which==='signup') $('#signupPanel').classList.remove('hidden');
   if(which==='account') {$('#account').classList.remove('hidden');$('#account').scrollIntoView({behavior:'smooth',block:'start'});}
 }
-function phoneNumber(raw) {
-  const digits=String(raw).replace(/\D/g,'');
-  if(!/^3\d{9}$/.test(digits)) throw new Error('Escribe un celular colombiano válido de 10 dígitos.');
-  return `+57${digits}`;
+function normalPhone(raw) {
+ const digits=String(raw??'').replace(/[^0-9]/g,'');
+ if(!/^3[0-9]{9}$/.test(digits))throw new Error('Escribe un celular colombiano válido de diez dígitos.');
+ return '+57'+digits;
 }
-async function sendOtp(event){
-  event.preventDefault();const btn=$('#phoneForm button[type=submit]');
-  try{if(!enrollmentReady)throw new Error('BellaShop aún no ha activado las inscripciones.');setLoading(btn,true);sendingPhone=phoneNumber($('#phone').value);await run(sb.auth.signInWithOtp({phone:sendingPhone,options:{shouldCreateUser:true}}));$('#phoneForm').classList.add('hidden');$('#otpForm').classList.remove('hidden');notify('Te enviamos el código por SMS.');}
-  catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
+async function sendJoinRequest(event) {
+ event.preventDefault();if($('#joinWebsite').value.trim())return;
+ const btn=$('#joinForm button[type=submit]');
+ try{
+  if(!requestsOpen)throw new Error('Las solicitudes todavía no están abiertas por BellaShop.');
+  const payload={p_name:$('#joinName').value.trim(),p_phone:normalPhone($('#joinPhone').value),
+   p_email:$('#joinEmail').value.trim().toLowerCase(),p_category:$('#joinCategory').value,
+   p_teacher_code:$('#joinTeacherCode').value.trim()||null,
+   p_marketing:$('#joinMarketing').checked,p_accept:$('#joinPrivacy').checked};
+  setLoading(btn,true,'Enviando solicitud…');
+  await run(sb.rpc('bl_submit_join_request',payload));
+  $('#joinForm').reset();$('#joinForm').classList.add('hidden');
+  $('#joinSent').classList.remove('hidden');
+  notify('Solicitud recibida. BellaShop la revisará cuando hagas tu primera compra.');
+ }catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
-async function verifyOtp(event){
-  event.preventDefault();const btn=$('#otpForm button[type=submit]');
-  try{setLoading(btn,true);const token=$('#otp').value.trim();await run(sb.auth.verifyOtp({phone:sendingPhone,token,type:'sms'}));await loadUser();notify('Celular verificado correctamente.');}
-  catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
-}
-async function saveProfile(event){
-  event.preventDefault();const btn=$('#signupForm button[type=submit]');
-  try{if(!enrollmentReady)throw new Error('BellaShop aún no ha activado las inscripciones.');setLoading(btn,true);await run(sb.rpc('bl_register',{
-    p_name:$('#fullName').value.trim(),p_category:$('#customerType').value,p_teacher_code:$('#teacherCode').value.trim()||null,
-    p_marketing:$('#marketing').checked,p_accept:$('#privacy').checked,
-  }));await loadUser();notify('¡Bienvenida a BellaLovers! Tu cuenta está lista.');}
-  catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
+async function sendMemberAccess(event){
+ event.preventDefault();const btn=$('#memberLoginForm button[type=submit]');
+ try{
+  if(!sb)throw new Error('No se pudo conectar al sistema.');
+  setLoading(btn,true,'Enviando enlace…');
+  const {error}=await sb.auth.signInWithOtp({
+   email:$('#memberEmail').value.trim().toLowerCase(),
+   options:{shouldCreateUser:false,emailRedirectTo:new URL('./index.html',location.href).href}
+  });
+  if(error)throw error;
+  notify('Si tu membresía fue aprobada, llegará un enlace a tu correo. Revisa también spam.');
+ }catch(err){notify('No se pudo enviar el enlace: '+err.message,'error');}
+ finally{setLoading(btn,false);}
 }
 async function loadUser(){
   session=(await sb.auth.getUser()).data.user;
   if(!session){show('login');return;}
   const profile=await run(sb.from('bl_profiles').select('*').eq('id',session.id).maybeSingle());
   if(!profile){
-    if(session.email&&!session.phone){await sb.auth.signOut();notify('Para ingresar como clienta debes verificar tu celular.','error');show('login');return;}
-    show('signup');return;
+    await sb.auth.signOut();notify('Esta membresía aún no está aprobada por BellaShop.','error');show('login');return;
   }
   customer=profile;await refreshAccount();show('account');
 }
@@ -170,32 +180,38 @@ async function submitRedemption(){
   catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function logOut(){
-  if(sb) await sb.auth.signOut();customer=null;$('#otpForm').classList.add('hidden');$('#phoneForm').classList.toggle('hidden',!enrollmentReady);$('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);$('#otp').value='';show('login');location.hash='#acceso';
+ if(sb)await sb.auth.signOut();customer=null;
+ show('login');$('#acceso').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
-async function loadPublicStatus(){
- const data=await run(sb.rpc('bl_public_status'));
- enrollmentReady=Array.isArray(data)&&data[0]?.signup_open===true;
- $('#phoneForm').classList.toggle('hidden',!enrollmentReady);
- $('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);
- if(!enrollmentReady)$('#enrollmentStatus').querySelector('p').textContent='Para proteger tu cuenta, necesitamos terminar la verificación por SMS. Cuando esté activa, podrás ingresar escribiendo tu celular y el código que recibas, sin contraseña.';
+async function loadJoinStatus(){
+ requestsOpen=(await run(sb.rpc('bl_join_requests_status')))===true;
+ $('#joinForm').classList.toggle('hidden',!requestsOpen);
+ $('#joinClosed').classList.toggle('hidden',requestsOpen);
 }
 
 function setup(){
-  $('#phoneForm').addEventListener('submit',sendOtp);$('#otpForm').addEventListener('submit',verifyOtp);$('#signupForm').addEventListener('submit',saveProfile);
-  $('#changePhone').addEventListener('click',()=>{$('#otpForm').classList.add('hidden');$('#phoneForm').classList.remove('hidden');});
-  $('#customerType').addEventListener('change',()=>$('#teacherField').classList.toggle('hidden',$('#customerType').value!=='estudiante'));
-  $('#logout').addEventListener('click',logOut);$('#submitRedeem').addEventListener('click',submitRedemption);
-  $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{ $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));$$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==`tab-${btn.dataset.tab}`));}));
-  const ref=new URLSearchParams(location.search).get('ref');if(ref) $('#teacherCode').value=ref.slice(0,30);
-  $('#phoneForm').classList.add('hidden');
-  $('#enrollmentStatus').classList.remove('hidden');
-  if(!HAS_BACKEND)return;
-  db().then(async x=>{
-   sb=x;
-   try{await loadPublicStatus();}catch(err){console.warn('Inscripciones no disponibles:',err.message);}
-   const {data}=await sb.auth.getSession();if(data.session)await loadUser();
-  }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
+ $('#joinForm').addEventListener('submit',sendJoinRequest);
+ $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
+ $('#joinCategory').addEventListener('change',()=>{
+  $('#joinTeacherField').classList.toggle('hidden',$('#joinCategory').value!=='estudiante');
+ });
+ $('#logout').addEventListener('click',logOut);
+ $('#submitRedeem').addEventListener('click',submitRedemption);
+ $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{
+  $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));
+  $$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==('tab-'+btn.dataset.tab)));
+ }));
+ const ref=new URLSearchParams(location.search).get('ref');
+ if(ref)$('#joinTeacherCode').value=ref.slice(0,30);
+ $('#joinForm').classList.add('hidden');$('#joinClosed').classList.remove('hidden');
+ if(!HAS_BACKEND)return;
+ db().then(async x=>{
+  sb=x;
+  try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);}
+  const {data:{session}}=await sb.auth.getSession();
+  if(session)await loadUser();
+ }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
+
 configureHomeNavigation();
 setup();
