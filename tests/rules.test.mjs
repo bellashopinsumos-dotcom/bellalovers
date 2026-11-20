@@ -22,4 +22,13 @@ assert.match(adminJs, /\$\$\('\[data-edit-staff\]'\)\.forEach\(/,
 const clientJs = readFileSync(new URL('../assets/client.js', import.meta.url), 'utf8');
 assert.match(clientJs, /configureHomeNavigation\(\);/, 'La portada debe controlar restauración al recargar');
 assert.match(clientJs, /history\.replaceState\(/, 'Al navegar por secciones hay que evitar conservar el ancla en URL');
-console.log('OK: 22 verificaciones de BellaLovers');
+const publicHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const adminHtml = readFileSync(new URL('../admin.html', import.meta.url), 'utf8');
+assert.match(publicHtml, /id="joinForm"/, 'La portada debe ofrecer solicitudes manuales');
+assert.match(publicHtml, /id="memberLoginForm"/, 'Miembros aprobados deben poder pedir acceso por correo');
+assert.doesNotMatch(publicHtml, /id="phoneForm"/, 'No debe quedar ingreso por SMS');
+assert.match(clientJs, /shouldCreateUser:false/, 'Nadie crea una cuenta solo solicitando acceso por correo');
+assert.match(adminHtml, /id="section-joins"/, 'Panel de revisión de solicitudes');
+assert.match(adminJs, /bl_join_requests/, 'Admin consulta solicitudes desde Supabase');
+assert.match(adminJs, /bellalovers-aprobar/, 'El alta requiere aprobación protegida y factura');
+console.log('OK: 29 verificaciones BellaLovers (sin SMS, con aprobación manual)');
