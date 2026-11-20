@@ -48,8 +48,9 @@ assert.match(adminJs, /bl_manage_affiliated_teacher/,
   'La edición de afiliación debe pasar por una función segura');
 assert.match(adminJs, /data-affiliate-retire/,
   'Debe ser posible retirar a una profesora sin borrar su historial');
-assert.match(publicHtml, /id="memberPhone"/, 'Ingreso por celular');
-assert.match(publicHtml, /id="memberAccessKey"/, 'Ingreso con clave privada entregada por BellaShop');
+assert.match(publicHtml, /id="memberIdentifier"/, 'Ingreso visible por celular o correo');
+assert.match(publicHtml, /id="memberFullName"/, 'El acceso pide nombre y apellido');
+assert.match(publicHtml, /id="memberAccessKey"/, 'La verificación adicional no aparece inicialmente');
 assert.match(publicHtml, /id="myJoinedDate"/, 'Fecha de ingreso visible en la cuenta');
 assert.match(publicHtml, /id="rewardsLock"/, 'El bloqueo de premios debe estar claramente visible');
 assert.match(publicHtml, /id="refreshMemberRewards"/, 'Recompensas actualizables desde la cuenta');
@@ -73,12 +74,15 @@ assert.match(adminJs,/deleteMemberAccount\(/, 'Mostrar eliminación segura de cu
 const deleteFn=readFileSync(new URL('../supabase/functions/bellalovers-eliminar/index.ts',import.meta.url),'utf8');
 assert.match(deleteFn,/staff\.role!=="admin"/, 'Eliminar cuenta requiere administrador autorizado');
 assert.match(deleteFn,/deleteUser\(id,true\)/, 'Eliminación de acceso en Auth conserva referencias');
-assert.ok(publicHtml.indexOf('id="acceso"') < publicHtml.indexOf('id="inicio"'),
-  'Iniciar sesión debe aparecer primero en la portada');
+assert.ok(publicHtml.indexOf('id="inicio"')<publicHtml.indexOf('id="authModal"'),
+  'La portada debe aparecer normalmente; acceso solo en la ventana');
+assert.match(publicHtml, /id="authModal"[^>]*hidden/, 'Modal oculto por defecto');
+assert.match(publicHtml, /id="closeAuthModal"/, 'El modal debe tener una X');
+assert.match(publicHtml, /role="dialog" aria-modal="true"/, 'Ventana accesible');
 assert.match(publicHtml, /data-auth-screen="signin"/, 'Pestaña de iniciar sesión');
 assert.match(publicHtml, /data-auth-screen="register"/, 'Pestaña de registrarse');
 assert.doesNotMatch(publicHtml, /id="joinEmail"/, 'Registro sin necesidad de correo Gmail');
-assert.doesNotMatch(publicHtml, /id="memberIdentifier"/, 'No mostrar solicitud antigua de correo');
+assert.doesNotMatch(publicHtml, /id="memberPhone"/, 'No pedir celular como único identificador');
 assert.doesNotMatch(clientJs, /signInWithOtp/, 'El ingreso no debe enviar magic links al correo');
 assert.match(clientJs, /auth\.setSession/, 'La sesión se establece con credenciales verificadas');
 assert.match(approvalFn, /auth\.admin\.createUser/, 'Nueva membresía creada sin invitación de correo');
@@ -88,4 +92,9 @@ assert.match(adminJs, /bellalovers-clave/, 'Generar nueva clave exclusivamente d
 assert.match(adminHtml, /id="copyMemberKey"/, 'Entrega de clave mediante mensaje preparado');
 assert.match(keyFn, /staff\?\.role!=="admin"/, 'Solo administrador puede restablecer una clave');
 assert.match(loginFn, /refresh_token/, 'El servidor devuelve una sesión de miembro autenticado');
-console.log('OK: 74 verificaciones BellaLovers (acceso al inicio sin correo, SMS ni autoconfirmación)');
+assert.match(clientJs, /openAuthModal/, 'Al tocar iniciar sesión se abre modal');
+assert.match(clientJs, /closeAuthModal/, 'Permite cerrar modal');
+assert.match(clientJs, /handleAuthKeydown/, 'Cierre con Escape y navegación de teclado');
+assert.match(clientJs, /normalizeName/, 'Verifica nombres en sesiones guardadas');
+assert.match(loginFn, /bl_resolve_member_email/, 'Consulta de email solo en servidor');
+console.log('OK: 79 verificaciones BellaLovers (modal de acceso, teléfono/correo + nombre y verificación segura)');
