@@ -53,6 +53,18 @@ Después de confirmar el enlace enviado al correo, la clienta visualiza:
 
 **No publicar jamás datos de una clienta solo con celular y nombre:** ambos pueden ser conocidos por terceros. El enlace enviado a su correo es la verificación de titularidad. Si una clienta pierde acceso a ese correo, BellaShop necesitará un procedimiento de verificación de identidad y cambio de contacto administrado de forma segura, no una vía pública que entregue la cuenta.
 
+## Administración: compras fáciles, deshacer puntos y eliminar cuentas
+
+**Compras → Registrar compra:** busca por celular (búsqueda exacta en Supabase sobre el índice único de `bl_profiles.phone`), confirma el nombre encontrado y escribe el valor realmente pagado en **productos**. La factura es opcional, el canal es opcional y el transporte no aparece en el formulario. Sin factura se genera una referencia de seguimiento única `REG-...`, **no una factura tributaria**; el canal sin elegir se marca «No especificado / otro». El servicio `bl_purchase_simple` exige personal autorizado, saldo no afecta el precio de transporte y mantiene el cálculo de puntos vigente. El mismo criterio de campos opcionales se aplica al registro de primera compra al aprobar una solicitud.
+
+**Clientas → Ficha de clienta → Ajustes manuales de puntos:** es posible añadir, descontar y **deshacer** ajustes. Deshacer no borra movimientos: crea una reversión compensatoria y registra motivo y auditoría; no se puede deshacer dos veces el mismo ajuste ni dejar un saldo negativo. Si el ciclo de puntos venció o se cerró, hace falta revisión administrativa antes de revertir. La revisión del caso de prueba de noviembre detectó un ajuste +50 sin revertir; se compensó con -50 en la misma cuenta, dejando un saldo final verificado de 5 puntos, originado por una compra vigente. Este saneamiento fue registrado en auditoría.
+
+**Clientas → Eliminar cuenta y acceso:** requiere rol **administrador**, introducir la palabra `ELIMINAR`, motivo de mínimo ocho caracteres y dos confirmaciones. La RPC `bl_delete_member_account` bloquea el perfil, retira nombre y teléfono y el vínculo a solicitudes, conservando compras/movimientos para trazabilidad contable. Una Edge Function `bellalovers-eliminar` verifica el JWT y el rol de administrador y solicita a Supabase Auth la **eliminación suave del usuario**; las cuentas eliminadas no se pueden restaurar desde el panel. Esta acción es distinta de **Archivar**, que sí es reversible. No se permite eliminar una cuenta administrativa ni con premios pendientes de resolución. Por integridad de compras, facturas y auditoría, **«Eliminar cuenta» no significa destruir los registros comerciales**; para solicitudes de supresión de esos datos hay que revisar las obligaciones legales de conservación.
+
+Las cuentas eliminadas salen del listado habitual y se pueden ver de forma anonimizada con el filtro **Eliminadas**. Las políticas RLS de puntos, compras, ciclos y canjes niegan lecturas a cuentas cerradas aun si persiste brevemente un token de sesión.
+ 
+**Pendiente:** probar en una cuenta de ensayo autorizada el envío real de invitaciones y el flujo completo de eliminación en Supabase Auth. No se realizó ninguna eliminación de cuenta real automáticamente.
+
 ## Reglas de puntos
 
 - Compra elegible desde **$50.000 en productos = 5 puntos**.
