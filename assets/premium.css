@@ -810,3 +810,91 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
   .hero .hero-ticket { min-height:285px; padding:22px 20px; }
   .hero .ticket-title { font-size:22px; }
 }
+
+
+/* BellaLovers: vitrina de premios y operaciones móviles */
+.section-prizes{
+ background:linear-gradient(180deg,#fbeef3 0%,#fff8fb 100%);
+ border-top:1px solid #edd2df;
+ border-bottom:1px solid #edd4dc;
+}
+.section-prizes .section-heading{max-width:720px;margin-bottom:28px;}
+.section-prizes h2{color:#64364e;}
+.public-prize-filters{
+ display:flex;justify-content:center;flex-wrap:wrap;gap:9px;margin-bottom:30px;
+}
+.public-prize-filters button{
+ border:1px solid #e7bdcc;background:#fffbfc;border-radius:999px;
+ padding:10px 17px;color:#89536c;font-weight:750;font-size:12px;min-height:42px;
+}
+.public-prize-filters button.active,
+.public-prize-filters button:hover{background:#a9557b;color:#fff;border-color:#a9557b;}
+.public-prize-grid{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;
+}
+.public-prize-card{
+ background:#fff;border:1px solid #ecceda;border-radius:18px;
+ overflow:hidden;box-shadow:0 10px 22px rgba(114,65,84,.055);
+ min-width:0;display:flex;flex-direction:column;
+}
+.public-prize-photo{
+ aspect-ratio:5/4;background:linear-gradient(145deg,#f6dbe5,#faedf2);
+ display:grid;place-items:center;overflow:hidden;color:#b2768e;font-size:54px;
+}
+.public-prize-photo img{width:100%;height:100%;object-fit:contain;padding:12px;}
+.public-prize-info{padding:17px 17px 19px;display:flex;flex-direction:column;flex:1;}
+.public-prize-badge{
+ background:#f8e8ee;border-radius:99px;color:#8c5270;
+ display:inline-flex;align-self:flex-start;padding:4px 10px;font-weight:750;font-size:10px;
+}
+.public-prize-info h3{font-size:16px;color:#5b384a;margin:11px 0 6px;line-height:1.4;}
+.public-prize-info p{font-size:11px;color:#89747d;margin:0 0 15px;}
+.public-prize-foot{
+ margin-top:auto;padding-top:14px;border-top:1px solid #f0e0e7;
+ display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:7px;
+}
+.public-prize-foot strong{color:#a34c72;font-size:15px;}
+.public-prize-foot span{font-size:10px;color:#86727b;}
+.public-prize-empty{
+ grid-column:1/-1;text-align:center;border:1px dashed #ddb4c5;border-radius:19px;
+ color:#825d6e;background:#fffafb;padding:37px 22px;font-size:13px;line-height:1.8;
+}
+.public-prize-bottom{
+ margin-top:27px;display:flex;justify-content:space-between;align-items:center;gap:20px;
+ padding:20px 24px;border-radius:16px;background:#f5dce5;border:1px solid #ecc6d4;
+}
+.public-prize-bottom p{margin:0;color:#755363;font-size:13px;max-width:580px;}
+.reward-photo-preview{
+ min-height:78px;padding:12px;border:1px dashed #dcb2c4;border-radius:12px;
+ background:#fdf4f8;color:#896779;display:flex;align-items:center;gap:15px;
+ font-size:12px;overflow:hidden;
+}
+.reward-photo-preview img{
+ width:90px;height:90px;max-width:34%;border-radius:10px;object-fit:contain;
+ background:#fff;border:1px solid #efd9e2;
+}
+.reward-photo-preview span{flex:1;overflow-wrap:anywhere;}
+.reward-admin-thumb{width:50px;height:50px;object-fit:contain;border-radius:8px;background:#fbeaf0;border:1px solid #eacbd6;}
+#adminSetupForm{border-top:1px solid #edd5df;padding-top:17px;margin-top:17px;}
+#signupStatusForm .checkline{max-width:700px;}
+@media(max-width:1000px){
+ .public-prize-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:690px){
+ .public-prize-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;}
+ .public-prize-filters{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding:2px 0 12px;scrollbar-width:thin;}
+ .public-prize-filters button{white-space:nowrap;flex:0 0 auto;}
+ .public-prize-photo{aspect-ratio:1/1;}
+ .public-prize-info{padding:11px;}
+ .public-prize-info h3{font-size:13px;}
+ .public-prize-badge{font-size:9px;padding:4px 7px;}
+ .public-prize-foot strong{font-size:13px;}
+ .public-prize-bottom{padding:19px;flex-direction:column;align-items:stretch;}
+ .public-prize-bottom .btn{width:100%;}
+ .section-prizes .section-heading{margin-bottom:25px;}
+}
+@media(max-width:370px){
+ .public-prize-grid{gap:8px;}
+ .public-prize-info{padding:9px;}
+ .public-prize-info h3{font-size:12px;}
+}
