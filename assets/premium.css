@@ -941,3 +941,38 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  color:#794d63;font-size:12px;line-height:1.7;
 }
 .admin-login-security span{margin-right:5px;}
+
+
+/* Reglas del club: lectura rápida, sin párrafos extensos. */
+.club-rules-list {
+ list-style:none;
+ padding:0;
+ margin:20px 0 0;
+ display:grid;
+ gap:11px;
+}
+.club-rules-list li {
+ background:#fff9fb;
+ border:1px solid #edcdd9;
+ border-left:3px solid #be7795;
+ border-radius:12px;
+ padding:12px 15px;
+ color:#755667;
+ font-size:13px;
+ line-height:1.65;
+}
+.club-rules-list li strong {
+ color:#88455f;
+ font-weight:800;
+}
+.closing-inner > div:first-child { min-width:0; }
+.benefit-regular p strong { color:#8e4a68; font-weight:800; }
+.enrollment-status { padding:20px 22px; border:1px solid #dbadc0; }
+.enrollment-status strong { font-size:16px; }
+@media(max-width:690px){
+ .club-rules-list { gap:8px;margin-top:15px; }
+ .club-rules-list li { font-size:12px;padding:11px 12px; }
+ .closing-inner { gap:24px; }
+ .club-principle strong { font-size:19px; }
+ .benefit-regular p { line-height:1.75; }
+}
