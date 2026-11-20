@@ -5,7 +5,8 @@ export const CONFIG = {
   supabasePublishableKey: 'sb_publishable_rDPaAHVm_DuCL7FBvQZ12Q_B24XlTcl',
   shopUrl: 'https://bellashopinsumos-dotcom.github.io/bella-shop-pruebas/',
   brand: 'BellaLovers',
-  // Las inscripciones se abren desde Configuración del administrador,
-  // después de validar la política de datos y el proveedor de SMS.
+  // Las solicitudes de ingreso se abren desde Configuración,
+  // solo después de aprobar la política de datos definitiva.
+  // Las clientas entran con celular + clave aprobada, sin correo ni SMS.
 };
 export const HAS_BACKEND = Boolean(CONFIG.supabaseUrl && CONFIG.supabasePublishableKey);
