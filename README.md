@@ -6,18 +6,18 @@ Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
 Proyecto Supabase exclusivo: `xpnfdyfnaromfwkontid`.
 
-## Entrada a la cuenta: primero en la portada
+## Iniciar sesión: ventana emergente, no sección fija
 
-La portada comienza con **Iniciar sesión** y **Registrarse**, incluso en celulares.
+La página muestra normalmente la presentación, productos y beneficios de BellaLovers. **Iniciar sesión** en el menú o portada abre una ventana emergente rosada con **Iniciar sesión**, **Registrarse** y una **X** para cerrarla. Funciona en móvil; se puede cerrar tocando fuera o pulsando Esc.
 
-- **Iniciar sesión:** celular colombiano + **clave BellaLovers de 12 caracteres**. No se pide Gmail, correo ni SMS. El servidor `bellalovers-ingresar` identifica la cuenta aprobada, valida la clave con Supabase Auth y establece una sesión segura. La clienta puede cerrar la sesión cuando quiera.
-- **Registrarse:** realmente significa **solicitar ingreso**. Solo pide nombre, celular, categoría, profesora afiliada si la hay, consentimiento de datos y elección opcional de mensajes promocionales por WhatsApp. No activa automáticamente la membresía.
-- **Primera compra:** el administrador verifica la compra real y aprueba desde **Solicitudes de ingreso**. La Edge Function protegida `bellalovers-aprobar` crea la cuenta sin invitación por email, registra la compra/puntos y muestra **una sola vez** una clave segura a la jefa.
-- **Entrega de clave:** el administrador confirma la identidad de la clienta y puede usar **Copiar mensaje para WhatsApp**. El botón no envía nada automáticamente; nunca guardar la clave en inventarios o documentos.
-- **Olvido de clave:** en **Clientas → Ver ficha → Generar nueva clave**. La Edge Function `bellalovers-clave` exige rol administrador, crea una nueva clave y la muestra una sola vez. La clave vieja deja de funcionar para iniciar nuevas sesiones. Sesiones existentes podrían continuar vigentes hasta su revocación o vencimiento.
-- La ruta antigua de correos `bellalovers-acceso` se encuentra desactivada (HTTP 410) para impedir mensajes accidentales.
+- **Primera pantalla:** la persona escribe **celular o correo** y su **nombre y apellido**, tal como quedó registrada. No se muestra una clave en esa pantalla.
+- **Si ya tiene una sesión aprobada guardada en ese dispositivo:** comprueba los datos y muestra su cuenta directamente, con compras, puntos y recompensas.
+- **Si es un dispositivo nuevo o no hay sesión:** el nombre y celular/correo no demuestran identidad. Para evitar que cualquiera consulte compras y puntos ajenos, la persona debe confirmar su acceso con BellaShop. Si ya le dieron una clave privada, puede introducirla en el segundo paso; no se envían correos ni SMS.
+- El servidor `bellalovers-ingresar` verifica que sea un miembro activo y comprueba identificador, nombre y credencial contra Supabase Auth. La consulta por correo `bl_resolve_member_email` solo está disponible para service_role; nunca se expone el correo de otras personas.
+- **Registrarse** es solicitar ingreso, no crear una cuenta automáticamente. La aprobación requiere una primera compra real verificada y BellaShop puede entregar la clave de acceso sin usar Gmail.
+- **Pérdida de acceso:** el administrador puede generar otra clave desde Clientas tras identificar a la titular. No se cambia el acceso administrativo desde el formulario de clientas.
 
-**Seguridad:** nadie puede ver historiales con solo conocer nombre/celular. Necesita su clave de acceso. Las claves las conserva Supabase Auth como credenciales de inicio; la clave en texto se expone solo una vez al administrador autorizado para su entrega y no se registra en la auditoría. El endpoint de ingreso aplica límites de intentos por celular y dirección IP. El rol del equipo se valida dentro del servidor y nunca se expone service_role en el navegador.
+**Seguridad:** no se muestran datos privados simplemente por introducir nombres y teléfonos, porque podrían ser conocidos por otras personas. Las sesiones previamente verificadas permanecen en el mismo dispositivo. El administrador controla las claves y permisos.
 
 ## Cuenta de BellaLover
 
