@@ -222,7 +222,15 @@ function renderLedger(){
   $('#pointsTable').innerHTML=items.length?items.map(x=>`<div class="data-row"><div><strong>${esc(({compra:'Compra confirmada',referido:'Referido verificado',redencion:'Recompensa solicitada',reintegro:'Puntos reintegrados',reverso:'Compra anulada',ajuste:'Ajuste administrativo',vencimiento:'Puntos vencidos'})[x.kind]||x.kind)}</strong><small>${date(x.created_at)} · ${esc(x.detail||'')}</small></div><strong class="${x.delta>=0?'positive':'negative'} nowrap">${x.delta>0?'+':''}${x.delta} pts</strong></div>`).join(''):'<div class="empty">Todavía no tienes movimientos. Tus compras confirmadas aparecerán aquí.</div>';
 }
 function renderPurchases(){
-  $('#purchaseList').innerHTML=purchases.length?purchases.map(p=>`<div class="data-row"><div><strong>Factura ${esc(p.invoice)}</strong><small>${date(p.created_at)} · ${p.status==='confirmada'?'Confirmada':'Anulada'}${p.special_discount?' · Con descuento especial':''}</small></div><div class="right"><strong>${fmt(p.products_total)}</strong><small>+${p.points_awarded} puntos</small></div></div>`).join(''):'<div class="empty">Aún no tienes compras registradas.</div>';
+ const channels={tienda:'Compra en tienda',whatsapp:'Compra por WhatsApp',domicilio:'Pedido con domicilio',web:'Compra por la página web',otro:'Compra registrada'};
+ $('#purchaseList').innerHTML=purchases.length?purchases.map(p=>
+  '<div class="data-row"><div><strong>Factura '+esc(p.invoice)+'</strong>'+
+  '<small>'+date(p.created_at)+' · '+esc(channels[p.channel]||'Compra en tienda')+
+  ' · '+(p.status==='confirmada'?'Confirmada':'Anulada')+
+  (p.special_discount?' · Descuento especial':'')+'</small></div>'+
+  '<div class="right"><strong>'+fmt(p.products_total)+'</strong>'+
+  '<small>'+(p.points_awarded>0?('+'+p.points_awarded+' puntos'):'0 puntos')+'</small></div></div>'
+ ).join(''):'<div class="empty">Aún no tienes compras registradas. Aquí aparecerán las facturas que confirme BellaShop, incluidas las compras por WhatsApp.</div>';
 }
 function renderRequests(){
   $('#requestsList').innerHTML=requests.length?requests.map(r=>`<div class="data-row"><div><strong>Solicitud ${esc(r.id.slice(0,8).toUpperCase())}</strong><small>${date(r.created_at)} · ${r.total_points} puntos</small></div>${r.status==='aprobada'?'<span class="status green">Aprobada</span>':r.status==='rechazada'?'<span class="status red">Rechazada</span>':'<span class="status">En revisión</span>'}</div>`).join(''):'<div class="empty">Todavía no has solicitado recompensas.</div>';
