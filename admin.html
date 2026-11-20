@@ -30,15 +30,15 @@
     <div class="table-scroll" id="joinRequestsTable"></div>
   </div>
   <div class="admin-card hidden" id="joinApprovalCard">
-    <h2>Comprobar primera compra y aprobar</h2>
-    <p class="admin-section-hint">La clienta debe haber realizado una compra real. Usa la factura única de BellaShop. La inscripción se aprueba y la compra se registra juntas. Después recibirá un enlace de invitación en su correo.</p>
+    <h2>Confirmar primera compra y aprobar</h2>
+    <p class="admin-section-hint">La clienta debe haber comprado realmente en BellaShop. Comprueba el valor de productos; la factura y el canal son opcionales. Su ingreso y primera compra se registrarán juntos.</p>
     <div id="joinSelectedInfo" class="join-selected-info"></div>
     <form id="joinApprovalForm" class="admin-form">
       <input id="joinRequestId" type="hidden">
-      <div><label for="joinInvoice">Número de factura comprobada</label><input class="admin-input" id="joinInvoice" minlength="2" maxlength="80" required placeholder="Ej. BS-2571"></div>
+      <div><label for="joinInvoice">Factura (opcional)</label><input class="admin-input" id="joinInvoice" maxlength="80" placeholder="Si no tiene, crearemos una referencia interna"></div>
       <div><label for="joinProductsTotal">Valor de productos (COP)</label><input class="admin-input" id="joinProductsTotal" type="number" min="1" step="1" required></div>
-      <div><label for="joinChannel">Canal de la compra</label><select class="admin-input" id="joinChannel"><option value="tienda">En tienda</option><option value="whatsapp">Por WhatsApp</option><option value="domicilio">Pedido con domicilio</option><option value="web">Por la web</option><option value="otro">Otro</option></select></div>
-      <div><label for="joinDelivery">Transporte (COP, no suma puntos)</label><input class="admin-input" id="joinDelivery" type="number" min="0" step="1" value="0" required></div>
+      <div><label for="joinChannel">Canal de la compra (opcional)</label><select class="admin-input" id="joinChannel"><option value="">No especificado</option><option value="tienda">En tienda</option><option value="whatsapp">Por WhatsApp</option><option value="domicilio">Pedido con domicilio</option><option value="web">Por la web</option><option value="otro">Otro</option></select></div>
+      
       <div><label class="checkline"><input id="joinDiscount" type="checkbox"> Compra con descuento especial (no suma puntos)</label></div>
       <div><label for="joinNotes">Observaciones internas</label><input class="admin-input" id="joinNotes" maxlength="500" placeholder="Ej. Factura comprobada en caja"></div>
       <div class="span2"><button class="btn btn-primary" type="submit">Confirmar factura y aprobar membresía</button><button id="joinCancel" type="button" class="btn btn-outline">Cancelar</button></div>
