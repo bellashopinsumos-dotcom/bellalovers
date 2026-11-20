@@ -12,7 +12,7 @@ const HEADERS={
  "Vary":"Origin"
 };
 const reply=(obj:unknown,status=200)=>new Response(JSON.stringify(obj),{status,headers:HEADERS});
-const generic="No pudimos ingresar. Revisa el celular y la clave BellaLovers o solicita ayuda en BellaShop.";
+const generic="No se pudo verificar tu acceso. Revisa tus datos o consulta con BellaShop.";
 async function digest(input:string){
  const bytes=new TextEncoder().encode(SECRET+"|"+input);
  const hash=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
@@ -23,20 +23,28 @@ function phoneOf(value:string){
  const phone=digits.startsWith("57")&&digits.length===12?digits.slice(2):digits;
  return /^3[0-9]{9}$/.test(phone)?"+57"+phone:null;
 }
+function normName(value:string){
+ return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toLocaleLowerCase("es-CO");
+}
+function emailOf(raw:string){return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(raw)?raw.toLowerCase():null;}
+
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:HEADERS});
  if(req.method!=="POST")return reply({error:"Método no permitido"},405);
  if(req.headers.get("origin")!==ORIGIN)return reply({error:"Origen no autorizado"},403);
  let body:Record<string,unknown>;
  try{body=await req.json();}catch{return reply({error:generic},400);}
- const phone=phoneOf(String(body.phone||""));
+ const identifier=String(body.identifier||body.phone||"").trim().toLowerCase();
+ const phone=phoneOf(identifier),email=emailOf(identifier);
+ const name=String(body.full_name||"").trim();
  const key=String(body.access_key||"").trim().toUpperCase();
- if(!phone||!/^[A-HJ-NP-Z2-9]{12}$/.test(key))return reply({error:generic},401);
+ if((!phone&&!email)||name.length<3||name.length>120||!name.includes(" ")||
+   !/^[A-HJ-NP-Z2-9]{12}$/.test(key))return reply({error:generic},401);
  const service=createClient(URL,SECRET,{auth:{persistSession:false,autoRefreshToken:false}});
  try{
   // The rate limit is checked even if the customer is unknown.
   const {data:allowed,error:limitError}=await service.rpc("bl_limit_member_access",{
-   p_key:await digest("access:"+phone),p_max:12
+   p_key:await digest("access:"+(email||phone)),p_max:12
   });
   if(limitError||allowed!==true)return reply({error:"Demasiados intentos. Intenta nuevamente más tarde o contacta a BellaShop."},429);
   const ip=req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip");
@@ -46,17 +54,31 @@ Deno.serve(async req=>{
    });
    if(ipAllowed!==true)return reply({error:"Demasiados intentos. Intenta más tarde."},429);
   }
+  let selectedId:string|null=null;
+  let personEmail:string|null=null;
+  if(email){
+   // Auth administrator list used only on server. No account identifiers returned to caller.
+   const {data:list,error:listError}=await service.auth.admin.listUsers({page:1,perPage:1000});
+   if(listError)return reply({error:generic},401);
+   const match=list?.users?.find(u=>u.email?.toLowerCase()===email);
+   if(!match)return reply({error:generic},401);
+   selectedId=match.id;personEmail=match.email||null;
+  }
   const {data:profile,error:profileError}=await service.from("bl_profiles")
-   .select("id,blocked,archived_at,deleted_at").eq("phone",phone).maybeSingle();
-  if(profileError||!profile||profile.blocked||profile.archived_at||profile.deleted_at)
-   return reply({error:generic},401);
+   .select("id,full_name,blocked,archived_at,deleted_at")
+   .eq(phone?"phone":"id",phone||selectedId).maybeSingle();
+  if(profileError||!profile||profile.blocked||profile.archived_at||profile.deleted_at||
+     normName(String(profile.full_name))!==normName(name))return reply({error:generic},401);
   const {data:staff}=await service.from("bl_staff").select("user_id").eq("user_id",profile.id).maybeSingle();
   if(staff)return reply({error:generic},401);
-  const {data:person,error:userError}=await service.auth.admin.getUserById(profile.id);
-  if(userError||!person?.user?.email)return reply({error:generic},401);
+  if(!personEmail){
+   const {data:person,error:userError}=await service.auth.admin.getUserById(profile.id);
+   if(userError||!person?.user?.email)return reply({error:generic},401);
+   personEmail=person.user.email;
+  }
   const auth=createClient(URL,ANON,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:session,error:signInError}=await auth.auth.signInWithPassword({
-   email:person.user.email,password:key
+   email:personEmail!,password:key
   });
   if(signInError||!session?.session||session.user?.id!==profile.id)return reply({error:generic},401);
   return reply({
