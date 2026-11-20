@@ -28,7 +28,7 @@ Sistema de fidelización de BellaShop: **rosado pastel, dorado champagne, interf
 
 ## Reglas principales
 
-Compra mínima elegible: $50.000 COP; 1 punto por $10.000 completos en productos; 50 puntos para desbloquear solicitudes. Compras con descuentos especiales excluidas; los domicilios no suman. Regalo de estudiante según el monto y compra inicial previstos en el programa. Las anulaciones deben revertir los puntos. El historial se preserva cuando una cuenta se archiva o se restaura; restaurar **no renueva puntos vencidos**.
+Compra mínima elegible: **$50.000 COP = 5 puntos**; cada $10.000 completos adicionales = 1 punto más. Ejemplos: $60.000 = 6 puntos; $70.000 = 7 puntos. Se requieren 50 puntos para desbloquear solicitudes. Compras con descuentos especiales excluidas; los domicilios no suman. Regalo de estudiante según el monto y compra inicial previstos en el programa. Las anulaciones deben revertir los puntos. El historial se preserva cuando una cuenta se archiva o se restaura; restaurar **no renueva puntos vencidos**.
 
 ## Seguridad y accesos
 
@@ -39,13 +39,13 @@ Compra mínima elegible: $50.000 COP; 1 punto por $10.000 completos en productos
 - Las cuentas no se eliminan al archivarlas. Para solicitudes legales de supresión definitiva se requiere un procedimiento separado, con revisión de obligaciones de conservación.
 - No se permiten restablecimientos arbitrarios de contraseñas ni acceso a las sesiones de clientes.
 
-## Cambios implementados: premios públicos y compras por canales
+## Cambios implementados: premios privados y compras por canales
 
 - El administrador registra el origen de la factura como tienda, WhatsApp, página web, domicilio u otro.
 - Los puntos se calculan con el valor de **productos pagados**, sin el costo de transporte, independientemente del canal. En ventas WhatsApp o entregadas a domicilio se aplican las mismas reglas de compras válidas que en el mostrador.
 - Premios en la tabla `bl_rewards`: referencia real, nombre, costo interno (privado), puntos, unidades, reservado, categoría, imagen y publicación.
 - El administrador puede subir JPG/PNG/WEBP hasta 3 MB al bucket `bellalovers-premios` (escritura solo administrador).
-- La vitrina pública carga premios publicados y con stock a través de `bl_public_rewards`; nunca devuelve `unit_cost` ni datos personales.
+- La portada pública **no muestra premios**. Los premios activos se consultan dentro de la cuenta de cada clienta (con inicio de sesión) y se gestionan desde administración. La función de API `bl_public_rewards` se conserva para compatibilidad, pero la web ya no la consume.
 - Carné digital y avisos de vencimientos/solicitudes en cuentas que hayan iniciado sesión.
 - Nueva migración: `supabase/migrations/20261120_premios_canales_registro.sql`.
 
@@ -96,3 +96,7 @@ Ejecutar primero `supabase/schema.sql` en un proyecto nuevo, después `supabase/
 ## Pruebas automáticas
 
 `npm test`, `node --check assets/admin.js`, `node --check assets/client.js`, `node --check assets/core.js` y `node --check assets/config.js`. Se ejecutan en GitHub Actions en cada actualización relevante.
+
+## Portada y acceso de clientas
+
+La portada presenta las condiciones en puntos breves, sin vitrina de premios. El área de clientas usa **SMS OTP** (código temporal por celular, sin contraseña). Mientras `bl_settings.signup_open=false`, se muestra un mensaje explicando que el ingreso y las inscripciones todavía no están habilitados. **No es un fallo de contraseña**: falta validar el proveedor SMS y la política de datos. El panel de administración se accede aparte, con correo y contraseña autorizados; no comparten el flujo de inicio de sesión.
