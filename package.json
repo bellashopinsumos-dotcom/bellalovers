@@ -1,0 +1,10 @@
+{
+  "name": "bellalovers",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/rules.test.mjs",
+    "serve": "python3 -m http.server 8080"
+  }
+}
