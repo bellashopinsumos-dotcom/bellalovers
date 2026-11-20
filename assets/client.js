@@ -70,6 +70,20 @@ function availablePoints() {
 function renderAccount(){
   const points=availablePoints(),unlock=rules.unlock_points||50,missing=Math.max(0,unlock-points);
   $('#accountGreeting').textContent=`¡Hola, ${customer.full_name.split(' ')[0]}! ♡`;
+
+  $('#memberName').textContent=customer.full_name;
+  $('#memberCategory').textContent=TYPE[customer.category]||customer.category;
+  $('#memberCode').textContent='BL-'+String(customer.id).slice(0,8).toUpperCase();
+  const pending=requests.filter(r=>r.status==='solicitada').length;
+  const expiring=cycles.filter(c=>!c.closed_at && Date.parse(c.expires_at)>Date.now()
+       && Date.parse(c.expires_at)-Date.now()<=30*86400000);
+  const notices=[];
+  if(customer.blocked)notices.push('Tu cuenta está suspendida. Consulta con BellaShop para revisar el estado.');
+  if(pending)notices.push('Tienes '+pending+' solicitud(es) de premio en revisión.');
+  if(expiring.length)notices.push('Algunos puntos están próximos a vencer. Revisa las fechas en tu historial.');
+  if(!notices.length)notices.push('Tu carné digital identifica tu participación en BellaLovers. Para reclamar un premio debes pasar por la validación de BellaShop.');
+  $('#accountNotices').innerHTML='<span class="kicker">AVISOS DE MI CUENTA</span>'+notices.map(n=>'<p>'+esc(n)+'</p>').join('');
+
   $('#accountSub').textContent='Este es tu espacio BellaLovers.';
   $('#balance').textContent=points;
   $('#progressBar').style.width=`${Math.min(100,Math.max(0,points/unlock*100))}%`;
