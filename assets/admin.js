@@ -354,14 +354,62 @@ function showRecoveryForm(){
  $('#passwordRecoveryPanel').classList.remove('hidden');
 }
 
+
+function updateSignupChecklist(){
+ $('#signupEnable').disabled=!($('#signupSmsVerified').checked&&$('#signupPolicyVerified').checked);
+}
+async function saveSignupStatus(open){
+ if(!requireLive()||!checkManager())return;
+ if(open&&(!$('#signupSmsVerified').checked||!$('#signupPolicyVerified').checked))return notify('Confirma primero SMS y política de datos.','error');
+ if(!confirm(open?'¿La política oficial ya fue publicada y el SMS funciona en Colombia? ¿Abrir inscripciones reales?':'¿Cerrar las inscripciones nuevas?'))return;
+ try{
+  await run(sb.from('bl_settings').update({signup_open:open}).eq('id',1));
+  notify(open?'Inscripciones habilitadas':'Inscripciones cerradas');
+  await loadAll();
+ }catch(err){notify(err.message,'error');}
+}
+async function createOwnerAccess(e){
+ e.preventDefault();
+ const email=$('#setupEmail').value.trim().toLowerCase(),password=$('#setupPassword').value;
+ if(email!=='bellashopinsumos@gmail.com')return notify('El primer acceso corresponde al correo oficial.','error');
+ if(password.length<12||password!==$('#setupPasswordConfirm').value)
+  return notify('La contraseña debe tener al menos 12 caracteres y coincidir.','error');
+ const btn=$('#adminSetupForm button[type=submit]');
+ try{
+  setLoading(btn,true);
+  sb=sb||await db('admin');
+  const redirectTo=new URL('./admin.html',location.href).toString();
+  const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
+  if(error)throw error;
+  if(data?.session){await initAdmin();}
+  else{
+   $('#setupMessage').textContent='Revisa la bandeja de BellaShop. Confirma tu correo y después ingresa con la contraseña creada.';
+   notify('Revisa el correo oficial para completar la verificación.');
+  }
+ }catch(err){notify('No se pudo crear el acceso: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
+
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#adminLoginForm').addEventListener('submit',login);
+ $('#openAdminSetup').addEventListener('click',()=>$('#adminSetupForm').classList.toggle('hidden'));
+ $('#adminSetupForm').addEventListener('submit',createOwnerAccess);
+ $('#signupSmsVerified').addEventListener('change',updateSignupChecklist);
+ $('#signupPolicyVerified').addEventListener('change',updateSignupChecklist);
+ $('#signupStatusForm').addEventListener('submit',e=>{e.preventDefault();saveSignupStatus(true);});
+ $('#signupDisable').addEventListener('click',()=>saveSignupStatus(false));
+ $('#rewardPhoto').addEventListener('change',()=>{
+  if(photoPreviewUrl)URL.revokeObjectURL(photoPreviewUrl);
+  const file=$('#rewardPhoto').files[0];photoPreviewUrl=file?URL.createObjectURL(file):null;
+  updateRewardPhotoPreview(photoPreviewUrl,file?.name||'');
+ });
+
  $('#sendRecoveryEmail').addEventListener('click',sendRecoveryEmail);$('#passwordRecoveryPanel').addEventListener('submit',completePasswordRecovery);
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
- $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
+ $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';updateRewardPhotoPreview(null);};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
  $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
  $('#csvPurchases').onclick=()=>{if(!requireLive())return;downloadCsv(['Factura','Canal','Cliente','Total productos','Costo transporte','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,CHANNEL_LABEL[p.channel]||'Tienda',uname(p.customer_id),p.products_total,p.delivery_fee,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');};
