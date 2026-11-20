@@ -27,7 +27,8 @@ const adminHtml = readFileSync(new URL('../admin.html', import.meta.url), 'utf8'
 assert.match(publicHtml, /id="joinForm"/, 'La portada debe ofrecer solicitudes manuales');
 assert.match(publicHtml, /id="memberLoginForm"/, 'Miembros aprobados deben poder pedir acceso por correo');
 assert.doesNotMatch(publicHtml, /id="phoneForm"/, 'No debe quedar ingreso por SMS');
-assert.match(clientJs, /shouldCreateUser:false/, 'Nadie crea una cuenta solo solicitando acceso por correo');
+const accessFn = readFileSync(new URL('../supabase/functions/bellalovers-acceso/index.ts', import.meta.url), 'utf8');
+assert.match(accessFn, /shouldCreateUser:false/, 'Solo enviar enlaces a miembros ya aprobados');
 assert.match(adminHtml, /id="section-joins"/, 'Panel de revisión de solicitudes');
 assert.match(adminJs, /bl_join_requests/, 'Admin consulta solicitudes desde Supabase');
 assert.match(adminJs, /bellalovers-aprobar/, 'El alta requiere aprobación protegida y factura');
@@ -45,4 +46,16 @@ assert.match(adminJs, /bl_manage_affiliated_teacher/,
   'La edición de afiliación debe pasar por una función segura');
 assert.match(adminJs, /data-affiliate-retire/,
   'Debe ser posible retirar a una profesora sin borrar su historial');
-console.log('OK: 36 verificaciones BellaLovers (profesoras afiliadas controladas por BellaShop)');
+assert.match(publicHtml, /id="memberIdentifier"/, 'Ingreso por correo o celular');
+assert.match(publicHtml, /id="memberFullName"/, 'El miembro escribe su nombre y apellido registrados');
+assert.match(publicHtml, /id="myJoinedDate"/, 'Fecha de ingreso visible en la cuenta');
+assert.match(publicHtml, /id="rewardsLock"/, 'El bloqueo de premios debe estar claramente visible');
+assert.match(publicHtml, /id="refreshMemberRewards"/, 'Recompensas actualizables desde la cuenta');
+assert.match(clientJs, /bellalovers-acceso/, 'El ingreso de miembros usa verificación en el servidor');
+assert.match(clientJs, /Próximamente tendremos recompensas/, 'Si faltan premios, mostrar Próximamente');
+assert.match(clientJs, /Premios bloqueados hasta/, 'Los premios se bloquean antes de la meta');
+assert.match(clientJs, /customer\.created_at/, 'Fecha de afiliación obtenida del perfil real');
+assert.match(accessFn, /bl_join_requests/, 'Solo solicitudes aprobadas permiten pedir acceso');
+assert.match(accessFn, /bl_profiles/, 'Comprobar que el miembro sigue activo');
+assert.match(accessFn, /bl_limit_member_access/, 'Limitar intentos de acceso para evitar abuso');
+console.log('OK: 48 verificaciones BellaLovers (ingreso privado, historial y premios)');
