@@ -178,7 +178,7 @@ async function loadPublicStatus(){
  enrollmentReady=Array.isArray(data)&&data[0]?.signup_open===true;
  $('#phoneForm').classList.toggle('hidden',!enrollmentReady);
  $('#enrollmentStatus').classList.toggle('hidden',enrollmentReady);
- if(!enrollmentReady)$('#enrollmentStatus').querySelector('p').textContent='Por ahora el ingreso y las inscripciones están cerrados mientras activamos los mensajes de verificación. Después escribirás tu número, recibirás un código SMS y entrarás a tu cuenta.';
+ if(!enrollmentReady)$('#enrollmentStatus').querySelector('p').textContent='Para proteger tu cuenta, necesitamos terminar la verificación por SMS. Cuando esté activa, podrás ingresar escribiendo tu celular y el código que recibas, sin contraseña.';
 }
 
 function setup(){
