@@ -1,7 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
-let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
+let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'Otro'};
 const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
@@ -45,6 +45,7 @@ async function loadAll(){if(mode!=='live')return;
   ['profiles',sb.from('bl_profiles').select('*').order('created_at',{ascending:false}).limit(1000)],
   ['purchases',sb.from('bl_purchases').select('*').order('created_at',{ascending:false}).limit(1000)],
   ['points',sb.from('bl_points').select('*').order('created_at',{ascending:false}).limit(3000)],
+  ...(staff?.role==='admin'?[['adjustmentReversals',sb.from('bl_adjustment_reversals').select('*').limit(3000)]]:[]),
   ['cycles',sb.from('bl_cycles').select('*').order('started_at',{ascending:false}).limit(1000)],
   ['rewards',sb.from('bl_rewards').select('*').order('created_at',{ascending:false})],
   ['redemptions',sb.from('bl_redemptions').select('*').order('created_at',{ascending:false}).limit(1000)],
@@ -61,7 +62,7 @@ async function loadAll(){if(mode!=='live')return;
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -83,10 +84,37 @@ function renderOverview(){
  $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.length?(valid.length/profiles.length).toFixed(1):'—')}</div><div class="admin-card-header"><h2>Ventas por canal</h2><span class="info-inline">Solo productos facturados</span></div>${table(['Canal','Facturas','Valor productos'],channelTotals.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td><td>${fmt(x.total)}</td></tr>`))}<div class="admin-form"><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
 }
 function populateClientSelects(){
- const opts='<option value="">Selecciona una clienta</option>'+profiles.filter(p=>!p.blocked&&!p.archived_at).map(p=>`<option value="${esc(p.id)}">${esc(p.full_name)} · ${esc(p.phone)}</option>`).join('');$('#purchaseCustomer').innerHTML=opts;
- const eligible=purchases.filter(p=>p.welcome_eligible&&p.status==='confirmada'&&!giftClaims.some(g=>g.student_id===p.customer_id)&&profiles.some(c=>c.id===p.customer_id&&!c.blocked&&!c.archived_at));
- $('#giftStudent').innerHTML='<option value="">Selecciona una estudiante</option>'+eligible.map(p=>`<option value="${esc(p.customer_id)}">${esc(uname(p.customer_id))} · ${esc(p.invoice)}</option>`).join('');
- $('#giftChoice').innerHTML='<option value="">Selecciona un regalo</option>'+giftOptions.filter(g=>g.active&&g.stock>0).map(g=>`<option value="${esc(g.id)}">${esc(g.name)} · ${g.stock} disponibles</option>`).join('');
+ // Las compras ya no usan una lista de cientos de nombres: búsqueda exacta por celular.
+ const selected=$('#purchaseCustomer');
+ if(selected?.value && !profiles.some(p=>p.id===selected.value&&!p.blocked&&!p.archived_at&&!p.deleted_at)){
+  selected.value='';$('#purchaseLookupResult').textContent='La clienta dejó de estar activa. Busca nuevamente por celular.';
+ }
+ const eligible=purchases.filter(p=>p.welcome_eligible&&p.status==='confirmada'&&!giftClaims.some(g=>g.student_id===p.customer_id)&&profiles.some(c=>c.id===p.customer_id&&!c.blocked&&!c.archived_at&&!c.deleted_at));
+ $('#giftStudent').innerHTML='<option value="">Selecciona una estudiante</option>'+eligible.map(p=>'<option value="'+esc(p.customer_id)+'">'+esc(uname(p.customer_id))+' · '+esc(p.invoice)+'</option>').join('');
+ $('#giftChoice').innerHTML='<option value="">Selecciona un regalo</option>'+giftOptions.filter(g=>g.active&&g.stock>0).map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+' · '+g.stock+' disponibles</option>').join('');
+}
+function normalizedPurchasePhone(input){
+ const digits=String(input||'').replace(/[^0-9]/g,'');
+ const local=digits.startsWith('57')&&digits.length===12?digits.slice(2):digits;
+ if(!/^3\d{9}$/.test(local))throw new Error('Escribe un celular colombiano de 10 dígitos.');
+ return '+57'+local;
+}
+async function findPurchaseCustomer(){
+ const result=$('#purchaseLookupResult');
+ $('#purchaseCustomer').value='';
+ try{
+  if(!requireLive())return null;
+  const phone=normalizedPurchasePhone($('#purchasePhone').value);
+  result.textContent='Buscando clienta…';
+  const profile=await run(sb.from('bl_profiles').select('id,full_name,phone,category,blocked,archived_at,deleted_at').eq('phone',phone).maybeSingle());
+  if(!profile){result.innerHTML='<span class="status red">No encontrada</span> No hay una membresía aprobada con ese celular. Revisa Solicitudes de ingreso.';return null;}
+  if(profile.blocked||profile.archived_at||profile.deleted_at){
+   result.textContent='Esta cuenta está suspendida, archivada o eliminada. Revisa Clientas antes de registrar compras.';return null;
+  }
+  $('#purchaseCustomer').value=profile.id;
+  result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span>';
+  return profile;
+ }catch(err){result.textContent=err.message;return null;}
 }
 
 function renderCustomers(){
@@ -421,7 +449,30 @@ async function approveJoin(e){
 }
 
 function renderAll(){renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
-async function purchaseSubmit(e){e.preventDefault();if(!requireLive())return;const btn=$('#purchaseForm button[type=submit]');try{setLoading(btn,true);const p=await rpc('bl_purchase_channel',{p_channel:$('#purchaseChannel').value,p_customer:$('#purchaseCustomer').value,p_invoice:$('#purchaseInvoice').value.trim(),p_amount:+$('#purchaseAmount').value,p_discount:$('#purchaseDiscount').checked,p_delivery:+$('#purchaseDelivery').value,p_notes:$('#purchaseNotes').value.trim()});notify(`Compra registrada: ${p.points} puntos${p.referral_points?`, ${p.referral_points} para profesora`:''}${p.welcome_eligible?'. Con derecho a regalo de bienvenida.':''}`);e.target.reset();await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
+async function purchaseSubmit(e){
+ e.preventDefault();if(!requireLive())return;
+ const btn=$('#purchaseForm button[type=submit]');
+ const customer=await findPurchaseCustomer();
+ if(!customer)return notify('Primero busca un celular que pertenezca a una clienta activa.','error');
+ try{
+  const amount=Number($('#purchaseAmount').value);
+  if(!Number.isSafeInteger(amount)||amount<=0||amount>500000000)throw new Error('Escribe el valor exacto de productos pagados.');
+  if(!confirm('¿Confirmas que '+customer.full_name+' realizó esta compra por '+fmt(amount)+' en productos?'))return;
+  setLoading(btn,true,'Guardando compra…');
+  const result=await rpc('bl_purchase_simple',{
+   p_customer:customer.id,p_amount:amount,
+   p_invoice:$('#purchaseInvoice').value.trim()||null,
+   p_channel:$('#purchaseChannel').value||null,
+   p_discount:$('#purchaseDiscount').checked,
+   p_notes:$('#purchaseNotes').value.trim()||null
+  });
+  notify('Compra registrada: '+result.points+' puntos. '+(result.internal_reference?'Referencia interna: '+result.reference:'Factura: '+result.reference));
+  $('#purchaseForm').reset();$('#purchaseCustomer').value='';
+  $('#purchaseLookupResult').textContent='Compra guardada. Busca otra clienta por celular.';
+  await loadAll();
+ }catch(err){notify('No se pudo guardar la compra: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
 async function rewardSubmit(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
  const btn=$('#rewardForm button[type=submit]');
@@ -542,7 +593,12 @@ function setup(){
  $('#sendRecoveryEmail').addEventListener('click',sendRecoveryEmail);$('#passwordRecoveryPanel').addEventListener('submit',completePasswordRecovery);
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
- $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
+ $('#purchaseForm').addEventListener('submit',purchaseSubmit);
+ $('#purchaseFind').addEventListener('click',findPurchaseCustomer);
+ $('#purchasePhone').addEventListener('input',()=>{
+   $('#purchaseCustomer').value='';
+   $('#purchaseLookupResult').textContent='Pulsa Buscar para confirmar la clienta.';
+ });$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
  $('#affiliateForm').addEventListener('submit',submitAffiliate);
  $('#affiliateReset').addEventListener('click',resetAffiliateForm);
  $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';updateRewardPhotoPreview(null);};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
