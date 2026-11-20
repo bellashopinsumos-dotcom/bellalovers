@@ -1,0 +1,38 @@
+name: Comprobar BellaLovers
+on:
+  push:
+    branches: [main]
+    paths:
+      - "assets/**"
+      - "index.html"
+      - "admin.html"
+      - "tests/**"
+      - "package.json"
+      - ".github/workflows/verificar.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar JavaScript
+        run: |
+          node --check assets/admin.js
+          node --check assets/client.js
+          node --check assets/core.js
+          node --check assets/config.js
+      - name: Comprobar reglas de puntos
+        run: npm test
+      - name: Confirmar estructura publica
+        run: |
+          test -f index.html
+          test -f admin.html
+          test -f assets/premium.css
+          grep -q 'premium.css' index.html
+          grep -q 'premium.css' admin.html
