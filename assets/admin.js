@@ -671,6 +671,14 @@ function setup(){
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
  $('#reloadJoins').addEventListener('click',loadAll);
+ // Las solicitudes de ingreso expiran rápidamente: actualiza solo esta bandeja, sin perder formularios.
+ window.setInterval(async()=>{
+  if(mode!=='live'||staff?.role!=='admin'||!$('#section-joins').classList.contains('active'))return;
+  try{
+   loginRequests=await run(sb.from('bl_login_requests').select('*').order('created_at',{ascending:false}).limit(150));
+   renderLoginRequests();
+  }catch(err){console.warn('No se pudieron actualizar las solicitudes de acceso:',err.message);}
+ },12000);
 
  $('#joinPolicyVerified').addEventListener('change',updateJoinChecklist);
  $('#joinStatusForm').addEventListener('submit',e=>{e.preventDefault();saveJoinStatus(true);});
