@@ -3,6 +3,36 @@ import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from 
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
 let cart={}; let sendingPhone=''; let giftClaims=[];
 let enrollmentReady=false;
+
+function configureHomeNavigation() {
+ // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
+ document.addEventListener('click', event => {
+  const link=event.target.closest?.('a[href^="#"]');
+  if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const destination=link.getAttribute('href');
+  if (!destination || destination==='#') return;
+  const section=document.getElementById(destination.slice(1));
+  if (!section) return;
+  event.preventDefault();
+  history.replaceState(history.state,'',location.pathname+location.search);
+  if (destination==='#inicio') window.scrollTo({top:0,behavior:'smooth'});
+  else section.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ // Safari y otros navegadores recuerdan la sección incluso sin interacción.
+ const navigation=performance.getEntriesByType('navigation')[0];
+ const reloaded=navigation?.type==='reload' || (performance.navigation && performance.navigation.type===1);
+ if (!reloaded) return;
+ if (location.hash) history.replaceState(history.state,'',location.pathname+location.search);
+ const reset=()=>{
+  const root=document.documentElement,previous=root.style.scrollBehavior;
+  root.style.scrollBehavior='auto';
+  window.scrollTo(0,0);
+  requestAnimationFrame(()=>{root.style.scrollBehavior=previous;});
+ };
+ reset();
+ window.addEventListener('pageshow',()=>{reset();setTimeout(reset,40);},{once:true});
+}
+
 async function run(q, label='Ocurrió un error') {
   const { data,error }=await q;
   if(error) throw new Error(error.message || label);
@@ -167,4 +197,5 @@ function setup(){
    const {data}=await sb.auth.getSession();if(data.session)await loadUser();
   }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
+configureHomeNavigation();
 setup();
