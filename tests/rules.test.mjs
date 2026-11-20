@@ -58,4 +58,17 @@ assert.match(clientJs, /customer\.created_at/, 'Fecha de afiliación obtenida de
 assert.match(accessFn, /bl_join_requests/, 'Solo solicitudes aprobadas permiten pedir acceso');
 assert.match(accessFn, /bl_profiles/, 'Comprobar que el miembro sigue activo');
 assert.match(accessFn, /bl_limit_member_access/, 'Limitar intentos de acceso para evitar abuso');
-console.log('OK: 48 verificaciones BellaLovers (ingreso privado, historial y premios)');
+assert.match(adminHtml,/id="purchasePhone"/, 'Comprar buscando por celular');
+assert.match(adminHtml,/id="purchaseFind"/, 'Confirmar cliente antes de guardar compra');
+assert.doesNotMatch(adminHtml,/id="purchaseDelivery"/, 'No mostrar costo de transporte en compras');
+assert.doesNotMatch(adminHtml,/id="joinDelivery"/, 'No mostrar costo de transporte al aprobar primera compra');
+assert.doesNotMatch(adminHtml,/id="purchaseInvoice"[^>]*\srequired/, 'Factura debe ser opcional');
+assert.match(adminJs,/bl_purchase_simple/, 'Compra sencilla validada en el servidor');
+assert.match(adminJs,/bl_reverse_manual_adjustment/, 'Deshacer ajuste realmente revierte puntos');
+assert.match(adminJs,/bellalovers-eliminar/, 'Solo admin puede iniciar cierre de cuenta');
+assert.match(adminJs,/data-reverse-adjustment/, 'Mostrar botón de deshacer en ficha');
+assert.match(adminJs,/deleteMemberAccount\(/, 'Mostrar eliminación segura de cuenta');
+const deleteFn=readFileSync(new URL('../supabase/functions/bellalovers-eliminar/index.ts',import.meta.url),'utf8');
+assert.match(deleteFn,/staff\.role!=="admin"/, 'Eliminar cuenta requiere administrador autorizado');
+assert.match(deleteFn,/deleteUser\(id,true\)/, 'Eliminación de acceso en Auth conserva referencias');
+console.log('OK: 60 verificaciones BellaLovers (compras rápidas, puntos auditables, control de cuentas)');
