@@ -178,9 +178,26 @@ function renderPurchases(){
  $('#purchasesTable').innerHTML=table(['Factura','Canal','Clienta','Productos','Transporte','Descuento','Puntos','Estado',''],purchases.map(p=>`<tr><td>${esc(p.invoice)}<div class="form-help">${date(p.created_at)}</div></td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${fmt(p.delivery_fee)}</td><td>${p.special_discount?'Sí':'No'}</td><td>${p.points_awarded}${p.referral_awarded?` +${p.referral_awarded} referido`:''}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td><td>${p.status==='confirmada'?`<button class="btn btn-outline admin-danger" data-void="${esc(p.id)}">Anular</button>`:''}</td></tr>`));
  $$('[data-void]').forEach(b=>b.onclick=async()=>{if(!requireLive()||!checkManager())return;const reason=prompt('Motivo obligatorio de anulación (mínimo 5 caracteres):');if(reason===null)return;if(!confirm('Se revertirán los puntos relacionados. ¿Continuar?'))return;try{await rpc('bl_void_purchase',{p_purchase:b.dataset.void,p_reason:reason});notify('Factura anulada y puntos revertidos');await loadAll();}catch(e){notify(e.message,'error');}});
 }
+
+function updateRewardPhotoPreview(src,description=''){
+ const preview=$('#rewardPhotoPreview');if(!preview)return;
+ if(src&&/^(https?:\/\/|blob:)/.test(src)){
+  const image=document.createElement('img');image.src=src;image.alt='Vista previa del premio';image.loading='lazy';
+  preview.replaceChildren(image);
+  if(description){const small=document.createElement('span');small.textContent=description;preview.append(small);}
+ }else preview.textContent='Puedes subir una fotografía desde tu celular antes de guardar el premio.';
+}
 function renderRewards(){
- $('#rewardsTable').innerHTML=table(['Producto','Referencia','Puntos','Disponibles','Costo','Categoría','Estado',''],rewards.map(r=>`<tr><td><strong>${esc(r.name)}</strong></td><td>${esc(r.product_ref)}</td><td>${r.points_cost}</td><td>${r.stock-r.reserved} <small>(${r.reserved} reservadas)</small></td><td>${fmt(r.unit_cost)}</td><td>${esc(r.audience)}</td><td>${r.active?pill('Activo','green'):pill('Oculto','neutral')}</td><td><button class="btn btn-outline" data-edit-reward="${esc(r.id)}">Editar</button></td></tr>`));
- $$('[data-edit-reward]').forEach(b=>b.onclick=()=>{const r=rewards.find(x=>x.id===b.dataset.editReward);if(!r)return;$('#rewardId').value=r.id;$('#rewardName').value=r.name;$('#rewardRef').value=r.product_ref;$('#rewardPoints').value=r.points_cost;$('#rewardStock').value=r.stock;$('#rewardCost').value=r.unit_cost;$('#rewardAudience').value=r.audience;$('#rewardImage').value=r.image_url||'';$('#rewardActive').checked=r.active;$('#rewardName').focus();});
+ $('#rewardsTable').innerHTML=table(['Foto','Producto','Referencia','Puntos','Disponibles','Costo','Categoría','Estado',''],rewards.map(r=>
+  `<tr><td>${r.image_url?'<img class="reward-admin-thumb" src="'+esc(safeUrl(r.image_url))+'" alt="" loading="lazy">':'♡'}</td><td><strong>${esc(r.name)}</strong></td><td>${esc(r.product_ref)}</td><td>${r.points_cost}</td><td>${r.stock-r.reserved} <small>(${r.reserved} reservadas)</small></td><td>${fmt(r.unit_cost)}</td><td>${esc(r.audience)}</td><td>${r.active?pill('Publicado','green'):pill('Oculto','neutral')}</td><td><button class="btn btn-outline" data-edit-reward="${esc(r.id)}">Editar</button></td></tr>`));
+ $$('[data-edit-reward]').forEach(b=>b.onclick=()=>{
+  const r=rewards.find(x=>x.id===b.dataset.editReward);if(!r)return;
+  $('#rewardId').value=r.id;$('#rewardName').value=r.name;$('#rewardRef').value=r.product_ref;
+  $('#rewardPoints').value=r.points_cost;$('#rewardStock').value=r.stock;$('#rewardCost').value=r.unit_cost;
+  $('#rewardAudience').value=r.audience;$('#rewardImage').value=r.image_url||'';$('#rewardActive').checked=r.active;
+  $('#rewardPhoto').value='';updateRewardPhotoPreview(safeUrl(r.image_url), 'Fotografía actual');
+  $('#rewardName').focus();$('#rewardForm').scrollIntoView({behavior:'smooth',block:'start'});
+ });
 }
 function renderRedemptions(){
  $('#redemptionsTable').innerHTML=table(['ID','Clienta','Premios','Puntos','Fecha','Estado',''],redemptions.map(r=>{
