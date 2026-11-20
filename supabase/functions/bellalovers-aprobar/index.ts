@@ -29,10 +29,11 @@ Deno.serve(async (req: Request) => {
  let payload: Record<string,unknown>;
  try{payload=await req.json();}catch{return send({error:"Datos inválidos"},400);}
  const requestId=String(payload.request_id||"");
- const invoice=String(payload.invoice||"").trim();
+ const submittedInvoice=String(payload.invoice||"").trim();
+ const invoice=submittedInvoice||"REG-"+crypto.randomUUID().replaceAll("-","").toUpperCase();
  const products=Number(payload.products_total);
- const delivery=Number(payload.delivery_fee ?? 0);
- const channel=String(payload.channel||"");
+ const delivery=0;
+ const channel=String(payload.channel||"otro");
  if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(requestId)||
     invoice.length<2||invoice.length>80||
     !Number.isSafeInteger(products)||products<=0||products>500000000||
@@ -52,10 +53,11 @@ Deno.serve(async (req: Request) => {
  try {
   const {data,error}=await userClient.rpc("bl_approve_join_request",{
    p_request:requestId,p_user:newId,p_invoice:invoice,p_amount:products,p_delivery:delivery,
-   p_discount:payload.special_discount===true,p_channel:channel,p_notes:String(payload.notes||"").slice(0,500)
+   p_discount:payload.special_discount===true,p_channel:channel,
+   p_notes:((submittedInvoice?"":"Registro interno sin factura comercial. ")+String(payload.notes||"")).slice(0,500)
   });
   if(error)throw error;
-  return send({success:true,purchase:data,notice:"Membresía aprobada. La clienta recibirá un enlace de activación en su correo."});
+  return send({success:true,purchase:data,reference:invoice,internal_reference:!submittedInvoice,notice:"Membresía aprobada. La clienta recibirá un enlace de activación en su correo."});
  } catch(error){
   // La factura no se pudo confirmar: no dejar una cuenta parcial con acceso.
   await adminClient.auth.admin.deleteUser(newId);
