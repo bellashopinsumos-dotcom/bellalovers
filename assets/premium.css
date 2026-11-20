@@ -1098,3 +1098,32 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
  #account .section-min-heading{align-items:flex-start;gap:12px;}
  #refreshMemberRewards{width:auto;max-width:100%;}
 }
+
+
+/* BellaLovers Admin: compras rápidas y movimientos auditables */
+.admin-simple-purchase{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px;}
+.admin-simple-purchase .purchase-lookup{padding:16px 18px;border:1px solid #e7bdce;border-radius:16px;background:linear-gradient(135deg,#fcf0f5,#fffafd);}
+.purchase-lookup-input{display:flex;gap:10px;align-items:stretch;}
+.purchase-lookup-input .admin-input{flex:1;min-width:0;font-size:16px;}
+.purchase-lookup-input .btn{min-height:46px;flex:0 0 auto;border-color:#cf9cb6;color:#8d4e6d;}
+.purchase-lookup-result{display:flex;gap:7px 13px;flex-wrap:wrap;align-items:center;min-height:42px;margin-top:12px;padding:12px 14px;background:#fff;border:1px solid #efd4df;border-radius:11px;color:#765568;font-size:12px;line-height:1.6;}
+.purchase-lookup-result strong{color:#7d405e;font-size:13px;}
+.field-optional{font-size:11px;color:#977e88;font-weight:500;}
+#purchaseForm .checkline{padding-top:23px;}
+.point-adjustments{display:grid;gap:9px;margin-top:10px;}
+.point-adjustment-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 15px;border:1px solid #efd5df;border-radius:12px;background:#fffafd;}
+.point-adjustment-row>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.point-adjustment-row strong{font-size:13px;color:#8c4e69;}
+.point-adjustment-row small{font-size:11px;color:#866a78;overflow-wrap:anywhere;}
+.point-adjustment-row .btn{white-space:nowrap;}
+.admin-subsection-heading{font-size:17px;color:#794962;margin-bottom:8px;}
+#deleteCustomer{border-color:#d8a0a7;color:#a34956;}
+#deleteCustomer:hover{background:#fff0f0;}
+@media(max-width:720px){
+ .admin-simple-purchase{grid-template-columns:1fr;gap:13px;}
+ .admin-simple-purchase .purchase-lookup{padding:15px 13px;}
+ .purchase-lookup-input .btn{padding:0 14px;}
+ #purchaseForm .checkline{padding-top:4px;}
+ .point-adjustment-row{flex-wrap:wrap;padding:11px 12px;}
+ .point-adjustment-row .btn{width:100%;}
+}
