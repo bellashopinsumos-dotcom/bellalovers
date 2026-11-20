@@ -183,6 +183,25 @@ async function logOut(){
  if(sb)await sb.auth.signOut();customer=null;
  show('login');$('#acceso').scrollIntoView({behavior:'smooth',block:'start'});
 }
+async function loadAffiliatedTeachers(){
+ const select=$('#joinTeacherCode');
+ if(!select||!sb)return;
+ const {data,error}=await sb.rpc('bl_list_affiliated_teachers');
+ if(error)throw error;
+ const requested=new URLSearchParams(location.search).get('ref')?.trim().toUpperCase()||'';
+ const previous=select.value||requested;
+ select.replaceChildren(new Option('Ninguna / no me recomendó una profesora',''));
+ for(const t of data||[]){
+  if(!t?.code||!t?.name)continue;
+  const option=new Option(String(t.name),String(t.code));
+  select.append(option);
+ }
+ if([...select.options].some(o=>o.value===previous))select.value=previous;
+ $('#joinTeacherHelp').textContent=(data||[]).length?
+  'Elige una profesora afiliada activa. Si no te recomendó ninguna, deja «Ninguna».':
+  'BellaShop todavía no ha publicado profesoras afiliadas. Puedes continuar sin seleccionar ninguna.';
+}
+
 async function loadJoinStatus(){
  requestsOpen=(await run(sb.rpc('bl_join_requests_status')))===true;
  $('#joinForm').classList.toggle('hidden',!requestsOpen);
@@ -192,21 +211,19 @@ async function loadJoinStatus(){
 function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
- $('#joinCategory').addEventListener('change',()=>{
-  $('#joinTeacherField').classList.toggle('hidden',$('#joinCategory').value!=='estudiante');
- });
+
  $('#logout').addEventListener('click',logOut);
  $('#submitRedeem').addEventListener('click',submitRedemption);
  $$('.account-tabs button').forEach(btn=>btn.addEventListener('click',()=>{
   $$('.account-tabs button').forEach(x=>x.classList.toggle('active',x===btn));
   $$('.account-tab').forEach(tab=>tab.classList.toggle('hidden',tab.id!==('tab-'+btn.dataset.tab)));
  }));
- const ref=new URLSearchParams(location.search).get('ref');
- if(ref)$('#joinTeacherCode').value=ref.slice(0,30);
+
  $('#joinForm').classList.add('hidden');$('#joinClosed').classList.remove('hidden');
  if(!HAS_BACKEND)return;
  db().then(async x=>{
   sb=x;
+  try{await loadAffiliatedTeachers();}catch(err){console.warn('Profesoras afiliadas no disponibles:',err.message);$('#joinTeacherHelp').textContent='No pudimos cargar las profesoras. Puedes continuar sin seleccionar ninguna.';}
   try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);}
   const {data:{session}}=await sb.auth.getSession();
   if(session)await loadUser();
