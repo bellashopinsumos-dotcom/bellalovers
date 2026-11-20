@@ -1,8 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
-let issuedMemberKey=null;
-let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
+let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],loginRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
 const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
@@ -59,11 +58,11 @@ async function loadAll(){if(mode!=='live')return;
   ['giftClaims',sb.from('bl_gift_claims').select('*').order('delivered_at',{ascending:false})],
   ['audit',sb.from('bl_audit').select('*').order('created_at',{ascending:false}).limit(150)],
   ['settings',sb.from('bl_settings').select('*').eq('id',1).single()],
-  ...(staff?.role==='admin'?[['joinRequests',sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000)]]:[]),
+  ...(staff?.role==='admin'?[['joinRequests',sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000)],['loginRequests',sb.from('bl_login_requests').select('*').order('created_at',{ascending:false}).limit(150)]]:[]),
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];loginRequests=d.loginRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -180,7 +179,6 @@ function renderCustomerDetail(){
   '<button class="btn btn-outline" id="saveCustomerCategory" '+(archived||deleted?'disabled':'')+'>Cambiar categoría</button>',
   actions,
   '<button class="btn btn-outline" id="adjustPointsBtn" '+(p.blocked||archived||deleted?'disabled':'')+'>Sumar o descontar puntos</button>',
-  deleted||archived||p.blocked||staff?.role!=='admin'?'':'<button class="btn btn-outline" id="resetMemberKey">Generar nueva clave</button>',
   deleted?'':'<button class="btn btn-outline admin-danger" id="deleteCustomer">Eliminar cuenta y acceso</button>',
   '</div>',
   '<div class="span2"><h3 class="admin-subsection-heading">Ajustes manuales de puntos</h3>',
@@ -198,7 +196,6 @@ function renderCustomerDetail(){
    $('#archiveCustomer').onclick=()=>manageCustomer(p,'archive');
   }
   $('#deleteCustomer').onclick=()=>deleteMemberAccount(p);
-  if($('#resetMemberKey'))$('#resetMemberKey').onclick=()=>resetMemberKey(p);
  }
  $('#adjustPointsBtn').onclick=async()=>{
   if(!requireLive()||!checkManager())return;
@@ -422,6 +419,53 @@ async function saveStaff(e){
  catch(err){notify('No se pudo actualizar: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
+function renderLoginRequests(){
+ const container=$('#loginRequestsTable');
+ if(!container)return;
+ if(staff?.role!=='admin'){
+  container.innerHTML='<p class="form-help">Solo administración puede autorizar el ingreso a las cuentas.</p>';return;
+ }
+ const now=Date.now();
+ const recent=loginRequests.filter(r=>new Date(r.expires_at).getTime()>now-24*60*60*1000);
+ const pending=recent.filter(r=>r.status==='pendiente'&&new Date(r.expires_at).getTime()>now);
+ $('#loginPendingBadge').textContent=pending.length+' por autorizar';
+ container.innerHTML=table(['Hora','BellaLover','Celular','Estado','Autorizar ingreso'],recent.slice(0,60).map(r=>{
+  const member=profiles.find(p=>p.id===r.member_id);
+  const expired=new Date(r.expires_at).getTime()<=now;
+  const active=r.status==='pendiente'&&!expired;
+  const status=expired?'Vencida':r.status==='pendiente'?'Esperando':
+   r.status==='aprobada'?'Aprobada':r.status==='rechazada'?'Rechazada':'Ingresó';
+  return '<tr><td>'+date(r.created_at)+' · '+new Date(r.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'})+'</td>'+
+   '<td><strong>'+esc(member?.full_name||'Cuenta no disponible')+'</strong></td><td>'+esc(member?.phone||'—')+'</td>'+
+   '<td>'+pill(status,active?'neutral':r.status==='aprobada'?'green':'')+'</td>'+
+   '<td>'+(active?
+    '<div class="account-actions"><button class="btn btn-primary btn-small" data-login-approve="'+esc(r.id)+'">Aprobar</button>'+
+    '<button class="btn btn-outline btn-small" data-login-reject="'+esc(r.id)+'">Rechazar</button></div>':
+    '—')+'</td></tr>';
+ }));
+ $$('[data-login-approve]').forEach(btn=>btn.onclick=()=>reviewLoginRequest(btn.dataset.loginApprove,true));
+ $$('[data-login-reject]').forEach(btn=>btn.onclick=()=>reviewLoginRequest(btn.dataset.loginReject,false));
+}
+async function reviewLoginRequest(id,approved){
+ if(!requireLive()||!checkManager())return;
+ const request=loginRequests.find(r=>r.id===id);
+ if(!request||request.status!=='pendiente'||new Date(request.expires_at).getTime()<=Date.now())
+  return notify('La solicitud venció o ya fue revisada.','error');
+ const member=profiles.find(p=>p.id===request.member_id);
+ if(!member)return notify('No se encontró la clienta.','error');
+ if(approved){
+  const confirmation=prompt('Antes de aprobar, VERIFICA por WhatsApp o presencialmente que la persona es '+member.full_name+' ('+member.phone+'). Escribe VERIFICADO si confirmaste su identidad:');
+  if(confirmation===null)return;
+  if(confirmation.trim().toUpperCase()!=='VERIFICADO')
+   return notify('No se aprobó: primero comprueba la identidad de la clienta.','error');
+ }else if(!confirm('¿Rechazar la solicitud de acceso a la cuenta de '+member.full_name+'?'))return;
+ try{
+  await rpc('bl_review_login_request',{p_request:id,p_approve:approved});
+  notify(approved?'Acceso autorizado. La clienta podrá entrar en el dispositivo que lo solicitó.':'Solicitud rechazada.');
+  await loadAll();
+ }catch(err){notify('No fue posible revisar el acceso: '+err.message,'error');}
+}
+
 function renderJoins(){
  const tableEl=$('#joinRequestsTable'),card=$('#joinApprovalCard');
  if(!tableEl)return;
@@ -467,42 +511,6 @@ async function rejectJoin(id){
   notify('Solicitud rechazada; quedó en el historial.');selectedJoinId=null;await loadAll();
  }catch(err){notify('No se pudo rechazar: '+err.message,'error');}
 }
-function showMemberKey(name,phone,key){
- issuedMemberKey={name:String(name||''),phone:String(phone||''),key:String(key||'')};
- $('#memberKeyRecipient').textContent=issuedMemberKey.name+' · '+issuedMemberKey.phone;
- $('#memberKeyCode').textContent=issuedMemberKey.key;
- $('#memberKeyDialog').classList.remove('hidden');
- $('#copyMemberKey').focus();
-}
-function closeMemberKey(){
- $('#memberKeyDialog').classList.add('hidden');
- $('#memberKeyCode').textContent='';
- $('#memberKeyRecipient').textContent='';
- issuedMemberKey=null;
-}
-async function copyMemberKey(){
- if(!issuedMemberKey)return;
- const message='Hola, '+issuedMemberKey.name+'. ♡ Ya puedes entrar a BellaLovers. Visita https://bellashopinsumos-dotcom.github.io/bellalovers/ e ingresa con tu celular '+issuedMemberKey.phone+' y tu clave privada: '+issuedMemberKey.key+'. No compartas tu clave con nadie. Si necesitas otra, solicítala a BellaShop.';
- try{
-  if(!navigator.clipboard?.writeText)throw new Error('Copiado manual necesario');
-  await navigator.clipboard.writeText(message);
-  notify('Mensaje copiado. Envíalo únicamente a la titular verificada por WhatsApp.');
- }catch{
-  prompt('Copia este mensaje y compártelo solamente con la titular verificada:',message);
- }
-}
-async function resetMemberKey(profile){
- if(!requireLive()||!checkManager())return;
- if(profile.blocked||profile.archived_at||profile.deleted_at)
-  return notify('La cuenta no está activa.','error');
- if(!confirm('¿Generar una nueva clave para '+profile.full_name+'? La anterior dejará de servir. Verifica antes que sea la titular.'))return;
- try{
-  const {data,error}=await sb.functions.invoke('bellalovers-clave',{body:{member_id:profile.id}});
-  if(error||!data?.success)throw new Error(data?.error||'No se pudo generar la clave.');
-  showMemberKey(profile.full_name,profile.phone,data.access_key);
- }catch(err){notify('No se pudo restablecer la clave: '+err.message,'error');}
-}
-
 async function approveJoin(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
  const req=joinRequests.find(x=>x.id===$('#joinRequestId').value&&x.status==='pendiente');
@@ -516,23 +524,22 @@ async function approveJoin(e){
  };
  if(!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
   return notify('Debes comprobar que la primera compra sea real y registrar el valor de productos.','error');
- if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+'? Se activará su cuenta y BellaShop podrá entregarle la clave privada, sin Gmail.'))return;
+ if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+'? Se activará su membresía sin crear claves para la clienta.'))return;
  const btn=$('#joinApprovalForm button[type=submit]');
  try{
   setLoading(btn,true,'Aprobando y creando acceso…');
   const {data,error}=await sb.functions.invoke('bellalovers-aprobar',{body:payload});
   if(error)throw error;
   if(!data?.success)throw new Error(data?.error||'El servidor no pudo confirmar la membresía');
-  notify('Membresía aprobada y compra registrada. La clave aparecerá para entregársela a la clienta.');
+  notify('Membresía aprobada y compra registrada. Podrá solicitar ingreso desde la página y tú autorizarás el acceso.');
   selectedJoinId=null;$('#joinApprovalCard').classList.add('hidden');
   $('#joinApprovalForm').reset();await loadAll();
-  if(data.access_key)showMemberKey(req.full_name,req.phone,data.access_key);
-  else notify('La cuenta se aprobó, pero falta generar la clave desde la ficha de Clientas.','error');
+
  }catch(err){notify('No se aprobó la solicitud: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
 
-function renderAll(){renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
+function renderAll(){renderLoginRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){
  e.preventDefault();if(!requireLive())return;
  const btn=$('#purchaseForm button[type=submit]');
@@ -662,8 +669,6 @@ function setup(){
  $('#adminLoginForm').addEventListener('submit',login);
  $('#joinFilter').addEventListener('change',renderJoins);
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
- $('#copyMemberKey').addEventListener('click',copyMemberKey);
- $('#closeMemberKey').addEventListener('click',closeMemberKey);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
  $('#reloadJoins').addEventListener('click',loadAll);
 
