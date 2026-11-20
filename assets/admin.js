@@ -1,6 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
+let issuedMemberKey=null;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
 const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
@@ -179,6 +180,7 @@ function renderCustomerDetail(){
   '<button class="btn btn-outline" id="saveCustomerCategory" '+(archived||deleted?'disabled':'')+'>Cambiar categoría</button>',
   actions,
   '<button class="btn btn-outline" id="adjustPointsBtn" '+(p.blocked||archived||deleted?'disabled':'')+'>Sumar o descontar puntos</button>',
+  deleted||archived||p.blocked||staff?.role!=='admin'?'':'<button class="btn btn-outline" id="resetMemberKey">Generar nueva clave</button>',
   deleted?'':'<button class="btn btn-outline admin-danger" id="deleteCustomer">Eliminar cuenta y acceso</button>',
   '</div>',
   '<div class="span2"><h3 class="admin-subsection-heading">Ajustes manuales de puntos</h3>',
@@ -196,6 +198,7 @@ function renderCustomerDetail(){
    $('#archiveCustomer').onclick=()=>manageCustomer(p,'archive');
   }
   $('#deleteCustomer').onclick=()=>deleteMemberAccount(p);
+  if($('#resetMemberKey'))$('#resetMemberKey').onclick=()=>resetMemberKey(p);
  }
  $('#adjustPointsBtn').onclick=async()=>{
   if(!requireLive()||!checkManager())return;
@@ -430,9 +433,9 @@ function renderJoins(){
  $('#joinPendingBadge').textContent=pending+' pendiente'+(pending===1?'':'s');
  const filter=$('#joinFilter').value;
  const selected=joinRequests.filter(x=>filter==='todas'||x.status===filter);
- tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Correo','Categoría','Profesora afiliada','Estado','Acción'],selected.map(x=>
+ tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Categoría','Profesora afiliada','Estado','Acción'],selected.map(x=>
   '<tr><td>'+date(x.created_at)+'</td><td><strong>'+esc(x.full_name)+'</strong></td><td>'+esc(x.phone)+'</td>'+
-  '<td>'+esc(x.email)+'</td><td>'+esc(TYPE[x.category]||x.category)+'</td><td>'+
+  '<td>'+esc(TYPE[x.category]||x.category)+'</td><td>'+
   esc(affiliatedTeachers.find(t=>t.id===x.affiliate_teacher_id)?.display_name||'Ninguna')+'</td><td>'+
   pill(x.status,x.status==='aprobada'?'green':x.status==='rechazada'?'red':'neutral')+'</td><td>'+
   (x.status==='pendiente'?'<div class="account-actions"><button class="btn btn-primary btn-small" data-join-approve="'+esc(x.id)+'">Revisar factura</button><button class="btn btn-outline btn-small" data-join-reject="'+esc(x.id)+'">Rechazar</button></div>':
@@ -442,7 +445,7 @@ function renderJoins(){
    selectedJoinId=request.id;
    $('#joinRequestId').value=request.id;
    const affiliate=affiliatedTeachers.find(t=>t.id===request.affiliate_teacher_id);
-   $('#joinSelectedInfo').textContent=request.full_name+' · '+request.phone+' · '+request.email+
+   $('#joinSelectedInfo').textContent=request.full_name+' · '+request.phone+
       ' · '+(TYPE[request.category]||request.category)+
       ' · Profesora: '+(affiliate?.display_name||'Ninguna');
    $('#joinApprovalForm').reset();
@@ -464,6 +467,42 @@ async function rejectJoin(id){
   notify('Solicitud rechazada; quedó en el historial.');selectedJoinId=null;await loadAll();
  }catch(err){notify('No se pudo rechazar: '+err.message,'error');}
 }
+function showMemberKey(name,phone,key){
+ issuedMemberKey={name:String(name||''),phone:String(phone||''),key:String(key||'')};
+ $('#memberKeyRecipient').textContent=issuedMemberKey.name+' · '+issuedMemberKey.phone;
+ $('#memberKeyCode').textContent=issuedMemberKey.key;
+ $('#memberKeyDialog').classList.remove('hidden');
+ $('#copyMemberKey').focus();
+}
+function closeMemberKey(){
+ $('#memberKeyDialog').classList.add('hidden');
+ $('#memberKeyCode').textContent='';
+ $('#memberKeyRecipient').textContent='';
+ issuedMemberKey=null;
+}
+async function copyMemberKey(){
+ if(!issuedMemberKey)return;
+ const message='Hola, '+issuedMemberKey.name+'. ♡ Ya puedes entrar a BellaLovers. Visita https://bellashopinsumos-dotcom.github.io/bellalovers/ e ingresa con tu celular '+issuedMemberKey.phone+' y tu clave privada: '+issuedMemberKey.key+'. No compartas tu clave con nadie. Si necesitas otra, solicítala a BellaShop.';
+ try{
+  if(!navigator.clipboard?.writeText)throw new Error('Copiado manual necesario');
+  await navigator.clipboard.writeText(message);
+  notify('Mensaje copiado. Envíalo únicamente a la titular verificada por WhatsApp.');
+ }catch{
+  prompt('Copia este mensaje y compártelo solamente con la titular verificada:',message);
+ }
+}
+async function resetMemberKey(profile){
+ if(!requireLive()||!checkManager())return;
+ if(profile.blocked||profile.archived_at||profile.deleted_at)
+  return notify('La cuenta no está activa.','error');
+ if(!confirm('¿Generar una nueva clave para '+profile.full_name+'? La anterior dejará de servir. Verifica antes que sea la titular.'))return;
+ try{
+  const {data,error}=await sb.functions.invoke('bellalovers-clave',{body:{member_id:profile.id}});
+  if(error||!data?.success)throw new Error(data?.error||'No se pudo generar la clave.');
+  showMemberKey(profile.full_name,profile.phone,data.access_key);
+ }catch(err){notify('No se pudo restablecer la clave: '+err.message,'error');}
+}
+
 async function approveJoin(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
  const req=joinRequests.find(x=>x.id===$('#joinRequestId').value&&x.status==='pendiente');
@@ -477,16 +516,18 @@ async function approveJoin(e){
  };
  if(!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
   return notify('Debes comprobar que la primera compra sea real y registrar el valor de productos.','error');
- if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+' en BellaShop? Se registrará la compra y se enviará una invitación privada a '+req.email+'.'))return;
+ if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+'? Se activará su cuenta y BellaShop podrá entregarle la clave privada, sin Gmail.'))return;
  const btn=$('#joinApprovalForm button[type=submit]');
  try{
-  setLoading(btn,true,'Aprobando y enviando invitación…');
+  setLoading(btn,true,'Aprobando y creando acceso…');
   const {data,error}=await sb.functions.invoke('bellalovers-aprobar',{body:payload});
   if(error)throw error;
   if(!data?.success)throw new Error(data?.error||'El servidor no pudo confirmar la membresía');
-  notify('Membresía aprobada, factura registrada e invitación enviada por correo.');
+  notify('Membresía aprobada y compra registrada. La clave aparecerá para entregársela a la clienta.');
   selectedJoinId=null;$('#joinApprovalCard').classList.add('hidden');
   $('#joinApprovalForm').reset();await loadAll();
+  if(data.access_key)showMemberKey(req.full_name,req.phone,data.access_key);
+  else notify('La cuenta se aprobó, pero falta generar la clave desde la ficha de Clientas.','error');
  }catch(err){notify('No se aprobó la solicitud: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
@@ -621,6 +662,8 @@ function setup(){
  $('#adminLoginForm').addEventListener('submit',login);
  $('#joinFilter').addEventListener('change',renderJoins);
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
+ $('#copyMemberKey').addEventListener('click',copyMemberKey);
+ $('#closeMemberKey').addEventListener('click',closeMemberKey);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
  $('#reloadJoins').addEventListener('click',loadAll);
 
