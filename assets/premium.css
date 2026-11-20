@@ -258,3 +258,457 @@ footer { border-top:1px solid #eadce1;background:#fffbfc; }
   html{scroll-behavior:auto;}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   BELLALOVERS / EDICIÓN ROSA
+   Jerarquía de marca: rosado protagonista, dorado champagne acento.
+   Secciones editoriales con ritmo visual y legibilidad móvil.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#fff9fb;
+  --soft:#f8e2e9;
+  --pastel:#f0c9d7;
+  --rose:#b66382;
+  --rose-dark:#78435a;
+  --gold:#a9834d;
+  --gold-light:#e6cfad;
+  --ink:#382d33;
+  --muted:#786a70;
+  --line:#e9d2db;
+  --white:#fff;
+  --shadow:0 18px 42px rgba(114,63,84,.085);
+}
+body {background:var(--bg);}
+::selection{background:#e7b0c4;color:#49323e;}
+a:focus-visible,button:focus-visible{outline-color:#ac5678;}
+
+/* Franja de marca, navegación y botones */
+.club-topline{
+  display:block;
+  color:#fff8fb;
+  background:#a85e7c;
+  border-bottom:1px solid #b97d94;
+  text-align:center;
+  font-size:9px;
+  font-weight:750;
+  letter-spacing:.19em;
+  line-height:1.5;
+}
+.club-topline .wrap{min-height:31px;display:flex;align-items:center;justify-content:center;gap:13px;}
+.club-topline .wrap>span:first-child{font-size:18px;line-height:1;color:#fbe1e9;}
+.topline-divider{color:#f8c6d8;}
+.site-header{background:rgba(255,247,250,.97);border-color:#eaceda;}
+.nav-bar{height:78px;}
+.brand-mark{background:#fdebf1;border-color:#e5bed0;color:#ae6680;}
+.brand strong{color:#854b64;}
+.brand small{color:#a7814b;}
+.nav-links a{color:#745461;}
+.nav-links a:hover{color:#a34f72;}
+.nav-links a:after{background:#b45b7e;}
+.btn{font-weight:750;}
+.btn-primary{
+  background:#a95377;
+  border-color:#a95377;
+  color:#fff;
+  box-shadow:0 8px 21px rgba(145,67,102,.15);
+}
+.btn-primary:hover:not(:disabled){background:#8c3f5f;border-color:#8c3f5f;box-shadow:0 11px 23px rgba(145,67,102,.22);}
+.btn-outline{background:#fff9fb;border-color:#d4aebc;color:#845167;}
+.btn-outline:hover{background:#fbe8ef;border-color:#bf829a;}
+.btn-text,.text-link{color:#95506c;}
+.text-link:hover{color:#7a3d58;}
+.kicker,.eyebrow,.panel-overline,.overline{color:#a16d7e;}
+
+/* Portada rosa visible, pero tranquila */
+.hero{
+  background:
+    radial-gradient(ellipse at 88% 5%,rgba(255,248,250,.78) 0%,transparent 35%),
+    radial-gradient(ellipse at 10% 85%,rgba(237,180,199,.36) 0%,transparent 46%),
+    linear-gradient(117deg,#f3d2de 0%,#f7e0e8 48%,#f9eaf0 100%);
+  padding:clamp(68px,7.7vw,111px) 0 clamp(95px,8vw,124px);
+  border-bottom:0;
+  isolation:isolate;
+}
+.hero:before{display:none;}
+.hero-glow{
+  pointer-events:none;
+  position:absolute;
+  width:min(38vw,530px);
+  aspect-ratio:1;
+  border:1px solid rgba(186,115,142,.14);
+  border-radius:50%;
+  right:-15vw;top:-19vw;
+  box-shadow:0 0 0 52px rgba(255,255,255,.08),0 0 0 106px rgba(255,255,255,.055);
+  z-index:0;
+}
+.hero-content{position:relative;z-index:1;grid-template-columns:1.18fr .82fr;gap:clamp(42px,6vw,102px);}
+.hero-copy{position:relative;max-width:680px;}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(255,249,250,.64);
+  border:1px solid #ebc7d3;
+  border-radius:999px;
+  color:#8a5268;
+  font-size:10px;font-weight:800;letter-spacing:.13em;
+  padding:9px 17px;margin-bottom:23px;
+}
+.hero-eyebrow span{font-size:17px;color:#b68e55;line-height:1;}
+.hero h1{
+  color:#4d3340;
+  font-size:clamp(3rem,5.25vw,5.7rem);
+  line-height:1.075;
+  max-width:720px;
+  margin-bottom:27px;
+}
+.hero h1 em{
+  color:#99516e;
+  display:inline;
+  font-size:1.12em;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-style:italic;
+  font-weight:600;
+  letter-spacing:-.029em;
+}
+.hero-lead{color:#674e59;font-size:16px;line-height:1.82;max-width:560px;}
+.hero-lead strong{color:#8b4f69;}
+.hero-actions{margin-top:32px;gap:24px;}
+.hero .btn-primary{padding:15px 25px;border-radius:13px;}
+.hero .text-link{font-size:13px;}
+.hero-trust{display:flex;flex-wrap:wrap;gap:17px 28px;margin-top:27px;color:#735565;font-size:11px;font-weight:600;}
+.hero-trust span span{color:#a87848;font-size:16px;vertical-align:middle;margin-right:5px;}
+
+/* Tarjeta de membresía más rosada, con detalles en oro sutil */
+.hero-ticket{
+  display:flex;flex-direction:column;justify-content:space-between;
+  background:
+    radial-gradient(circle at 65% 30%,rgba(255,255,255,.43),transparent 54%),
+    linear-gradient(146deg,#ecc0d0 0%,#f4d4de 48%,#eab8cb 100%);
+  border:1px solid #dab0bc;
+  box-shadow:0 26px 65px rgba(112,61,79,.17),0 0 0 9px rgba(255,249,251,.33);
+  border-radius:27px;min-height:395px;padding:31px;
+  transform:translateY(7px) rotate(1.5deg);
+  color:#684152;
+  overflow:hidden;
+}
+.hero-ticket:before{width:235px;height:235px;top:58px;border-color:rgba(168,117,83,.18);}
+.hero-ticket:after{inset:12px;border-color:rgba(162,102,124,.32);}
+.ticket-top,.ticket-bottom{color:#744859;font-weight:800;letter-spacing:.16em;z-index:1;}
+.ticket-top small{display:block;font-size:8px;letter-spacing:.2em;margin-top:5px;color:#996676;}
+.ticket-sparkle{color:#a98250;font-size:27px;}
+.ticket-center{position:relative;z-index:1;text-align:center;}
+.ticket-heart{color:#9d5873;font-family:'Cormorant Garamond',Georgia,serif;font-size:105px;margin:-20px 0 -15px;}
+.ticket-caption{font-size:9px;letter-spacing:.19em;font-weight:800;color:#a16c7a;}
+.ticket-title{color:#653f50;font-size:clamp(24px,2.75vw,34px);margin-top:9px;line-height:1.28;}
+.ticket-title i{color:#98613c;font-weight:600;}
+.ticket-seal{
+  position:absolute;z-index:0;right:-17px;bottom:27px;
+  font:600 155px/.8 'Cormorant Garamond',Georgia,serif;
+  color:rgba(255,252,252,.23);
+  transform:rotate(-20deg);pointer-events:none;
+}
+.ticket-bottom{font-size:9px;}
+
+/* Regla rápida: flota sobre la portada y conserva respiro */
+.club-principles{background:transparent;border:none;position:relative;z-index:5;margin-top:-44px;}
+.club-principles .wrap{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  width:calc(100% - 40px);max-width:1160px;
+  padding:0;
+  background:#fff8fa;
+  border:1px solid #e7c1cf;
+  border-radius:21px;
+  box-shadow:0 18px 38px rgba(121,69,89,.11);
+  overflow:hidden;
+}
+.club-principle{padding:25px 24px;text-align:center;position:relative;}
+.club-principle+.club-principle{border-left:1px solid #eed6df;}
+.club-principle strong{font-size:23px;color:#8c4b66;}
+.club-principle small{font-size:11px;color:#846f77;line-height:1.5;}
+.club-principle:nth-child(2){background:#fbeaf0;}
+
+/* Beneficios primero: rosa elegante y tarjetas diferenciadas */
+.section-benefits{
+  background:linear-gradient(180deg,#fff9fb 0%,#f9e7ed 100%);
+  border:0;
+  padding:clamp(91px,8vw,124px) 0 clamp(72px,7vw,102px);
+}
+.benefits-heading{
+  display:grid;grid-template-columns:1.3fr .7fr;gap:50px;
+  align-items:end;
+  margin-bottom:40px;
+}
+.benefits-heading h2{max-width:720px;font-size:clamp(2.15rem,3.6vw,3.55rem);line-height:1.12;color:#503543;}
+.benefits-heading h2 em{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.18em;color:#a35475;font-weight:600;}
+.benefits-heading>p{font-size:14px;line-height:1.85;color:#76606b;padding-bottom:8px;max-width:380px;}
+.benefits-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}
+.benefit-card{
+  padding:30px 27px 26px;
+  border-radius:21px;
+  min-height:315px;
+  border:1px solid #e9cbd6;
+  box-shadow:0 12px 32px rgba(112,64,82,.055);
+  display:flex;flex-direction:column;
+  transition:transform .18s,box-shadow .18s;
+}
+.benefit-student{background:#f4d6e1;}
+.benefit-regular{background:#fffafc;}
+.benefit-teacher{background:#edcad7;}
+.benefit-card:hover{background-color:inherit;transform:translateY(-3px);}
+.benefit-top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:17px;}
+.benefit-symbol{
+  font-size:25px;display:grid;place-items:center;
+  background:rgba(255,255,255,.55);
+  color:#96516f;border-radius:15px;
+  border:1px solid rgba(167,102,132,.18);
+  width:50px;height:50px;margin:0;
+}
+.benefit-label{font-size:9px;font-weight:800;letter-spacing:.11em;color:#906176;text-align:right;}
+.benefit-card h3{color:#513747;font-size:21px;margin-bottom:15px;letter-spacing:-.05em;}
+.benefit-card p{color:#6b5461;font-size:13px;line-height:1.8;margin-bottom:22px;}
+.benefit-foot{border-top:1px solid rgba(166,99,131,.2);padding-top:17px;display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:auto;}
+.benefit-foot strong{font-size:11px;font-weight:750;color:#8d4c68;}
+.benefit-foot>span{font-size:20px;color:#a37557;}
+.benefits-note{text-align:center;font-size:11px;color:#836d77;margin:26px auto 0;max-width:600px;}
+.benefits-note span{color:#b48756;margin-right:5px;}
+
+/* Cómo funciona: formato editorial de dos columnas, sin tres cajas iguales */
+.section-steps{background:#fffdfd;border-top:1px solid #f0dce3;padding:clamp(82px,8vw,116px) 0;}
+.steps-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(40px,7vw,114px);align-items:center;}
+.steps-intro h2{font-size:clamp(2.25rem,3.7vw,3.7rem);line-height:1.12;color:#523947;max-width:500px;}
+.steps-intro h2 em{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.18em;font-weight:600;color:#a25473;}
+.steps-intro>p{max-width:435px;font-size:14px;line-height:1.85;}
+.steps-spotlight{
+  margin-top:34px;
+  max-width:345px;
+  border-radius:18px;
+  padding:23px 25px;
+  background:linear-gradient(130deg,#f7e1e9,#f4d4df);
+  border:1px solid #edc7d4;
+  display:flex;flex-direction:column;gap:5px;
+}
+.spotlight-label{letter-spacing:.12em;font-size:9px;font-weight:800;color:#895769;}
+.steps-spotlight strong{font:800 43px/1.25 Manrope,sans-serif;color:#934f6a;letter-spacing:-.07em;}
+.steps-spotlight strong small{font-size:15px;letter-spacing:0;font-weight:650;}
+.steps-spotlight>span:last-child{font-size:11px;color:#7b616b;line-height:1.6;}
+.section-steps .steps-grid{display:flex;flex-direction:column;gap:14px;}
+.section-steps .step{
+  min-height:unset;background:#fff;
+  border:1px solid #ead4dd;border-radius:18px;
+  box-shadow:0 10px 23px rgba(114,61,82,.035);
+  padding:22px 24px;
+  display:grid;grid-template-columns:57px minmax(0,1fr);
+  gap:17px;align-items:start;
+  transform:none;
+}
+.section-steps .step:nth-child(2){background:#fcf0f4;border-color:#ebcbd7;}
+.section-steps .step-num{
+  display:grid;place-items:center;
+  height:48px;width:48px;
+  border:1px solid #e3b7c8;border-radius:14px;
+  background:#f9e7ed;color:#93516c;
+  font-size:16px;letter-spacing:-.03em;
+}
+.section-steps .step-body{min-width:0;}
+.section-steps .step-icon{display:none;}
+.section-steps .step h3{color:#513a46;margin:2px 0 9px;font-size:17px;}
+.section-steps .step p{color:#7d6972;font-size:12px;line-height:1.7;}
+
+/* Acceso: bloque rosa intenso y formulario blanco que contrasta */
+.section-access{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(118deg,#eec3d3 0%,#f3d4df 55%,#f7e2ea 100%);
+  border-top:1px solid #ebbdcf;
+  border-bottom:1px solid #edcad6;
+  padding:clamp(76px,7vw,105px) 0;
+}
+.section-access:before{
+  content:'';
+  position:absolute;right:-130px;bottom:-210px;width:470px;height:470px;
+  border-radius:50%;border:1px solid rgba(255,255,255,.38);
+  box-shadow:0 0 0 55px rgba(255,255,255,.085),0 0 0 110px rgba(255,255,255,.05);
+  pointer-events:none;
+}
+.section-access .access-grid{position:relative;z-index:1;gap:clamp(42px,6vw,110px);}
+.access-intro .kicker{color:#8d4c66;}
+.access-intro h2{font-size:clamp(2.3rem,3.6vw,3.65rem);line-height:1.14;color:#5a3a4b;}
+.access-intro h2 em{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.2em;color:#964967;}
+.access-intro>p{font-size:14px;color:#6e5260;}
+.access-promise{color:#674b58;font-size:13px;padding:8px 0;border-bottom:1px solid rgba(150,87,110,.17);}
+.access-promise>span{color:#a47846;}
+.access-panel{border:1px solid #dfb6c5;border-top:3px solid #bb7894;border-radius:22px;background:#fffafd;box-shadow:0 24px 60px rgba(120,67,88,.15);}
+.access-panel-top{
+  border-bottom:1px solid #ead7df;
+  display:flex;align-items:center;gap:9px;
+  padding-bottom:13px;margin-bottom:23px;
+  color:#966079;font-size:10px;letter-spacing:.16em;font-weight:750;
+}
+.access-panel-top span:first-child{font-size:25px;color:#aa7089;}
+.access-panel h3{color:#513849;}
+.access-panel .preview-box{background:#fbe9ef;border-color:#ebcad7;}
+.access-panel .fineprint a{color:#9c4a6b;text-decoration:underline;text-underline-offset:3px;}
+.section-dashboard{background:#fff5f8;}
+.balance-card{background:linear-gradient(135deg,#f1cbd9,#f8e4ec)!important;border-color:#e7bfd0!important;}
+.balance-number strong{color:#914c6b;}
+.status-card{border-color:#eccfdb;background:#fffafc;}
+.account-tabs{background:#f8e4ed;border:1px solid #edd2dd;}
+.account-tabs button.active{background:#a95477;color:#fff;}
+.redeem-bar{background:#f6e0e8;border:1px solid #ebc7d3;}
+
+/* Términos y pie de página con cierre suave */
+.closing{background:#fff8fa;border-top:1px solid #edd8e0;}
+.closing h2{color:#523847;}
+.closing h2 em{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.19em;color:#9f5974;}
+.closing-cta{background:#f8e4ec;border:1px solid #e8c5d2;box-shadow:none;}
+.closing-cta .btn-outline{background:#fffafc;}
+footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
+.footer-content .brand-mark{background:#f8d7e4;}
+
+/* Administración: sí al rosado en la estructura; blanco reservado a datos */
+.admin-body{background:#f9edf2;}
+.admin-login{background:radial-gradient(circle at 25% 25%,#edbdce,transparent 40%),linear-gradient(140deg,#f3d1de,#fff4f8 72%);}
+.admin-login .access-panel{border-top:3px solid #b66e8b;background:#fffafc;}
+.admin-shell{grid-template-columns:249px minmax(0,1fr);}
+.admin-side{
+  background:linear-gradient(180deg,#f4d5e0 0%,#f9e7ed 55%,#f6dae4 100%);
+  border-right:1px solid #e7bdcd;
+}
+.admin-side>.brand{margin-bottom:4px;}
+.admin-side .brand strong{color:#864862;}
+.admin-menu button{color:#765061;}
+.admin-menu button.active{
+  background:#fffafc;
+  color:#873d5d;
+  border:1px solid #e9bfd0;
+  box-shadow:inset 4px 0 0 #ac5c7c,0 4px 11px rgba(126,76,96,.04);
+}
+.admin-menu button:hover{background:#fcecf2;color:#854260;}
+.admin-foot{border-color:#dfb7c7;}
+.admin-side-logout{border-color:#dcb7c7;background:#fffbfc;color:#8c4a65;}
+.admin-main{
+  background:
+    radial-gradient(ellipse at 80% -1%,rgba(233,179,196,.35),transparent 29%),
+    linear-gradient(180deg,#f9eaf0 0%,#fff7fa 310px,#fffafb 100%);
+}
+.admin-head{
+  background:linear-gradient(108deg,#efc8d7,#f8e4ec);
+  border:1px solid #e7bdce;
+  border-radius:20px;
+  padding:26px 29px;
+  margin-bottom:25px;
+  box-shadow:0 12px 29px rgba(118,67,85,.07);
+}
+.admin-head h1{color:#603b4d;}
+.admin-head p{color:#7c5a6b;}
+.admin-head .kicker{color:#94546c;}
+.admin-head .admin-actions .btn-outline{background:#fff9fb;}
+.admin-card{
+  border-color:#ead4de;
+  border-top-color:#e9c3d2;
+  box-shadow:0 8px 24px rgba(116,66,87,.045);
+  background:#fffdfd;
+}
+.admin-card:nth-of-type(even){border-top-color:#dec9c2;}
+.stat-tile{
+  background:linear-gradient(130deg,#f9e5ed,#fff9fb);
+  border-color:#eac9d7;
+  border-top:3px solid #b96a89;
+}
+.stat-tile:nth-child(2n){background:#fffafd;border-top-color:#c69f76;}
+.stat-tile strong{color:#894b66;}
+.stat-tile p{color:#876774;}
+.admin-table th{background:#f9e8ef;color:#81576a;}
+.admin-table tbody tr:hover{background:#fff5f8;}
+.admin-notice{background:#fff2f6;border-color:#e5becd;color:#88546a;}
+.admin-search,.admin-input{background:#fffafd;border-color:#e6ccd7;}
+.admin-form :where(input,select,textarea):focus,.admin-input:focus{
+ border-color:#ba7291;box-shadow:0 0 0 3px rgba(187,104,139,.12);
+}
+.admin-section-hint{border-left-color:#b86987;background:#fbeef3;}
+.password-recovery-panel{background:#fcecf2;border-color:#ebc5d4;}
+.admin-feedback{background:#f9e5ed;border-color:#edc7d5;}
+
+/* Pantallas medianas y celulares */
+@media(max-width:1060px){
+ .hero-content{gap:40px;}
+ .hero-ticket{min-height:350px;}
+ .benefits-heading{gap:24px;}
+ .steps-layout{gap:40px;}
+}
+@media(max-width:840px){
+ .hero h1{font-size:clamp(2.75rem,6vw,4.6rem);}
+ .benefits-heading{grid-template-columns:1fr;gap:8px;}
+ .benefits-heading>p{max-width:660px;}
+ .benefits-grid{grid-template-columns:1fr;gap:14px;}
+ .benefit-card{min-height:unset;padding:25px;}
+ .steps-layout{grid-template-columns:1fr;gap:34px;}
+ .steps-intro h2{max-width:650px;}
+ .steps-intro>p{max-width:610px;}
+ .steps-spotlight{max-width:100%;}
+}
+@media(max-width:690px){
+ .club-topline{font-size:8px;letter-spacing:.1em;}
+ .club-topline .wrap{padding:7px 13px;gap:8px;min-height:29px;}
+ .club-topline .wrap>span:first-child{font-size:15px;}
+ .topline-divider{display:none;}
+ .site-header{background:rgba(255,246,250,.98);}
+ .nav-bar{height:69px;}
+ .brand strong{font-size:18px;}
+ .site-header .btn{font-size:10px;max-width:165px;padding:10px 12px;}
+ .hero{padding:60px 0 96px;}
+ .hero-content{gap:34px;}
+ .hero-glow{display:none;}
+ .hero-eyebrow{font-size:8.5px;letter-spacing:.09em;margin-bottom:20px;}
+ .hero h1{font-size:clamp(2.75rem,10.2vw,4rem);margin-bottom:19px;}
+ .hero-lead{font-size:14px;line-height:1.77;}
+ .hero-actions{gap:15px;margin-top:22px;}
+ .hero .btn-primary{width:100%;}
+ .hero .text-link{margin:0 auto;}
+ .hero-trust{justify-content:center;gap:9px 16px;font-size:10px;margin-top:23px;}
+ .hero-ticket{width:min(100%,400px);min-height:310px;transform:rotate(0deg);padding:25px;box-shadow:0 20px 37px rgba(112,61,79,.13);}
+ .ticket-title{font-size:28px;}
+ .ticket-heart{font-size:77px;margin:-16px 0 -10px;}
+ .ticket-caption{font-size:8px;}
+ .ticket-bottom{font-size:8px;}
+ .club-principles{margin-top:-38px;}
+ .club-principles .wrap{width:calc(100% - 28px);grid-template-columns:1fr;border-radius:18px;}
+ .club-principle{padding:15px 16px;}
+ .club-principle+.club-principle{border-left:0;border-top:1px solid #efd8e1;}
+ .club-principle strong{font-size:20px;}
+ .club-principle small{font-size:10px;margin-top:2px;}
+ .section-benefits{padding:70px 0 65px;}
+ .benefits-heading{margin-bottom:27px;}
+ .benefits-heading h2{font-size:clamp(2rem,8vw,2.7rem);}
+ .benefits-heading>p{font-size:13px;}
+ .benefit-card{padding:24px 22px;}
+ .benefit-card h3{font-size:20px;}
+ .benefits-note{font-size:10px;margin-top:20px;}
+ .section-steps{padding:71px 0;}
+ .steps-intro h2{font-size:clamp(2.2rem,9vw,3rem);}
+ .steps-spotlight{margin-top:24px;padding:20px;}
+ .section-steps .steps-grid{gap:12px;}
+ .section-steps .step{grid-template-columns:45px 1fr;padding:17px 15px;gap:12px;}
+ .section-steps .step-num{width:40px;height:40px;font-size:13px;}
+ .section-steps .step h3{font-size:15px;}
+ .section-steps .step p{font-size:12px;}
+ .section-access{padding:73px 0;}
+ .access-intro h2{font-size:clamp(2.3rem,8.5vw,3rem);}
+ .access-intro>p{font-size:13px;}
+ .access-panel{padding:25px 21px;}
+ .closing{padding:69px 0;}
+ .admin-side{background:rgba(246,216,227,.96);border-bottom-color:#dfb7c8;}
+ .admin-menu button.active{background:#fffafd;}
+ .admin-main{background:linear-gradient(180deg,#f9e6ee,#fff9fb 360px);}
+ .admin-head{padding:20px 17px;border-radius:16px;}
+ .admin-head h1{font-size:24px;}
+ .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .stat-tile{padding:16px;}
+ .admin-card{background:#fffdfd;}
+}
+@media(max-width:370px){
+ .hero h1{font-size:2.56rem;}
+ .hero-ticket{min-height:283px;}
+ .ticket-title{font-size:24px;}
+ .hero-trust{justify-content:flex-start;}
+}
