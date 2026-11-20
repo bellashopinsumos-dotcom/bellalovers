@@ -10,7 +10,7 @@ Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 - Su solicitud aparece en **Administrador → Solicitudes de ingreso**, sin crear membresía ni puntos.
 - Cuando haga la **primera compra**, la jefa verifica la factura, selecciona la solicitud y registra el número de factura, valor de productos, canal y transporte.
 - Al aprobar se registra la membresía junto con esa primera compra; el sistema calcula los puntos que correspondan.
-- La clienta recibe un **correo de invitación** y puede acceder a sus puntos mediante un enlace seguro a su correo.
+- La clienta recibe un **correo de invitación**; después puede pedir acceso usando celular o correo más su nombre completo, y confirma el ingreso desde su correo asociado.
 - No se necesita SMS ni contraseña para la clienta. BellaShop puede rechazar solicitudes con motivo.
 
 La primera compra puede ser en **tienda, WhatsApp, web o con domicilio**. El transporte no suma puntos, pero los productos del pedido sí. Compras desde $50.000 = 5 puntos; cada $10.000 completos adicionales = 1 punto. Para estudiantes se aplica la excepción de primera compra prevista en el programa.
@@ -32,6 +32,19 @@ En Administrador → **Profesoras**:
 5. **Retirar no elimina historial**, y ninguna persona puede autorizarse como profesora por sí misma.
 
 Cuando todavía no hay afiliadas, las personas podrán seleccionar «Ninguna».
+
+## Entrar a mi cuenta (solo membresías aprobadas)
+
+La clienta no necesita escribir su correo si prefiere usar su celular. Desde la página de BellaLovers, en **¿Ya eres BellaLover?**, escribe su **celular o correo y su nombre completo tal como quedó registrado**.
+
+Para proteger su información, el sistema envía un enlace privado al **correo ya registrado y aprobado**. Al abrirlo accede a su carné con **fecha de ingreso**, compras, puntos, movimientos y premios. El nombre y el celular solos nunca desbloquean el historial. No se usan códigos SMS.
+
+### Recompensas de mi cuenta
+
+- Sin premios publicados por la jefa: «Próximamente tendremos recompensas para ti».
+- Con premios y menos de 50 puntos: aparecen bloqueados y se indica cuántos puntos faltan.
+- Desde 50 puntos: puede solicitar productos publicados que alcance a pagar con sus puntos, sujetos a existencias y aprobación.
+- El administrador modifica el catálogo en **Recompensas**; las clientas tienen el botón **Actualizar premios**.
 
 ## Correos e invitaciones
 
