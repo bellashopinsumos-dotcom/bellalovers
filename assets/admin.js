@@ -1,8 +1,8 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js';
 let sb, staff, mode='demo';
-let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],settings={...DEFAULT_RULES},selectedCustomerId=null;
-const titles={overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
+let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],settings={...DEFAULT_RULES},selectedCustomerId=null;
+const titles={overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 const fakeId=i=>'ejemplo-'+i;
 const sampleProfiles=[{id:fakeId(1),full_name:'María Fernanda López',phone:'+573000000001',category:'manicurista',teacher_verified:false,blocked:false,created_at:'2026-11-14'}, {id:fakeId(2),full_name:'Valentina Gómez',phone:'+573000000002',category:'estudiante',teacher_verified:false,blocked:false,created_at:'2026-11-16'}, {id:fakeId(3),full_name:'Ana Rodríguez',phone:'+573000000003',category:'profesora',teacher_verified:true,blocked:false,created_at:'2026-11-17'}];
 const demoPurchases=[{id:fakeId(4),customer_id:fakeId(1),invoice:'EJEMPLO-001',products_total:150000,delivery_fee:0,points_awarded:15,referral_awarded:0,welcome_eligible:false,special_discount:false,status:'confirmada',created_at:'2026-11-18'}, {id:fakeId(5),customer_id:fakeId(2),invoice:'EJEMPLO-002',products_total:160000,delivery_fee:0,points_awarded:0,referral_awarded:2,welcome_eligible:true,special_discount:false,status:'confirmada',created_at:'2026-11-19'}];
@@ -26,7 +26,7 @@ function showPanel(name){
  if(window.innerWidth<690) window.scrollTo({top:0,behavior:'smooth'});
 }
 function enter(preview){mode=preview?'demo':'live';$('#adminLogin').classList.add('hidden');$('#adminApp').classList.remove('hidden');$('#adminNotice').classList.toggle('hidden',!preview);$('#adminMode').textContent=preview?'Vista de ejemplo':(staff.role==='admin'?'Administrador':'Operador');$('#staffIdentity').textContent=preview?'Datos ilustrativos':staff.role;
- if(preview){profiles=sampleProfiles;purchases=demoPurchases;rewards=demoRewards;redemptions=[];redemptionItems=[];giftOptions=[{id:fakeId(7),name:'Lima para uñas',product_ref:'EJEMPLO-REG',stock:5,unit_cost:1000,active:true}];giftClaims=[];points=[];cycles=[];teachers=[{teacher_id:fakeId(3),code:'BL-EJEMPLO',label:'Ana Rodríguez',enabled:true}];referrals=[];tiers=[{min_amount:50000,points:1},{min_amount:100000,points:2},{min_amount:200000,points:4},{min_amount:400000,points:6},{min_amount:600000,points:8},{min_amount:1000000,points:10}];audit=[];settings={...DEFAULT_RULES};renderAll();}
+ if(preview){profiles=sampleProfiles;purchases=demoPurchases;rewards=demoRewards;redemptions=[];redemptionItems=[];giftOptions=[{id:fakeId(7),name:'Lima para uñas',product_ref:'EJEMPLO-REG',stock:5,unit_cost:1000,active:true}];giftClaims=[];points=[];cycles=[];teachers=[{teacher_id:fakeId(3),code:'BL-EJEMPLO',label:'Ana Rodríguez',enabled:true}];staffDirectory=[{user_id:fakeId(100),email:'administracion@ejemplo.com',role:'admin',active:true,created_at:'2026-11-18'}];referrals=[];tiers=[{min_amount:50000,points:1},{min_amount:100000,points:2},{min_amount:200000,points:4},{min_amount:400000,points:6},{min_amount:600000,points:8},{min_amount:1000000,points:10}];audit=[];settings={...DEFAULT_RULES};renderAll();}
 }
 async function login(e){e.preventDefault();const btn=$('#adminLoginForm button[type=submit]');
  try{setLoading(btn,true);sb=await db('admin');await run(sb.auth.signInWithPassword({email:$('#adminEmail').value.trim(),password:$('#adminPassword').value}));await initAdmin();}
@@ -55,9 +55,10 @@ async function loadAll(){if(mode!=='live')return;
   ['giftClaims',sb.from('bl_gift_claims').select('*').order('delivered_at',{ascending:false})],
   ['audit',sb.from('bl_audit').select('*').order('created_at',{ascending:false}).limit(150)],
   ['settings',sb.from('bl_settings').select('*').eq('id',1).single()],
+  ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   renderAll();}
+   staffDirectory=d.staffDirectory||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -78,24 +79,95 @@ function renderOverview(){
  $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',mode==='demo'?0:-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.length?(valid.length/profiles.length).toFixed(1):'—')}</div><div class="admin-form"><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
 }
 function populateClientSelects(){
- const opts='<option value="">Selecciona una clienta</option>'+profiles.map(p=>`<option value="${esc(p.id)}">${esc(p.full_name)} · ${esc(p.phone)}</option>`).join('');$('#purchaseCustomer').innerHTML=opts;
- const eligible=purchases.filter(p=>p.welcome_eligible&&p.status==='confirmada'&&!giftClaims.some(g=>g.student_id===p.customer_id));
+ const opts='<option value="">Selecciona una clienta</option>'+profiles.filter(p=>!p.blocked&&!p.archived_at).map(p=>`<option value="${esc(p.id)}">${esc(p.full_name)} · ${esc(p.phone)}</option>`).join('');$('#purchaseCustomer').innerHTML=opts;
+ const eligible=purchases.filter(p=>p.welcome_eligible&&p.status==='confirmada'&&!giftClaims.some(g=>g.student_id===p.customer_id)&&profiles.some(c=>c.id===p.customer_id&&!c.blocked&&!c.archived_at));
  $('#giftStudent').innerHTML='<option value="">Selecciona una estudiante</option>'+eligible.map(p=>`<option value="${esc(p.customer_id)}">${esc(uname(p.customer_id))} · ${esc(p.invoice)}</option>`).join('');
  $('#giftChoice').innerHTML='<option value="">Selecciona un regalo</option>'+giftOptions.filter(g=>g.active&&g.stock>0).map(g=>`<option value="${esc(g.id)}">${esc(g.name)} · ${g.stock} disponibles</option>`).join('');
 }
+
 function renderCustomers(){
- const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');const filtered=profiles.filter(p=>(p.full_name+' '+p.phone).toLowerCase().includes(term));
- $('#customersTable').innerHTML=table(['Nombre','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>`<tr><td>${esc(p.full_name)}</td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${p.blocked?pill('Bloqueada','red'):pill('Activa','green')}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
- $$('[data-view-customer]').forEach(b=>b.onclick=()=>{selectedCustomerId=b.dataset.viewCustomer;renderCustomerDetail();});renderCustomerDetail();
+ const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
+ const chosen=$('#customerStatusFilter')?.value||'all';
+ const filtered=profiles.filter(p=>{
+   const match=(p.full_name+' '+p.phone).toLowerCase().includes(term);
+   const status=p.archived_at?'archived':p.blocked?'blocked':'active';
+   return match&&(chosen==='all'||chosen===status);
+ });
+ const status=p=>p.archived_at?pill('Archivada','neutral'):p.blocked?pill('Bloqueada','red'):pill('Activa','green');
+ $('#customersTable').innerHTML=table(['Nombre','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>
+   `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
+ $$('[data-view-customer]').forEach(b=>b.onclick=()=>{
+   selectedCustomerId=b.dataset.viewCustomer;renderCustomerDetail();
+   if(window.innerWidth<690)$('#selectedCustomerCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ renderCustomerDetail();
+}
+async function manageCustomer(p,action,category=null){
+ if(!requireLive()||!checkManager())return;
+ const verbs={block:'bloquear',unblock:'desbloquear',archive:'archivar',restore:'restaurar',category:'cambiar la categoría de'};
+ const reason=prompt('Motivo para '+verbs[action]+' '+p.full_name+' (mínimo 8 caracteres):');
+ if(reason===null)return;
+ if(reason.trim().length<8)return notify('Escribe un motivo de al menos 8 caracteres.','error');
+ if(!confirm('¿Confirmas '+verbs[action]+' esta cuenta? El cambio quedará registrado en auditoría.'))return;
+ try {
+   await rpc('bl_manage_customer',{p_customer:p.id,p_action:action,p_category:category,p_reason:reason.trim()});
+   notify(action==='restore'?'Cuenta restaurada con su historial intacto':'Cambio guardado y auditado');
+   await loadAll();
+ }catch(err){notify(err.message,'error');}
 }
 function renderCustomerDetail(){
- const p=profiles.find(x=>x.id===selectedCustomerId);if(!p){$('#selectedCustomer').innerHTML='<p>Selecciona una clienta de la tabla para ver su información.</p>';return;}
+ const p=profiles.find(x=>x.id===selectedCustomerId);
+ if(!p){$('#selectedCustomer').innerHTML='<p>Selecciona una clienta para revisar su historial y administrar su cuenta.</p>';return;}
+ const archived=Boolean(p.archived_at);
  const cycle=cycles.filter(c=>c.customer_id===p.id&&!c.closed_at).sort((a,b)=>new Date(a.expires_at)-new Date(b.expires_at))[0];
- const movements=points.filter(x=>x.customer_id===p.id).slice(0,8).map(x=>`<li>${date(x.created_at)}: ${x.delta>0?'+':''}${x.delta} pts · ${esc(x.kind)}</li>`).join('');
- $('#selectedCustomer').innerHTML=`<div class="admin-form"><div><p class="form-help">Nombre y celular verificado</p><strong>${esc(p.full_name)}</strong><p>${esc(p.phone)}</p></div><div><p class="form-help">Puntos disponibles</p><strong>${ubalance(p.id)} puntos</strong><p>Próximo vencimiento: ${date(cycle?.expires_at)}</p></div><div><label>Categoría</label><select class="admin-input" id="editCustomerCategory"><option value="estudiante" ${p.category==='estudiante'?'selected':''}>Estudiante</option><option value="manicurista" ${p.category==='manicurista'?'selected':''}>Manicurista</option><option value="profesora" ${p.category==='profesora'?'selected':''}>Profesora</option></select></div><div><label>Estado de cuenta</label><select class="admin-input" id="editCustomerBlocked"><option value="false" ${!p.blocked?'selected':''}>Activa</option><option value="true" ${p.blocked?'selected':''}>Bloqueada</option></select></div><div class="span2 admin-actions"><button type="button" class="btn btn-outline" id="saveCustomer">Guardar ficha (administración)</button><button type="button" class="btn btn-outline" id="adjustPointsBtn">Ajustar puntos con motivo</button></div><div class="span2"><p class="form-help">Últimos movimientos</p><ul class="list-compact">${movements||'<li>Sin movimientos registrados</li>'}</ul></div></div>`;
- $('#saveCustomer').onclick=async()=>{if(!requireLive()||!checkManager())return;try{await run(sb.from('bl_profiles').update({category:$('#editCustomerCategory').value,blocked:$('#editCustomerBlocked').value==='true'}).eq('id',p.id));notify('Ficha actualizada. Revisa las reglas históricas al cambiar categoría.');await loadAll();}catch(e){notify(e.message,'error');}};
- $('#adjustPointsBtn').onclick=async()=>{if(!requireLive()||!checkManager())return;const quantity=prompt('¿Cuántos puntos ajustar? Usa valor negativo para descontar.');if(quantity===null)return;const number=Number(quantity);if(!Number.isInteger(number)||number===0){notify('Debe ser un número entero distinto de 0','error');return;}const reason=prompt('Motivo detallado (mínimo 8 caracteres):');if(reason===null)return;try{await rpc('bl_adjust_points',{p_customer:p.id,p_delta:number,p_reason:reason});notify('Ajuste registrado');await loadAll();}catch(e){notify(e.message,'error');}};
+ const movements=points.filter(x=>x.customer_id===p.id).slice(0,8)
+   .map(x=>`<li>${date(x.created_at)}: ${x.delta>0?'+':''}${x.delta} puntos · ${esc(x.kind)}</li>`).join('');
+ const status=archived?'Archivada':p.blocked?'Bloqueada':'Activa';
+ $('#selectedCustomer').innerHTML=`
+ <div class="admin-form">
+  <div><p class="form-help">Clienta y celular verificado</p><strong>${esc(p.full_name)}</strong><p>${esc(p.phone)}</p><p class="admin-tag">Estado: ${esc(status)}</p></div>
+  <div><p class="form-help">Puntos e historial</p><strong>${ubalance(p.id)} puntos</strong><p>Próximo vencimiento: ${date(cycle?.expires_at)}</p></div>
+  <div><label for="editCustomerCategory">Categoría</label><select class="admin-input" id="editCustomerCategory" ${archived?'disabled':''}>
+   <option value="estudiante" ${p.category==='estudiante'?'selected':''}>Estudiante</option>
+   <option value="manicurista" ${p.category==='manicurista'?'selected':''}>Manicurista</option>
+   <option value="profesora" ${p.category==='profesora'?'selected':''}>Profesora</option>
+  </select></div>
+  <div><p class="form-help">Registro y trazabilidad</p><p>Inscrita: ${date(p.created_at)}</p><p>${archived?'Archivada: '+date(p.archived_at):'Cuenta conservada con historial completo'}</p></div>
+  <div class="span2 account-actions">
+   <button class="btn btn-outline" id="saveCustomerCategory" ${archived?'disabled':''}>Cambiar categoría</button>
+   ${archived?'<button class="btn btn-primary" id="restoreCustomer">Restaurar cuenta</button>':
+   `<button class="btn btn-outline" id="toggleCustomerBlock">${p.blocked?'Desbloquear':'Bloquear'} cuenta</button>
+    <button class="btn btn-outline admin-danger" id="archiveCustomer">Archivar sin borrar</button>`}
+   <button class="btn btn-outline" id="adjustPointsBtn" ${p.blocked||archived?'disabled':''}>Ajustar puntos</button>
+  </div>
+  <div class="span2"><p class="form-help">Últimos movimientos</p><ul class="list-compact">${movements||'<li>Sin movimientos registrados</li>'}</ul></div>
+ </div>`;
+ $('#saveCustomerCategory').onclick=()=>{
+   const c=$('#editCustomerCategory').value;
+   if(c===p.category)return notify('No hay cambio de categoría.');
+   manageCustomer(p,'category',c);
+ };
+ if(archived){
+   $('#restoreCustomer').onclick=()=>manageCustomer(p,'restore');
+ }else{
+   $('#toggleCustomerBlock').onclick=()=>manageCustomer(p,p.blocked?'unblock':'block');
+   $('#archiveCustomer').onclick=()=>manageCustomer(p,'archive');
+ }
+ $('#adjustPointsBtn').onclick=async()=>{
+   if(!requireLive()||!checkManager())return;
+   const quantity=prompt('Puntos a ajustar (valor negativo para descontar):');
+   if(quantity===null)return;
+   const number=Number(quantity);
+   if(!Number.isInteger(number)||number===0)return notify('Debe ser un entero distinto de cero.','error');
+   const reason=prompt('Justificación detallada (mínimo 8 caracteres):');
+   if(reason===null)return;
+   if(reason.trim().length<8)return notify('Justificación demasiado corta.','error');
+   if(!confirm('¿Confirmas el ajuste de puntos? Se guardará en la auditoría.'))return;
+   try{await rpc('bl_adjust_points',{p_customer:p.id,p_delta:number,p_reason:reason.trim()});notify('Ajuste registrado');await loadAll();}
+   catch(err){notify(err.message,'error');}
+ };
 }
+
 function renderPurchases(){
  $('#purchasesTable').innerHTML=table(['Factura','Clienta','Productos','Domicilio','Descuento','Puntos','Estado',''],purchases.map(p=>`<tr><td>${esc(p.invoice)}<div class="form-help">${date(p.created_at)}</div></td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${fmt(p.delivery_fee)}</td><td>${p.special_discount?'Sí':'No'}</td><td>${p.points_awarded}${p.referral_awarded?` +${p.referral_awarded} referido`:''}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td><td>${p.status==='confirmada'?`<button class="btn btn-outline admin-danger" data-void="${esc(p.id)}">Anular</button>`:''}</td></tr>`));
  $$('[data-void]').forEach(b=>b.onclick=async()=>{if(!requireLive()||!checkManager())return;const reason=prompt('Motivo obligatorio de anulación (mínimo 5 caracteres):');if(reason===null)return;if(!confirm('Se revertirán los puntos relacionados. ¿Continuar?'))return;try{await rpc('bl_void_purchase',{p_purchase:b.dataset.void,p_reason:reason});notify('Factura anulada y puntos revertidos');await loadAll();}catch(e){notify(e.message,'error');}});
@@ -143,7 +215,34 @@ function renderSettings(){for(const key of ['min_purchase','point_value','unlock
 function renderAudit(){
  $('#auditTable').innerHTML=table(['Fecha','Acción','Entidad','ID','Detalle'],audit.map(x=>`<tr><td>${date(x.created_at)}</td><td>${esc(x.action)}</td><td>${esc(x.entity)}</td><td>${esc(String(x.entity_id||'').slice(0,20))}</td><td>${esc(JSON.stringify(x.detail||{}).slice(0,150))}</td></tr>`));
 }
-function renderAll(){renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderAudit();}
+function renderStaff(){
+ const container=$('#staffTable');if(!container)return;
+ if(mode==='live'&&staff?.role!=='admin'){
+   container.innerHTML='<p class="admin-feedback">Solo el administrador principal puede gestionar empleados.</p>';
+   $('#staffForm')?.classList.add('hidden');return;
+ }
+ $('#staffForm')?.classList.remove('hidden');
+ container.innerHTML=table(['Correo','Permiso','Estado','Fecha',''],staffDirectory.map(e=>
+   `<tr><td><strong>${esc(e.email)}</strong></td><td>${esc(e.role)}</td><td>${e.active?pill('Activo','green'):pill('Suspendido','red')}</td><td>${date(e.created_at)}</td><td><button class="btn btn-outline" data-edit-staff="${esc(e.user_id)}">Gestionar</button></td></tr>`));
+ $('[data-edit-staff]').forEach(b=>b.onclick=()=>{
+   const e=staffDirectory.find(x=>x.user_id===b.dataset.editStaff);if(!e)return;
+   $('#staffEmail').value=e.email;$('#staffRole').value=e.role;$('#staffActive').value=String(e.active);
+   $('#staffReason').value='';$('#staffEmail').focus();
+   if(window.innerWidth<690)$('#staffForm')?.scrollIntoView({behavior:'smooth',block:'center'});
+ });
+}
+async function saveStaff(e){
+ e.preventDefault();if(!requireLive()||!checkManager())return;
+ const payload={p_email:$('#staffEmail').value.trim().toLowerCase(),p_role:$('#staffRole').value,
+   p_active:$('#staffActive').value==='true',p_reason:$('#staffReason').value.trim()};
+ if(payload.p_reason.length<8)return notify('Escribe un motivo de al menos 8 caracteres.','error');
+ if(!confirm('¿Aplicar los permisos indicados al correo '+payload.p_email+'?'))return;
+ const btn=$('#staffForm button[type=submit]');
+ try{setLoading(btn,true);await rpc('bl_manage_staff',payload);notify('Acceso actualizado y auditado');e.target.reset();await loadAll();}
+ catch(err){notify('No se pudo actualizar: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
+function renderAll(){renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){e.preventDefault();if(!requireLive())return;const btn=$('#purchaseForm button[type=submit]');try{setLoading(btn,true);const p=await rpc('bl_purchase',{p_customer:$('#purchaseCustomer').value,p_invoice:$('#purchaseInvoice').value.trim(),p_amount:+$('#purchaseAmount').value,p_discount:$('#purchaseDiscount').checked,p_delivery:+$('#purchaseDelivery').value,p_notes:$('#purchaseNotes').value.trim()});notify(`Compra registrada: ${p.points} puntos${p.referral_points?`, ${p.referral_points} para profesora`:''}${p.welcome_eligible?'. Con derecho a regalo de bienvenida.':''}`);e.target.reset();await loadAll();}catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}}
 async function rewardSubmit(e){e.preventDefault();if(!requireLive()||!checkManager())return;const btn=$('#rewardForm button[type=submit]');const payload={name:$('#rewardName').value.trim(),product_ref:$('#rewardRef').value.trim(),points_cost:+$('#rewardPoints').value,stock:+$('#rewardStock').value,unit_cost:+$('#rewardCost').value,audience:$('#rewardAudience').value,image_url:$('#rewardImage').value.trim()||null,active:$('#rewardActive').checked};
  if(payload.image_url&&!/^https:\/\//i.test(payload.image_url))return notify('La fotografía debe usar HTTPS.','error');
@@ -157,17 +256,21 @@ async function saveSettings(e){e.preventDefault();if(!requireLive()||!checkManag
  if(!confirm('¿Confirmas el cambio de las reglas futuras de BellaLovers?'))return;
  try{await run(sb.from('bl_settings').update(payload).eq('id',1));notify('Configuración actualizada');await loadAll();}catch(err){notify(err.message,'error');}}
 async function saveTiers(e){e.preventDefault();if(!requireLive()||!checkManager())return;try{const data=$$('[data-tier]').map(x=>({min_amount:Number(x.dataset.tier),points:Number(x.value)}));if(data.some(x=>!Number.isInteger(x.points)||x.points<0))throw new Error('Puntos inválidos');await run(sb.from('bl_referral_tiers').upsert(data,{onConflict:'min_amount'}));notify('Tabla de referidos actualizada');await loadAll();}catch(err){notify(err.message,'error');}}
-function downloadCsv(headers,rows,name){const values=[headers,...rows].map(row=>row.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const blob=new Blob(['\ufeff'+values],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function downloadCsv(headers,rows,name){const values=[headers,...rows].map(row=>row.map(x=>{
+  let v=String(x??'').replace(/^[\s\uFEFF\u200B]*[=+\-@]/,m=>"'"+m);
+  return '"'+v.replace(/"/g,'""')+'"';
+ }).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+values],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#adminLoginForm').addEventListener('submit',login);$('#adminPreviewBtn').onclick=()=>enter(true);
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>mode==='demo'?renderAll():loadAll();
- $('#searchCustomers').addEventListener('input',renderCustomers);
+ $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
  $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
  $('#csvCustomers').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');
  $('#csvPurchases').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Factura','Cliente','Total productos','Domicilio','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,uname(p.customer_id),p.products_total,p.delivery_fee,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');
+ $('#csvAudit').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');
  $('#adminPreviewLogin').classList.remove('hidden');
  if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');return;}
  db('admin').then(async s=>{sb=s;const {data:{session}}=await sb.auth.getSession();if(session)await initAdmin();}).catch(err=>notify(err.message,'error'));
