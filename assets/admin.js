@@ -1,6 +1,6 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js';
-let sb, staff, mode='demo';
+let sb, staff, mode='demo', recoveryMode=false;
 let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],settings={...DEFAULT_RULES},selectedCustomerId=null;
 const titles={overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 const fakeId=i=>'ejemplo-'+i;
@@ -260,9 +260,57 @@ function downloadCsv(headers,rows,name){const values=[headers,...rows].map(row=>
   let v=String(x??'').replace(/^[\s\uFEFF\u200B]*[=+\-@]/,m=>"'"+m);
   return '"'+v.replace(/"/g,'""')+'"';
  }).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+values],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
+async function sendRecoveryEmail(){
+ const email=$('#adminEmail').value.trim().toLowerCase();
+ if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+   notify('Escribe el correo de tu acceso en el campo superior.','error');return;
+ }
+ const btn=$('#sendRecoveryEmail');
+ try{
+   setLoading(btn,true,'Enviando…');
+   sb=sb||await db('admin');
+   const url=new URL('./admin.html',location.href).toString();
+   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:url});
+   if(error)throw error;
+   notify('Si el correo está registrado, recibirás instrucciones. Revisa tu bandeja y el correo no deseado.');
+ }catch(err){notify('No se pudo enviar la recuperación. Revisa la configuración de correos de Supabase: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
+async function completePasswordRecovery(e){
+ e.preventDefault();const pw=$('#newAdminPassword').value,confirmPw=$('#confirmAdminPassword').value;
+ if(pw.length<12 || pw!==confirmPw)return notify('La contraseña debe tener al menos 12 caracteres y coincidir en ambos campos.','error');
+ const btn=$('#passwordRecoveryPanel button[type=submit]');
+ try {
+   setLoading(btn,true);
+   sb=sb||await db('admin');
+   const {error}=await sb.auth.updateUser({password:pw});
+   if(error)throw error;
+   await sb.auth.signOut();
+   recoveryMode=false;
+   $('#passwordRecoveryPanel').classList.add('hidden');
+   $('#adminLoginForm').classList.remove('hidden');
+   $('#sendRecoveryEmail').classList.remove('hidden');
+   $('#adminPreviewLogin').classList.remove('hidden');
+   e.target.reset();history.replaceState({},'',new URL('./admin.html',location.href).pathname);
+   notify('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+ }catch(err){notify('No se pudo cambiar la contraseña: '+err.message,'error');}
+ finally{setLoading(btn,false);}
+}
+function showRecoveryForm(){
+ recoveryMode=true;
+ $('#adminApp').classList.add('hidden');
+ $('#adminLogin').classList.remove('hidden');
+ $('#adminLoginForm').classList.add('hidden');
+ $('#sendRecoveryEmail').classList.add('hidden');
+ $('#adminPreviewLogin').classList.add('hidden');
+ $('#passwordRecoveryPanel').classList.remove('hidden');
+}
+
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#adminLoginForm').addEventListener('submit',login);$('#adminPreviewBtn').onclick=()=>enter(true);
+ $('#sendRecoveryEmail').addEventListener('click',sendRecoveryEmail);$('#passwordRecoveryPanel').addEventListener('submit',completePasswordRecovery);
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>mode==='demo'?renderAll():loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
@@ -273,7 +321,14 @@ function setup(){
  $('#csvAudit').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');
  $('#adminPreviewLogin').classList.remove('hidden');
  if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');return;}
- db('admin').then(async s=>{sb=s;const {data:{session}}=await sb.auth.getSession();if(session)await initAdmin();}).catch(err=>notify(err.message,'error'));
+ db('admin').then(async s=>{
+   sb=s;
+   sb.auth.onAuthStateChange((event)=>{
+     if(event==='PASSWORD_RECOVERY')showRecoveryForm();
+   });
+   const {data:{session}}=await sb.auth.getSession();
+   if(session&&!recoveryMode)await initAdmin();
+ }).catch(err=>notify(err.message,'error'));
 }
 async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
 setup();
