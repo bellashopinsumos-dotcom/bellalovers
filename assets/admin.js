@@ -1,19 +1,14 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js';
-let sb, staff, mode='demo', recoveryMode=false;
+let sb, staff, mode='locked', recoveryMode=false;
 let profiles=[], purchases=[], points=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],settings={...DEFAULT_RULES},selectedCustomerId=null;
 const titles={overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras y referidos','Códigos, nuevas estudiantes y puntos adicionales.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
-const fakeId=i=>'ejemplo-'+i;
-const sampleProfiles=[{id:fakeId(1),full_name:'María Fernanda López',phone:'+573000000001',category:'manicurista',teacher_verified:false,blocked:false,created_at:'2026-11-14'}, {id:fakeId(2),full_name:'Valentina Gómez',phone:'+573000000002',category:'estudiante',teacher_verified:false,blocked:false,created_at:'2026-11-16'}, {id:fakeId(3),full_name:'Ana Rodríguez',phone:'+573000000003',category:'profesora',teacher_verified:true,blocked:false,created_at:'2026-11-17'}];
-const demoPurchases=[{id:fakeId(4),customer_id:fakeId(1),invoice:'EJEMPLO-001',products_total:150000,delivery_fee:0,points_awarded:15,referral_awarded:0,welcome_eligible:false,special_discount:false,status:'confirmada',created_at:'2026-11-18'}, {id:fakeId(5),customer_id:fakeId(2),invoice:'EJEMPLO-002',products_total:160000,delivery_fee:0,points_awarded:0,referral_awarded:2,welcome_eligible:true,special_discount:false,status:'confirmada',created_at:'2026-11-19'}];
-const demoRewards=[{id:fakeId(6),product_ref:'EJEMPLO-P1',name:'Pincel decorativo',points_cost:10,stock:10,reserved:0,unit_cost:3000,audience:'todas',active:true,image_url:''}];
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
 function ubalance(id){
   const validCycles=cycles.filter(c=>c.customer_id===id&&!c.closed_at&&Date.parse(c.grace_until)>Date.now()).map(c=>c.id);
-  if(mode==='demo')return id===fakeId(1)?35:id===fakeId(3)?16:0;
   return points.filter(p=>p.customer_id===id&&validCycles.includes(p.cycle_id)).reduce((a,p)=>a+p.delta,0);
 }
-function requireLive(){if(mode==='demo'){notify('Vista de ejemplo. Conecta una base de datos exclusiva para activar esta función.','error');return false;}return true;}
+function requireLive(){if(mode!=='live'||!sb||!staff){notify('Inicia sesión con una cuenta administrativa autorizada.','error');return false;}return true;}
 function checkManager(){if(staff?.role!=='admin'){notify('Esta acción requiere permisos de administración.','error');return false;}return true;}
 async function run(q){const {data,error}=await q;if(error)throw new Error(error.message);return data;}
 async function rpc(name,args={}){if(!requireLive())return null;return run(sb.rpc(name,args));}
@@ -25,9 +20,14 @@ function showPanel(name){
  $('#sectionTitle').textContent=titles[name][0];$('#sectionSubtitle').textContent=titles[name][1];
  if(window.innerWidth<690) window.scrollTo({top:0,behavior:'smooth'});
 }
-function enter(preview){mode=preview?'demo':'live';$('#adminLogin').classList.add('hidden');$('#adminApp').classList.remove('hidden');$('#adminNotice').classList.toggle('hidden',!preview);$('#adminMode').textContent=preview?'Vista de ejemplo':(staff.role==='admin'?'Administrador':'Operador');$('#staffIdentity').textContent=preview?'Datos ilustrativos':staff.role;
- if(preview){profiles=sampleProfiles;purchases=demoPurchases;rewards=demoRewards;redemptions=[];redemptionItems=[];giftOptions=[{id:fakeId(7),name:'Lima para uñas',product_ref:'EJEMPLO-REG',stock:5,unit_cost:1000,active:true}];giftClaims=[];points=[];cycles=[];teachers=[{teacher_id:fakeId(3),code:'BL-EJEMPLO',label:'Ana Rodríguez',enabled:true}];staffDirectory=[{user_id:fakeId(100),email:'administracion@ejemplo.com',role:'admin',active:true,created_at:'2026-11-18'}];referrals=[];tiers=[{min_amount:50000,points:1},{min_amount:100000,points:2},{min_amount:200000,points:4},{min_amount:400000,points:6},{min_amount:600000,points:8},{min_amount:1000000,points:10}];audit=[];settings={...DEFAULT_RULES};renderAll();}
+function enter(){
+ mode='live';
+ $('#adminLogin').classList.add('hidden');
+ $('#adminApp').classList.remove('hidden');
+ $('#adminMode').textContent=staff.role==='admin'?'Administrador':'Operador';
+ $('#staffIdentity').textContent=staff.role;
 }
+
 async function login(e){e.preventDefault();const btn=$('#adminLoginForm button[type=submit]');
  try{setLoading(btn,true);sb=await db('admin');await run(sb.auth.signInWithPassword({email:$('#adminEmail').value.trim(),password:$('#adminPassword').value}));await initAdmin();}
  catch(err){notify('No se pudo ingresar: '+err.message,'error');}
@@ -37,7 +37,7 @@ async function initAdmin(){
  const {data:{user}}=await sb.auth.getUser();if(!user){$('#adminLogin').classList.remove('hidden');return;}
  staff=await run(sb.from('bl_staff').select('*').eq('user_id',user.id).eq('active',true).maybeSingle());
  if(!staff){await sb.auth.signOut();throw new Error('Tu cuenta no tiene autorización como empleado de BellaLovers.');}
- enter(false);await loadAll();
+ enter();await loadAll();
 }
 async function loadAll(){if(mode!=='live')return;
  const reqs=[
@@ -67,7 +67,7 @@ function renderOverview(){
  const earned=points.filter(p=>p.delta>0&&['compra','referido'].includes(p.kind)).reduce((s,p)=>s+p.delta,0);
  const claimsCost=giftClaims.reduce((s,g)=>s+(giftOptions.find(o=>o.id===g.gift_id)?.unit_cost||0),0);
  const prizesCost=redemptions.filter(r=>r.status==='aprobada').reduce((s,r)=>s+redemptionItems.filter(i=>i.redemption_id===r.id).reduce((a,i)=>a+i.qty*(rewards.find(w=>w.id===i.reward_id)?.unit_cost||0),0),0);
- $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',mode==='demo'?'35':earned);
+ $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',earned);
  $('#recentPurchases').innerHTML=table(['Factura','Clienta','Productos','Puntos','Estado'],purchases.slice(0,7).map(p=>`<tr><td>${esc(p.invoice)}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.points_awarded}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td></tr>`));
  if(!$('#additionalStats')) {const card=document.createElement('div');card.className='admin-card';card.id='additionalStats';$('#section-overview').append(card);}
  const repeat=profiles.filter(c=>valid.filter(p=>p.customer_id===c.id).length>1).length;
@@ -76,7 +76,7 @@ function renderOverview(){
  const expired=points.filter(p=>p.kind==='vencimiento').reduce((s,p)=>s-p.delta,0);
  const topTeachers=profiles.filter(p=>p.category==='profesora').map(p=>({name:p.full_name,awards:referrals.filter(r=>r.teacher_id===p.id&&r.awarded_at).length,pts:points.filter(x=>x.customer_id===p.id&&x.kind==='referido').reduce((s,x)=>s+x.delta,0)})).sort((a,b)=>b.awards-a.awards).slice(0,5);
  const prizeRank=rewards.map(r=>({name:r.name,qty:redemptionItems.filter(i=>i.reward_id===r.id&&redemptions.some(d=>d.id===i.redemption_id&&d.status==='aprobada')).reduce((s,i)=>s+i.qty,0)})).filter(x=>x.qty>0).sort((a,b)=>b.qty-a.qty).slice(0,5);
- $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',mode==='demo'?0:-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.length?(valid.length/profiles.length).toFixed(1):'—')}</div><div class="admin-form"><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
+ $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.length?(valid.length/profiles.length).toFixed(1):'—')}</div><div class="admin-form"><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
 }
 function populateClientSelects(){
  const opts='<option value="">Selecciona una clienta</option>'+profiles.filter(p=>!p.blocked&&!p.archived_at).map(p=>`<option value="${esc(p.id)}">${esc(p.full_name)} · ${esc(p.phone)}</option>`).join('');$('#purchaseCustomer').innerHTML=opts;
@@ -291,7 +291,6 @@ async function completePasswordRecovery(e){
    $('#passwordRecoveryPanel').classList.add('hidden');
    $('#adminLoginForm').classList.remove('hidden');
    $('#sendRecoveryEmail').classList.remove('hidden');
-   $('#adminPreviewLogin').classList.remove('hidden');
    e.target.reset();history.replaceState({},'',new URL('./admin.html',location.href).pathname);
    notify('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
  }catch(err){notify('No se pudo cambiar la contraseña: '+err.message,'error');}
@@ -303,23 +302,21 @@ function showRecoveryForm(){
  $('#adminLogin').classList.remove('hidden');
  $('#adminLoginForm').classList.add('hidden');
  $('#sendRecoveryEmail').classList.add('hidden');
- $('#adminPreviewLogin').classList.add('hidden');
  $('#passwordRecoveryPanel').classList.remove('hidden');
 }
 
 function setup(){
  $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
- $('#adminLoginForm').addEventListener('submit',login);$('#adminPreviewBtn').onclick=()=>enter(true);
+ $('#adminLoginForm').addEventListener('submit',login);
  $('#sendRecoveryEmail').addEventListener('click',sendRecoveryEmail);$('#passwordRecoveryPanel').addEventListener('submit',completePasswordRecovery);
- $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>mode==='demo'?renderAll():loadAll();
+ $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
  $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
- $('#csvCustomers').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');
- $('#csvPurchases').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Factura','Cliente','Total productos','Domicilio','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,uname(p.customer_id),p.products_total,p.delivery_fee,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');
- $('#csvAudit').onclick=()=>mode==='demo'?requireLive():downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');
- $('#adminPreviewLogin').classList.remove('hidden');
+ $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
+ $('#csvPurchases').onclick=()=>{if(!requireLive())return;downloadCsv(['Factura','Cliente','Total productos','Domicilio','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,uname(p.customer_id),p.products_total,p.delivery_fee,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');};
+ $('#csvAudit').onclick=()=>{if(!requireLive()||!checkManager())return;downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');};
  if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');return;}
  db('admin').then(async s=>{
    sb=s;
@@ -330,5 +327,5 @@ function setup(){
    if(session&&!recoveryMode)await initAdmin();
  }).catch(err=>notify(err.message,'error'));
 }
-async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
+async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
 setup();
