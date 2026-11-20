@@ -35,7 +35,7 @@ Deno.serve(async req=>{
  let body:Record<string,unknown>;
  try{body=await req.json();}catch{return reply({error:generic},400);}
  const identifier=String(body.identifier||body.phone||"").trim().toLowerCase();
- const phone=phoneOf(identifier),email=emailOf(identifier);
+ const email=emailOf(identifier),phone=email?null:phoneOf(identifier);
  const name=String(body.full_name||"").trim();
  const key=String(body.access_key||"").trim().toUpperCase();
  if((!phone&&!email)||name.length<3||name.length>120||!name.includes(" ")||
