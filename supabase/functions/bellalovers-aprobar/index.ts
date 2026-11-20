@@ -5,7 +5,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ORIGIN = "https://bellashopinsumos-dotcom.github.io";
-const REDIRECT = ORIGIN + "/bellalovers/";
 const CORS = {
  "Access-Control-Allow-Origin": ORIGIN,
  "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info",
@@ -40,16 +39,23 @@ Deno.serve(async (req: Request) => {
     !Number.isSafeInteger(delivery)||delivery<0||delivery>50000000||
     !["tienda","whatsapp","web","domicilio","otro"].includes(channel))return send({error:"Revisa los datos de la factura"},400);
  const {data:pending,error:readError}=await userClient.from("bl_join_requests")
-   .select("id,email,status").eq("id",requestId).maybeSingle();
+   .select("id,email,phone,status").eq("id",requestId).maybeSingle();
  if(readError||!pending||pending.status!=="pendiente")return send({error:"La solicitud ya fue revisada o no existe"},409);
  const {data:invoiceExists}=await userClient.from("bl_purchases").select("id").eq("invoice",invoice).maybeSingle();
  if(invoiceExists)return send({error:"Esa factura ya está registrada"},409);
  const adminClient=createClient(SUPABASE_URL,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:invited,error:inviteError}=await adminClient.auth.admin.inviteUserByEmail(pending.email,{redirectTo:REDIRECT});
- if(inviteError||!invited?.user?.id){
-  return send({error:"No se pudo enviar el correo de invitación. Revisa el servicio de correo de Supabase.",detail:inviteError?.message},422);
+ const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+ const random=new Uint8Array(12);
+ crypto.getRandomValues(random);
+ const accessKey=Array.from(random,n=>alphabet[n%alphabet.length]).join("");
+ // Crear la membresía sin enviar correo o SMS; BellaShop entregará la clave directamente.
+ const {data:created,error:createError}=await adminClient.auth.admin.createUser({
+  email:pending.email,password:accessKey,email_confirm:true
+ });
+ if(createError||!created?.user?.id){
+  return send({error:"No fue posible activar la cuenta de esta clienta. Comprueba su solicitud.",detail:createError?.message},422);
  }
- const newId=invited.user.id;
+ const newId=created.user.id;
  try {
   const {data,error}=await userClient.rpc("bl_approve_join_request",{
    p_request:requestId,p_user:newId,p_invoice:invoice,p_amount:products,p_delivery:delivery,
@@ -57,9 +63,11 @@ Deno.serve(async (req: Request) => {
    p_notes:((submittedInvoice?"":"Registro interno sin factura comercial. ")+String(payload.notes||"")).slice(0,500)
   });
   if(error)throw error;
-  return send({success:true,purchase:data,reference:invoice,internal_reference:!submittedInvoice,notice:"Membresía aprobada. La clienta recibirá un enlace de activación en su correo."});
+  return send({success:true,purchase:data,reference:invoice,internal_reference:!submittedInvoice,
+   access_key:accessKey,phone:pending.phone,
+   notice:"Membresía aprobada. Entrega la clave privada a la titular verificada; no se enviarán correos ni SMS."});
  } catch(error){
-  // La factura no se pudo confirmar: no dejar una cuenta parcial con acceso.
+  // Si la factura falla, eliminar únicamente la cuenta recién creada, sin entregar clave.
   await adminClient.auth.admin.deleteUser(newId);
   return send({error:error instanceof Error?error.message:"No se pudo confirmar la compra"},422);
  }
