@@ -233,12 +233,12 @@ function renderTeachers(){
     return '<tr><td><strong>'+esc(t.display_name)+'</strong></td>'+
      '<td><code>'+esc(t.code)+'</code></td><td>'+pill(t.active?'Activa':'Retirada',t.active?'green':'neutral')+'</td>'+
      '<td>'+esc(linked?.full_name||'No vinculada')+'</td>'+
-     '<td>'+totalRef+esc(waitingText)+'</td><td class="affiliate-actions">'+
+     '<td>'+totalRef+esc(waitingText)+'</td><td><div class="affiliate-actions">'+
      '<button class="btn btn-outline btn-small" data-affiliate-edit="'+esc(t.id)+'">Editar</button>'+
      (t.active?'<button class="btn btn-outline btn-small admin-danger" data-affiliate-retire="'+esc(t.id)+'">Retirar</button>':
       '<button class="btn btn-outline btn-small" data-affiliate-restore="'+esc(t.id)+'">Reactivar</button>')+
      (t.active?'<button class="btn btn-outline btn-small" data-affiliate-share="'+esc(t.id)+'">Enlace/QR</button>':'')+
-     '</td></tr>';
+     '</div></td></tr>';
    }));
   $$('[data-affiliate-edit]').forEach(b=>b.onclick=()=>selectAffiliate(b.dataset.affiliateEdit));
   $$('[data-affiliate-retire]').forEach(b=>b.onclick=()=>changeAffiliateStatus(b.dataset.affiliateRetire,false));
