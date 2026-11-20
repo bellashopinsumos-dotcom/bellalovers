@@ -63,7 +63,7 @@
       </article>
       <article class="benefit-card benefit-teacher">
         <div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">✦</span><span class="benefit-label">03 · COMPARTO LO QUE SÉ</span></div>
-        <h3>Profesoras de uñas</h3>
+        <h3>Profesoras afiliadas</h3>
         <p>Acumula puntos por tus compras y gana puntos adicionales cuando una estudiante referida realice su primera compra válida verificada.</p>
         <div class="benefit-foot"><strong>Compartir también suma</strong><span aria-hidden="true">♡</span></div>
       </article>
@@ -110,10 +110,14 @@
     <label for="joinCategory">¿Qué categoría te representa?</label>
     <select id="joinCategory" required>
      <option value="">Selecciona una</option><option value="estudiante">Estudiante de uñas</option>
-     <option value="manicurista">Manicurista / clienta frecuente</option><option value="profesora">Profesora de uñas</option>
+     <option value="manicurista">Manicurista / clienta frecuente</option>
     </select>
-    <div id="joinTeacherField" class="hidden"><label for="joinTeacherCode">Código de tu profesora (opcional)</label>
-    <input id="joinTeacherCode" maxlength="30" placeholder="Solo si te recomendó una profesora BellaLovers"></div>
+    <div id="joinTeacherField"><label for="joinTeacherCode">¿Qué profesora afiliada de BellaShop te recomendó? (opcional)</label>
+      <select id="joinTeacherCode" aria-describedby="joinTeacherHelp">
+        <option value="">Ninguna / no me recomendó una profesora</option>
+      </select>
+      <p class="helper" id="joinTeacherHelp">Solo aparecen las profesoras afiliadas que BellaShop tiene activas. Si no te recomendó ninguna, deja «Ninguna».</p>
+    </div>
     <label class="checkline"><input id="joinPrivacy" type="checkbox" required><span>Autorizo el tratamiento de mis datos según la <a href="./politica-datos.html" target="_blank" rel="noopener">política de BellaShop</a>.</span></label>
     <label class="checkline"><input id="joinMarketing" type="checkbox"><span>Quiero recibir promociones por WhatsApp (opcional).</span></label>
     <div class="join-honeypot" aria-hidden="true"><label for="joinWebsite">Sitio web</label><input id="joinWebsite" tabindex="-1" autocomplete="off"></div>
