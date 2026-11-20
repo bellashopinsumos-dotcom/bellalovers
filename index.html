@@ -142,16 +142,14 @@
      <input id="memberIdentifier" type="text" autocomplete="username" required maxlength="254" placeholder="3123456789 o tucorreo@ejemplo.com">
      <label for="memberFullName">Nombre y apellido</label>
      <input id="memberFullName" type="text" autocomplete="name" required maxlength="120" minlength="3" placeholder="Tal como te registraste">
-     <button type="submit" class="btn btn-primary btn-full">Continuar a mi cuenta ♡</button>
+     <button type="submit" class="btn btn-primary btn-full">Iniciar sesión ♡</button>
     </form>
-    <div id="memberVerification" class="auth-verification hidden">
-     <p>Tu cuenta contiene compras y puntos personales. Para abrirla en un dispositivo nuevo, BellaShop debe comprobar que eres la titular.</p>
-     <form id="memberKeyForm" class="stack">
-      <label for="memberAccessKey">Clave privada de acceso, solo si ya la recibiste</label>
-      <input id="memberAccessKey" type="password" autocomplete="current-password" minlength="12" maxlength="12" placeholder="Clave de 12 caracteres">
-      <button type="submit" class="btn btn-outline btn-full">Confirmar mi acceso</button>
-     </form>
-     <p class="fineprint">Si no tienes clave, solicítale a BellaShop que verifique tu identidad por WhatsApp o presencialmente. No se envían códigos SMS ni correos.</p>
+    <div id="memberVerification" class="auth-verification hidden" role="status" aria-live="polite">
+     <strong>♡ Solicitud de acceso enviada a BellaShop</strong>
+     <p id="memberVerificationMessage">Pide a BellaShop que compruebe tu identidad por WhatsApp o en la tienda y apruebe tu ingreso. Esta ventana se actualizará cuando te autoricen.</p>
+     <div class="auth-verification-loading"><span aria-hidden="true">◌</span> Esperando autorización del administrador</div>
+     <button type="button" id="cancelMemberLogin" class="btn btn-outline btn-full">Cancelar solicitud</button>
+     <p class="fineprint">Sin claves, correos de verificación ni SMS. La autorización vence en 10 minutos.</p>
     </div>
     <p id="memberLoginFeedback" class="member-login-feedback hidden" role="status"></p>
     <p class="auth-entry-prompt">¿Aún no eres BellaLover? <button type="button" data-auth-screen="register" class="auth-inline-link">Regístrate aquí</button></p>
