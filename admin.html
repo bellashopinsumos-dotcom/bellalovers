@@ -31,8 +31,9 @@
   </div>
   <div class="admin-card hidden" id="joinApprovalCard">
     <h2>Confirmar primera compra y aprobar</h2>
-    <p class="admin-section-hint">La clienta debe haber comprado realmente en BellaShop. Comprueba el valor de productos; la factura y el canal son opcionales. Su ingreso y primera compra se registrarán juntos.</p>
+    <p class="admin-section-hint">La clienta debe haber comprado realmente en BellaShop. Registra el valor de productos y aprueba su membresía. Se entregará una clave de acceso, sin enviar correos ni SMS.</p>
     <div id="joinSelectedInfo" class="join-selected-info"></div>
+    <p class="form-help">Después de aprobar, aparecerá una clave privada para entregar a la titular verificada.</p>
     <form id="joinApprovalForm" class="admin-form">
       <input id="joinRequestId" type="hidden">
       <div><label for="joinInvoice">Factura (opcional)</label><input class="admin-input" id="joinInvoice" maxlength="80" placeholder="Si no tiene, crearemos una referencia interna"></div>
@@ -153,4 +154,18 @@
    </div>
  </section>
  <section class="admin-panel" id="section-audit"><div class="admin-card"><div class="admin-card-header"><h2>Historial de movimientos de administración</h2><button id="csvAudit" class="btn btn-outline btn-small" type="button">Exportar auditoría CSV</button></div><p>Registro de actividades críticas: compras, anulaciones, ajustes, solicitudes, regalos y activación de profesoras.</p><div class="table-scroll" id="auditTable"></div></div></section>
-</main></div><div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=comprafacil20261120c1"></script></body></html>
+</main></div><div id="memberKeyDialog" class="member-key-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="memberKeyTitle">
+ <div class="member-key-card">
+   <span class="kicker">ACCESO PRIVADO BELLALOVERS</span>
+   <h2 id="memberKeyTitle">Clave de acceso generada ♡</h2>
+   <p>Comprueba que la persona es la titular antes de entregarla. La clave solo aparece ahora; si se pierde, puedes generar otra desde Clientas.</p>
+   <div id="memberKeyRecipient" class="member-key-recipient"></div>
+   <div class="member-key-code"><strong id="memberKeyCode"></strong></div>
+   <div class="admin-actions member-key-actions">
+     <button type="button" id="copyMemberKey" class="btn btn-primary">Copiar mensaje para WhatsApp</button>
+     <button type="button" id="closeMemberKey" class="btn btn-outline">Ya la entregué / Cerrar</button>
+   </div>
+   <p class="fineprint">No se envían mensajes automáticamente. Pega el mensaje en el WhatsApp de la clienta verificada.</p>
+ </div>
+</div>
+<div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=comprafacil20261120c1"></script></body></html>
