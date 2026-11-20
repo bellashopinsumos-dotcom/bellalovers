@@ -471,13 +471,13 @@ async function approveJoin(e){
  const payload={
   request_id:req.id,invoice:$('#joinInvoice').value.trim(),
   products_total:Number($('#joinProductsTotal').value),
-  delivery_fee:Number($('#joinDelivery').value),
+  delivery_fee:0,
   special_discount:$('#joinDiscount').checked,
   channel:$('#joinChannel').value,notes:$('#joinNotes').value.trim()
  };
- if(!payload.invoice||!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
-  return notify('Debes comprobar una factura real con el valor de sus productos.','error');
- if(!confirm('¿Ya comprobaste la factura '+payload.invoice+' en BellaShop? Al aprobar se registrará la compra y se enviará una invitación privada a '+req.email+'.'))return;
+ if(!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
+  return notify('Debes comprobar que la primera compra sea real y registrar el valor de productos.','error');
+ if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+' en BellaShop? Se registrará la compra y se enviará una invitación privada a '+req.email+'.'))return;
  const btn=$('#joinApprovalForm button[type=submit]');
  try{
   setLoading(btn,true,'Aprobando y enviando invitación…');
