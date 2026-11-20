@@ -8,7 +8,12 @@ function configureHomeNavigation() {
  // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
  document.addEventListener('click', event => {
   const link=event.target.closest?.('a[href^="#"]');
-  if(link?.dataset.openAuth)setAuthScreen(link.dataset.openAuth);
+  if(link?.dataset.openAuth){
+   event.preventDefault();
+   if(customer&&link.dataset.openAuth==='signin'){show('account');return;}
+   openAuthModal(link.dataset.openAuth);
+   return;
+  }
   if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   const destination=link.getAttribute('href');
   if (!destination || destination==='#') return;
@@ -39,30 +44,59 @@ async function run(q, label='Ocurrió un error') {
   if(error) throw new Error(error.message || label);
   return data;
 }
-function show(which) {
-  ['#loginPanel','#account'].forEach(selector=>$(selector).classList.add('hidden'));
-  $('#acceso').classList.toggle('hidden',which==='account');
-  const nav=$('#navCuenta');
-  $('#navRegister')?.classList.toggle('hidden',which==='account');
-  if(which==='login'){
-    $('#loginPanel').classList.remove('hidden');
-    if(nav){nav.href='#acceso';nav.dataset.openAuth='signin';nav.innerHTML='Iniciar sesión <span aria-hidden="true">♡</span>';}
-  }
-  if(which==='account'){
-    $('#account').classList.remove('hidden');
-    if(nav){nav.href='#account';delete nav.dataset.openAuth;nav.innerHTML='Mi cuenta <span aria-hidden="true">♡</span>';}
-    $('#account').scrollIntoView({behavior:'smooth',block:'start'});
-  }
+let authModalTrigger=null;
+function closeAuthModal(){
+ const modal=$('#authModal');
+ if(!modal||modal.classList.contains('hidden'))return;
+ modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');
+ document.body.classList.remove('auth-modal-open');
+ $('#memberAccessKey').value='';
+ authModalTrigger?.focus?.();authModalTrigger=null;
+}
+function openAuthModal(screen='signin'){
+ if(customer&&screen==='signin'){show('account');return;}
+ authModalTrigger=document.activeElement;setAuthScreen(screen);
+ $('#memberVerification').classList.add('hidden');
+ $('#memberLoginFeedback').classList.add('hidden');
+ const modal=$('#authModal');
+ modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');
+ document.body.classList.add('auth-modal-open');
+ requestAnimationFrame(()=>$('#closeAuthModal').focus());
+}
+function show(which){
+ const account=$('#account'),nav=$('#navCuenta');
+ if(which==='account'){
+  closeAuthModal();
+  account.classList.remove('hidden');
+  $('#navRegister')?.classList.add('hidden');
+  if(nav){nav.textContent='Mi cuenta ♡';nav.href='#account';delete nav.dataset.openAuth;}
+  account.scrollIntoView({behavior:'smooth',block:'start'});
+ }else{
+  account.classList.add('hidden');$('#navRegister')?.classList.remove('hidden');
+  if(nav){nav.textContent='Iniciar sesión ♡';nav.href='#inicio';nav.dataset.openAuth='signin';}
+ }
 }
 function setAuthScreen(screen){
  const registering=screen==='register';
  $('#memberLoginView').classList.toggle('hidden',registering);
  $('#registerView').classList.toggle('hidden',!registering);
- $('[data-auth-screen]').forEach(btn=>{
+ $$('[data-auth-screen]').forEach(btn=>{
   const active=btn.dataset.authScreen===(registering?'register':'signin');
   btn.classList.toggle('active',active);
   if(btn.hasAttribute('aria-pressed'))btn.setAttribute('aria-pressed',String(active));
  });
+}
+function handleAuthKeydown(event){
+ const modal=$('#authModal');
+ if(modal.classList.contains('hidden'))return;
+ if(event.key==='Escape'){event.preventDefault();closeAuthModal();return;}
+ if(event.key!=='Tab')return;
+ const list=$$('button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href]',modal)
+ .filter(el=>el.getClientRects().length&&el.tabIndex>=0);
+ if(!list.length)return;
+ const first=list[0],last=list[list.length-1];
+ if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+ else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
 }
 
 function normalPhone(raw) {
@@ -86,22 +120,60 @@ async function sendJoinRequest(event) {
   notify('Solicitud recibida. BellaShop la revisará cuando hagas tu primera compra.');
  }catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
+function normalizeIdentifier(value){
+ const raw=String(value||'').trim().toLowerCase();
+ if(/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(raw))return raw;
+ const digits=raw.replace(/\D/g,'');
+ const local=digits.startsWith('57')&&digits.length===12?digits.slice(2):digits;
+ if(/^3\d{9}$/.test(local))return '+57'+local;
+ throw new Error('Escribe un celular colombiano o correo válido.');
+}
+function normalizeName(value){
+ return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+ .replace(/\s+/g,' ').trim().toLocaleLowerCase('es-CO');
+}
 async function sendMemberAccess(event){
  event.preventDefault();
- const btn=$('#memberLoginForm button[type=submit]'),info=$('#memberLoginFeedback');
+ const info=$('#memberLoginFeedback'),verify=$('#memberVerification');
  try{
-  if(!sb)throw new Error('No fue posible conectar con BellaLovers.');
-  const phone=normalPhone($('#memberPhone').value);
-  const accessKey=$('#memberAccessKey').value.trim().toUpperCase();
-  if(!/^[A-HJ-NP-Z2-9]{12}$/.test(accessKey))throw new Error('Revisa tu clave BellaLovers de 12 caracteres.');
-  setLoading(btn,true,'Ingresando a tu cuenta…');
-  info.classList.add('hidden');
-  const {data,error}=await sb.functions.invoke('bellalovers-ingresar',{
-   body:{phone,access_key:accessKey}
-  });
-  if(error||!data?.success||!data.access_token||!data.refresh_token){
-   throw new Error(data?.error||'Celular o clave incorrectos. Verifica tus datos o consulta con BellaShop.');
+  const identifier=normalizeIdentifier($('#memberIdentifier').value);
+  const name=$('#memberFullName').value.trim();
+  if(name.length<3||!name.includes(' '))throw new Error('Escribe nombre y apellido como te registraste.');
+  if(!sb)throw new Error('No se pudo conectar con BellaLovers.');
+  const {data:{user}}=await sb.auth.getUser();
+  if(user){
+   const {data:profile}=await sb.from('bl_profiles').select('id,full_name,phone,blocked,archived_at,deleted_at').eq('id',user.id).maybeSingle();
+   if(profile&&!profile.blocked&&!profile.archived_at&&!profile.deleted_at&&
+      normalizeName(name)===normalizeName(profile.full_name)&&
+      (identifier===profile.phone||identifier===String(user.email||'').toLowerCase())){
+    await loadUser();return;
+   }
   }
+  verify.classList.remove('hidden');
+  info.textContent='Para proteger tus compras y puntos, BellaShop debe confirmar que eres la titular cuando ingresas desde un dispositivo nuevo.';
+  info.classList.remove('hidden');
+  $('#memberAccessKey').focus();
+ }catch(err){
+  info.textContent=err.message||'Revisa tus datos.';
+  info.classList.remove('hidden');verify.classList.add('hidden');
+ }
+}
+async function verifyMemberAccess(event){
+ event.preventDefault();
+ const info=$('#memberLoginFeedback'),button=$('#memberKeyForm button[type=submit]');
+ try{
+  if(!sb)throw new Error('No se pudo conectar con BellaLovers.');
+  const identifier=normalizeIdentifier($('#memberIdentifier').value);
+  const name=$('#memberFullName').value.trim();
+  if(!name.includes(' '))throw new Error('Escribe nombre y apellido completos.');
+  const key=$('#memberAccessKey').value.trim().toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{12}$/.test(key))throw new Error('Revisa la clave de acceso.');
+  setLoading(button,true,'Verificando acceso…');
+  const {data,error}=await sb.functions.invoke('bellalovers-ingresar',{
+   body:{identifier,full_name:name,access_key:key}
+  });
+  if(error||!data?.success||!data.access_token||!data.refresh_token)
+   throw new Error(data?.error||'No se pudo confirmar tu identidad. Consulta con BellaShop.');
   const {error:sessionError}=await sb.auth.setSession({
    access_token:data.access_token,refresh_token:data.refresh_token
   });
@@ -110,9 +182,9 @@ async function sendMemberAccess(event){
   await loadUser();
   notify('¡Bienvenida a tu cuenta BellaLovers!');
  }catch(err){
+  info.textContent=err.message||'No fue posible ingresar.';
   info.classList.remove('hidden');
-  info.textContent=err.message||'No pudimos ingresar. Consulta con BellaShop.';
- }finally{setLoading(btn,false);}
+ }finally{setLoading(button,false);}
 }
 
 async function loadUser(){
@@ -262,7 +334,7 @@ async function submitRedemption(){
 }
 async function logOut(){
  if(sb)await sb.auth.signOut();customer=null;
- show('login');$('#acceso').scrollIntoView({behavior:'smooth',block:'start'});
+ show('login');window.scrollTo({top:0,behavior:'smooth'});
 }
 async function loadAffiliatedTeachers(){
  const select=$('#joinTeacherCode');
@@ -292,9 +364,14 @@ async function loadJoinStatus(){
 function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
- $('[data-auth-screen]').forEach(button=>button.addEventListener('click',()=>{
+ $('#memberKeyForm').addEventListener('submit',verifyMemberAccess);
+ $('#closeAuthModal').addEventListener('click',closeAuthModal);
+ $('#authModal').addEventListener('click',event=>{if(event.target===$('#authModal'))closeAuthModal();});
+ document.addEventListener('keydown',handleAuthKeydown);
+ $$('[data-auth-screen]').forEach(button=>button.addEventListener('click',()=>{
   setAuthScreen(button.dataset.authScreen);
-  if(!location.hash||location.hash!=='#acceso')$('#acceso').scrollIntoView({behavior:'smooth',block:'start'});
+  $('#memberVerification').classList.add('hidden');
+  $('#memberLoginFeedback').classList.add('hidden');
  }));
  $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)refreshAccount().then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
 
