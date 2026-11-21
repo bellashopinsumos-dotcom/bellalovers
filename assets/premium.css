@@ -1322,3 +1322,16 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
 @media(prefers-reduced-motion:reduce){
  #progressBar,.club-month-track span{transition:none}
 }
+
+
+/* Acceso administrativo: avisos visibles y recuperación sin modificar contraseñas */
+.admin-login-feedback,.admin-load-feedback{
+ background:#fff5f8;border:1px solid #e6c3d1;border-left:3px solid #ba7b9a;
+ color:#79495e;border-radius:12px;padding:13px 16px;
+ font-size:12px;line-height:1.7;font-weight:650;margin:12px 0;
+}
+.admin-login-feedback.hidden,.admin-load-feedback.hidden{display:none}
+.admin-load-feedback{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 19px}
+.admin-load-feedback p{margin:0;flex:1}
+.admin-clear-session{margin-top:2px;font-size:12px;min-height:35px;color:#886773}
+@media(max-width:690px){.admin-load-feedback{flex-wrap:wrap}.admin-load-feedback .btn{width:100%}}
