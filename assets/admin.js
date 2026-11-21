@@ -21,7 +21,7 @@ function showPanel(name){
  if(name==='redemptions'&&pendingRewardDirty){
   pendingRewardDirty=false;loadAll().catch(err=>notify(err.message,'error'));
  }
- $('.admin-panel').forEach(e=>e.classList.toggle('active',e.id===`section-${name}`));$$('#adminNav button').forEach(b=>b.classList.toggle('active',b.dataset.section===name));
+ $('.admin-panel').forEache=>e.classList.toggle('active',e.id===`section-${name}`));$$('#adminNav button').forEach(b=>b.classList.toggle('active',b.dataset.section===name));
  $('#sectionTitle').textContent=titles[name][0];$('#sectionSubtitle').textContent=titles[name][1];
  if(window.innerWidth<690) window.scrollTo({top:0,behavior:'smooth'});
 }
