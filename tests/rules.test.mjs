@@ -112,7 +112,7 @@ assert.doesNotMatch(publicHtml, /memberVerification|Esperando autorización/, 'V
 assert.match(clientJs, /request_reward/, 'El canje se envía como solicitud pendiente');
 assert.match(clientJs, /Confirmar tu canje por WhatsApp|confirme tu canje por WhatsApp/i, 'Confirmación por WhatsApp antes de descuento');
 assert.match(publicAccountFn, /status:"pendiente"/, 'Crear solicitudes de premios sin descontar puntos');
-assert.match(publicAccountFn, /balance<50/, 'Bloquear canjes hasta 50 puntos');
+assert.match(publicAccountFn, /balance<threshold/, 'Bloquear canjes según meta configurada por BellaShop');
 assert.match(adminHtml, /id="guestRedemptionsTable"/, 'Admin revisa nuevas solicitudes de premios');
 assert.match(adminJs, /CONFIRMADO/, 'Admin confirma con titular antes de descontar');
 assert.doesNotMatch(adminJs, /renderLoginRequests|reviewLoginRequest/, 'No pedir aprobación para iniciar sesión');
