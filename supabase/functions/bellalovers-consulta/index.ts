@@ -78,21 +78,29 @@ Deno.serve(async(req:Request)=>{
  let body:Record<string,unknown>;
  try{body=await req.json();}catch{return respond({error:"Solicitud inválida"},400);}
  const action=String(body.action||"view");
+ // Datos públicos del programa: no incluyen información de clientas.
+ if(action==="public_rules"){
+  const {data,error}=await client.from("bl_settings")
+   .select("min_purchase,point_value,unlock_points,student_gift_min,cycle_months,grace_days,exclude_discounts,student_first_no_points,shop_url")
+   .eq("id",1).single();
+  if(error||!data)return respond({error:"No pudimos cargar las reglas del club."},503);
+  return respond({success:true,rules:data});
+ }
  const identifier=String(body.identifier||"").trim();
  const fullName=String(body.full_name||"").trim();
  const parsed=normalizedIdentifier(identifier);
  if(!parsed||fullName.length<3||fullName.length>120||!fullName.includes(" "))
   return respond({error:"Escribe celular o correo y nombre completo válido."},400);
  const key=("email" in parsed?parsed.email:parsed.phone)||"";
- if(!await limit(key,"lookup",120))return respond({error:"Demasiados intentos. Vuelve más tarde."},429);
+ if(!await limit(key,"lookup",60))return respond({error:"Demasiados intentos. Vuelve más tarde."},429);
  const ip=req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip");
- if(ip&&!await limit(ip,"ip",200))return respond({error:"Se alcanzó el límite de consultas."},429);
+ if(ip&&!await limit(ip,"ip",100))return respond({error:"Se alcanzó el límite de consultas."},429);
  try{
   const person=await resolveMember(identifier,fullName);
   if(!person)return respond({error:generic},404);
   const {balance,cycles,points}=await balanceFor(person.id);
   if(action==="view"){
-   const [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult]=await Promise.all([
+   const [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult,giftResult]=await Promise.all([
     client.from("bl_settings").select("unlock_points,student_gift_min").eq("id",1).single(),
     client.from("bl_purchases").select("created_at,products_total,points_awarded,status,channel,special_discount")
       .eq("customer_id",person.id).order("created_at",{ascending:false}).limit(80),
@@ -102,9 +110,10 @@ Deno.serve(async(req:Request)=>{
       .order("created_at",{ascending:false}).limit(35),
     client.from("bl_guest_reward_requests").select("id,created_at,status,total_points").eq("customer_id",person.id)
       .order("created_at",{ascending:false}).limit(35),
-    client.from("bl_teacher_codes").select("code").eq("teacher_id",person.id).eq("enabled",true).maybeSingle()
+    client.from("bl_teacher_codes").select("code").eq("teacher_id",person.id).eq("enabled",true).maybeSingle(),
+     client.from("bl_gift_claims").select("id").eq("student_id",person.id).limit(1)
    ]);
-   for(const item of [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult])
+   for(const item of [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult,giftResult])
     if(item.error)throw item.error;
    const rewards=(rewardsResult.data||[]).filter(r=>r.audience==="todas"||r.audience===person.category);
    const traditional=(redemptionsResult.data||[]).map(r=>({
@@ -127,7 +136,7 @@ Deno.serve(async(req:Request)=>{
      cycle_id:p.cycle_id,created_at:p.created_at,kind:p.kind,delta:p.delta,detail:""
     })),
     purchases:(purchasesResult.data||[]).map(p=>({...p,invoice:null})),
-    requests,rewards,teacher_code:teacherResult.data?.code||null
+    requests,rewards,gift_claimed:(giftResult.data||[]).length>0,teacher_code:teacherResult.data?.code||null
    });
   }
   if(action==="request_reward"){
