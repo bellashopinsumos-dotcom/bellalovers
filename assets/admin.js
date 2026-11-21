@@ -1,7 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
-let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],loginRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
+let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
 const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
 function uname(id){return profiles.find(p=>p.id===id)?.full_name||'—';}
@@ -58,11 +58,11 @@ async function loadAll(){if(mode!=='live')return;
   ['giftClaims',sb.from('bl_gift_claims').select('*').order('delivered_at',{ascending:false})],
   ['audit',sb.from('bl_audit').select('*').order('created_at',{ascending:false}).limit(150)],
   ['settings',sb.from('bl_settings').select('*').eq('id',1).single()],
-  ...(staff?.role==='admin'?[['joinRequests',sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000)],['loginRequests',sb.from('bl_login_requests').select('*').order('created_at',{ascending:false}).limit(150)]]:[]),
+  ...(staff?.role==='admin'?[['joinRequests',sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000)],['guestRewardRequests',sb.from('bl_guest_reward_requests').select('*').order('created_at',{ascending:false}).limit(300)]]:[]),
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];loginRequests=d.loginRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];guestRewardRequests=d.guestRewardRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
@@ -268,6 +268,58 @@ function renderRewards(){
   $('#rewardName').focus();$('#rewardForm').scrollIntoView({behavior:'smooth',block:'start'});
  });
 }
+function renderGuestRewardRequests(){
+ const el=$('#guestRedemptionsTable');
+ if(!el)return;
+ if(staff?.role!=='admin'){
+  el.innerHTML='<div class="admin-feedback">Solo administración puede confirmar solicitudes nuevas de premios.</div>';
+  return;
+ }
+ const pending=guestRewardRequests.filter(r=>r.status==='pendiente').length;
+ $('#guestRewardPendingCount').textContent=pending+' pendiente'+(pending===1?'':'s');
+ el.innerHTML=table(['Fecha','Clienta / contacto','Premios solicitados','Puntos estimados','Estado','Confirmar por WhatsApp'],
+ guestRewardRequests.map(r=>{
+  const member=profiles.find(p=>p.id===r.customer_id);
+  const items=Array.isArray(r.items)?r.items:[];
+  const descriptions=items.map(i=>(Number(i.qty)||0)+' × '+(rewards.find(w=>w.id===i.reward_id)?.name||'Premio retirado')).join(', ');
+  return '<tr><td>'+date(r.created_at)+'</td><td><strong>'+esc(member?.full_name||'Cuenta no disponible')+'</strong><small>'+esc(member?.phone||'Sin celular')+'</small></td>'+
+   '<td>'+esc(descriptions)+'</td><td>'+Number(r.total_points)+'</td>'+
+   '<td>'+pill(r.status,r.status==='aprobada'?'green':r.status==='rechazada'?'red':'neutral')+'</td>'+
+   '<td>'+(r.status==='pendiente'?'<div class="admin-actions">'+
+    '<button class="btn btn-primary btn-small" data-guest-confirm="'+esc(r.id)+'">Ya confirmé con clienta</button>'+
+    '<button class="btn btn-outline btn-small" data-guest-reject="'+esc(r.id)+'">Rechazar</button></div>':
+    r.status==='aprobada'?'Confirmado y descontado':'Rechazado')+'</td></tr>';
+ }));
+ $$('[data-guest-confirm]').forEach(btn=>btn.onclick=()=>reviewGuestReward(btn.dataset.guestConfirm,true));
+ $$('[data-guest-reject]').forEach(btn=>btn.onclick=()=>reviewGuestReward(btn.dataset.guestReject,false));
+}
+async function reviewGuestReward(id,approve){
+ if(!requireLive()||!checkManager())return;
+ const req=guestRewardRequests.find(r=>r.id===id&&r.status==='pendiente');
+ if(!req)return notify('Esta solicitud ya se revisó.','error');
+ const member=profiles.find(p=>p.id===req.customer_id);
+ if(!member)return notify('No se encontró la clienta.','error');
+ let reason=null;
+ if(approve){
+  const check=prompt('Confirma por WhatsApp o teléfono al número registrado '+(member.phone||'sin número')+' que '+member.full_name+' solicitó estos premios. Escribe CONFIRMADO solamente después de hablar con la titular:');
+  if(check===null)return;
+  if(check.trim().toUpperCase()!=='CONFIRMADO')
+   return notify('Debes confirmar el canje con la clienta antes de descontar puntos.','error');
+  if(!confirm('¿Aprobar el premio de '+member.full_name+'? SOLO AHORA se descontarán puntos y stock.'))return;
+  reason='Titularidad comprobada por WhatsApp';
+ }else{
+  reason=prompt('Motivo para rechazar esta solicitud (mínimo 5 caracteres):');
+  if(reason===null)return;
+  if(reason.trim().length<5)return notify('Explica el motivo del rechazo.','error');
+  if(!confirm('¿Rechazar esta solicitud sin descontar puntos ni inventario?'))return;
+ }
+ try{
+  await rpc('bl_decide_guest_reward',{p_request:id,p_approve:approve,p_reason:reason});
+  notify(approve?'Solicitud confirmada: puntos e inventario actualizados.':'Solicitud rechazada: sin descuento de puntos.');
+  await loadAll();
+ }catch(err){notify('No fue posible procesar el premio: '+err.message,'error');}
+}
+
 function renderRedemptions(){
  $('#redemptionsTable').innerHTML=table(['ID','Clienta','Premios','Puntos','Fecha','Estado',''],redemptions.map(r=>{
    const items=redemptionItems.filter(i=>i.redemption_id===r.id).map(i=>`${i.qty} × ${rewards.find(x=>x.id===i.reward_id)?.name||'Premio'}`).join(', ');
@@ -419,53 +471,6 @@ async function saveStaff(e){
  catch(err){notify('No se pudo actualizar: '+err.message,'error');}
  finally{setLoading(btn,false);}
 }
-function renderLoginRequests(){
- const container=$('#loginRequestsTable');
- if(!container)return;
- if(staff?.role!=='admin'){
-  container.innerHTML='<p class="form-help">Solo administración puede autorizar el ingreso a las cuentas.</p>';return;
- }
- const now=Date.now();
- const recent=loginRequests.filter(r=>new Date(r.expires_at).getTime()>now-24*60*60*1000);
- const pending=recent.filter(r=>r.status==='pendiente'&&new Date(r.expires_at).getTime()>now);
- $('#loginPendingBadge').textContent=pending.length+' por autorizar';
- container.innerHTML=table(['Hora','BellaLover','Celular','Estado','Autorizar ingreso'],recent.slice(0,60).map(r=>{
-  const member=profiles.find(p=>p.id===r.member_id);
-  const expired=new Date(r.expires_at).getTime()<=now;
-  const active=r.status==='pendiente'&&!expired;
-  const status=expired?'Vencida':r.status==='pendiente'?'Esperando':
-   r.status==='aprobada'?'Aprobada':r.status==='rechazada'?'Rechazada':'Ingresó';
-  return '<tr><td>'+date(r.created_at)+' · '+new Date(r.created_at).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',timeZone:'America/Bogota'})+'</td>'+
-   '<td><strong>'+esc(member?.full_name||'Cuenta no disponible')+'</strong></td><td>'+esc(member?.phone||'—')+'</td>'+
-   '<td>'+pill(status,active?'neutral':r.status==='aprobada'?'green':'')+'</td>'+
-   '<td>'+(active?
-    '<div class="account-actions"><button class="btn btn-primary btn-small" data-login-approve="'+esc(r.id)+'">Aprobar</button>'+
-    '<button class="btn btn-outline btn-small" data-login-reject="'+esc(r.id)+'">Rechazar</button></div>':
-    '—')+'</td></tr>';
- }));
- $$('[data-login-approve]').forEach(btn=>btn.onclick=()=>reviewLoginRequest(btn.dataset.loginApprove,true));
- $$('[data-login-reject]').forEach(btn=>btn.onclick=()=>reviewLoginRequest(btn.dataset.loginReject,false));
-}
-async function reviewLoginRequest(id,approved){
- if(!requireLive()||!checkManager())return;
- const request=loginRequests.find(r=>r.id===id);
- if(!request||request.status!=='pendiente'||new Date(request.expires_at).getTime()<=Date.now())
-  return notify('La solicitud venció o ya fue revisada.','error');
- const member=profiles.find(p=>p.id===request.member_id);
- if(!member)return notify('No se encontró la clienta.','error');
- if(approved){
-  const confirmation=prompt('Antes de aprobar, VERIFICA por WhatsApp o presencialmente que la persona es '+member.full_name+' ('+member.phone+'). Escribe VERIFICADO si confirmaste su identidad:');
-  if(confirmation===null)return;
-  if(confirmation.trim().toUpperCase()!=='VERIFICADO')
-   return notify('No se aprobó: primero comprueba la identidad de la clienta.','error');
- }else if(!confirm('¿Rechazar la solicitud de acceso a la cuenta de '+member.full_name+'?'))return;
- try{
-  await rpc('bl_review_login_request',{p_request:id,p_approve:approved});
-  notify(approved?'Acceso autorizado. La clienta podrá entrar en el dispositivo que lo solicitó.':'Solicitud rechazada.');
-  await loadAll();
- }catch(err){notify('No fue posible revisar el acceso: '+err.message,'error');}
-}
-
 function renderJoins(){
  const tableEl=$('#joinRequestsTable'),card=$('#joinApprovalCard');
  if(!tableEl)return;
@@ -539,7 +544,7 @@ async function approveJoin(e){
  finally{setLoading(btn,false);}
 }
 
-function renderAll(){renderLoginRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
+function renderAll(){renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){
  e.preventDefault();if(!requireLive())return;
  const btn=$('#purchaseForm button[type=submit]');
@@ -671,14 +676,6 @@ function setup(){
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
  $('#reloadJoins').addEventListener('click',loadAll);
- // Las solicitudes de ingreso expiran rápidamente: actualiza solo esta bandeja, sin perder formularios.
- window.setInterval(async()=>{
-  if(mode!=='live'||staff?.role!=='admin'||!$('#section-joins').classList.contains('active'))return;
-  try{
-   loginRequests=await run(sb.from('bl_login_requests').select('*').order('created_at',{ascending:false}).limit(150));
-   renderLoginRequests();
-  }catch(err){console.warn('No se pudieron actualizar las solicitudes de acceso:',err.message);}
- },12000);
 
  $('#joinPolicyVerified').addEventListener('change',updateJoinChecklist);
  $('#joinStatusForm').addEventListener('submit',e=>{e.preventDefault();saveJoinStatus(true);});
