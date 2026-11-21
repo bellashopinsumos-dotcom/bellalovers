@@ -8,5 +8,5 @@ const HEADERS={
 };
 Deno.serve(req=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:HEADERS});
- return new Response(JSON.stringify({error:"Usa el acceso con celular y clave BellaLovers desde la portada."}),{status:410,headers:HEADERS});
+ return new Response(JSON.stringify({error:"Entra desde BellaLovers con tu nombre y celular o correo, sin clave."}),{status:410,headers:HEADERS});
 });
