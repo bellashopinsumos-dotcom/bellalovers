@@ -56,7 +56,7 @@ assert.match(publicHtml, /id="myJoinedDate"/, 'Fecha de ingreso visible en la cu
 assert.match(publicHtml, /id="rewardsLock"/, 'El bloqueo de premios debe estar claramente visible');
 assert.match(publicHtml, /id="refreshMemberRewards"/, 'Recompensas actualizables desde la cuenta');
 assert.match(clientJs, /bellalovers-consulta/, 'Ingresar únicamente con celular o correo y nombre');
-assert.match(clientJs, /Próximamente tendremos recompensas/, 'Si faltan premios, mostrar Próximamente');
+assert.match(clientJs, /Próximamente, sorpresas para nuestras BellaLovers/, 'Si faltan premios, mostrar Próximamente sin inventar productos');
 assert.match(clientJs, /Premios bloqueados hasta/, 'Los premios se bloquean antes de la meta');
 assert.match(clientJs, /customer\.created_at/, 'Fecha de afiliación obtenida del perfil real');
 assert.match(publicAccountFn, /bl_profiles/, 'Consultar solo membresías activas');
