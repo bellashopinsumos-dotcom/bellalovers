@@ -1,7 +1,7 @@
 import {CONFIG,HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
-let cart={}; let giftClaims=[];
+let cart={}; let giftClaims=[]; let serverBalance=null;
 let requestsOpen=false;
 
 function configureHomeNavigation() {
@@ -57,6 +57,8 @@ function closeAuthModal(){
 function openAuthModal(screen='signin'){
  if(customer&&screen==='signin'){show('account');return;}
  authModalTrigger=document.activeElement;setAuthScreen(screen);
+ $('#joinSent').classList.add('hidden');
+ $('#joinForm').classList.toggle('hidden',!requestsOpen);
  $('#memberLoginFeedback').classList.add('hidden');
  const modal=$('#authModal');
  modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');
@@ -120,6 +122,16 @@ async function sendJoinRequest(event) {
   notify('Solicitud recibida. BellaShop la revisará cuando hagas tu primera compra.');
  }catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
+async function edgeErrorMessage(error,data,fallback='No pudimos completar la solicitud.'){
+ if(data?.error)return String(data.error);
+ if(error?.context?.json){
+  try{
+   const payload=await error.context.clone().json();
+   if(payload?.error)return String(payload.error);
+  }catch{}
+ }
+ return fallback;
+}
 function normalizeIdentifier(value){
  const raw=String(value||'').trim().toLowerCase();
  if(/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(raw))return raw;
@@ -133,20 +145,20 @@ async function fetchGuestAccount(identifier,fullName,{open=false}={}){
   body:{action:'view',identifier,full_name:fullName}
  });
  if(error||!data?.success||!data?.profile){
-  const info=data?.error||'No encontramos tu membresía con esos datos. Revisa lo escrito o regístrate.';
-  throw new Error(info);
+  throw new Error(await edgeErrorMessage(error,data,'No pudimos consultar tu cuenta. Comprueba tu conexión e intenta nuevamente.'));
  }
  guestMode=true;
  guestIdentity={identifier,fullName};
  customer=data.profile;
- rules={...DEFAULT_RULES,...data.settings};
+ rules={...DEFAULT_RULES,...rules,...data.settings};
  cycles=data.cycles||[];
  ledger=data.ledger||[];
  purchases=data.purchases||[];
  requests=data.requests||[];
  rewards=data.rewards||[];
  teacherCode=data.teacher_code||null;
- giftClaims=[];
+ giftClaims=data.gift_claimed?[{confirmed:true}]:[];
+ serverBalance=Number.isFinite(Number(data.balance))?Math.max(0,Number(data.balance)):null;
  cart={};
  renderAccount();
  if(open){
@@ -205,6 +217,7 @@ async function refreshAccount(){
   cart={};renderAccount();
 }
 function availablePoints() {
+ if(guestMode&&serverBalance!==null)return serverBalance;
   const today=Date.now();
   const validIds=new Set(cycles.filter(c=>!c.closed_at && new Date(c.grace_until).getTime()>today).map(c=>c.id));
   return Math.max(0,ledger.filter(p=>validIds.has(p.cycle_id)).reduce((s,p)=>s+Number(p.delta),0));
@@ -302,7 +315,7 @@ function renderRewards(){
 }
 function renderLedger(){
   const items=ledger;
-  $('#pointsTable').innerHTML=items.length?items.map(x=>`<div class="data-row"><div><strong>${esc(({compra:'Compra confirmada',referido:'Referido verificado',redencion:'Recompensa solicitada',reintegro:'Puntos reintegrados',reverso:'Compra anulada',ajuste:'Ajuste administrativo',vencimiento:'Puntos vencidos'})[x.kind]||x.kind)}</strong><small>${date(x.created_at)} · ${esc(x.detail||'')}</small></div><strong class="${x.delta>=0?'positive':'negative'} nowrap">${x.delta>0?'+':''}${x.delta} pts</strong></div>`).join(''):'<div class="empty">Todavía no tienes movimientos. Tus compras confirmadas aparecerán aquí.</div>';
+  $('#pointsTable').innerHTML=items.length?items.map(x=>`<div class="data-row"><div><strong>${esc(({compra:'Compra confirmada',referido:'Referido verificado',redencion:'Recompensa confirmada',reintegro:'Puntos reintegrados',reverso:'Compra anulada',ajuste:'Ajuste administrativo',vencimiento:'Puntos vencidos'})[x.kind]||x.kind)}</strong><small>${date(x.created_at)} · ${esc(x.detail||'')}</small></div><strong class="${x.delta>=0?'positive':'negative'} nowrap">${x.delta>0?'+':''}${x.delta} pts</strong></div>`).join(''):'<div class="empty">Todavía no tienes movimientos. Tus compras confirmadas aparecerán aquí.</div>';
 }
 function renderPurchases(){
  const channels={tienda:'Compra en tienda',whatsapp:'Compra por WhatsApp',domicilio:'Pedido con domicilio',web:'Compra por la página web',otro:'Compra registrada'};
@@ -330,7 +343,7 @@ async function submitRedemption(){
      body:{action:'request_reward',identifier:guestIdentity.identifier,
       full_name:guestIdentity.fullName,items:selected}
     });
-    if(error||!data?.success)throw new Error(data?.error||'No se pudo registrar tu solicitud.');
+    if(error||!data?.success)throw new Error(await edgeErrorMessage(error,data,'No se pudo registrar tu solicitud. Intenta nuevamente.'));
     notify('¡Solicitud enviada! BellaShop te contactará por WhatsApp para confirmarla.');
     await refreshAccount();
     $$('.account-tabs button').find(x=>x.dataset.tab==='requests')?.click();
@@ -345,7 +358,7 @@ async function submitRedemption(){
 async function logOut(){
  sessionStorage.removeItem(GUEST_SESSION_KEY);
  if(sb&&!guestMode)await sb.auth.signOut();
- guestMode=false;guestIdentity=null;customer=null;
+ guestMode=false;guestIdentity=null;customer=null;serverBalance=null;
  ledger=[];purchases=[];requests=[];rewards=[];cycles=[];cart={};
  show('login');window.scrollTo({top:0,behavior:'smooth'});
 }
