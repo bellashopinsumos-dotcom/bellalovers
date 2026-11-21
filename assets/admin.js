@@ -1,5 +1,5 @@
 import {HAS_BACKEND} from './config.js';
-import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
+import {db,$,$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
 let pendingRewardPoll=null,pendingRewardKnownIds=null,pendingRewardCount=0,pendingRewardDirty=false;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
@@ -760,6 +760,29 @@ function downloadCsv(headers,rows,name){const values=[headers,...rows].map(row=>
   return '"'+v.replace(/"/g,'""')+'"';
  }).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+values],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
+async function clearStaleAdminSession(){
+ const btn=$('#adminClearSession');
+ try{
+  setLoading(btn,true,'Reiniciando sesión…');
+  sb=sb||await db('admin');
+  if(sb){
+   const {error}=await sb.auth.signOut({scope:'local'});
+   if(error)console.warn('Sesión vencida; eliminando datos locales:',error.message);
+  }
+ }catch(err){console.warn('No se pudo cerrar la sesión antigua:',err.message);}
+ finally{
+  // Solo elimina la sesión local de este dispositivo: no afecta cuentas ni contraseñas.
+  try{localStorage.removeItem('bellalovers-admin-auth');}catch{}
+  mode='locked';staff=null;
+  stopPendingRewardPoll();
+  $('#adminApp').classList.add('hidden');
+  $('#adminLogin').classList.remove('hidden');
+  $('#adminPassword').value='';
+  clearAdminLoginError();
+  setLoading(btn,false);
+  notify('Sesión local reiniciada. Vuelve a iniciar con tu correo y contraseña.');
+ }
+}
 async function sendRecoveryEmail(){
  const email=$('#adminEmail').value.trim().toLowerCase();
  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
@@ -826,6 +849,7 @@ function setup(){
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
  $('#adminLoginForm').addEventListener('submit',login);
  $('#adminRetryLoad').addEventListener('click',()=>loadAll());
+ $('#adminClearSession').addEventListener('click',clearStaleAdminSession);
  $('#adminEmail').addEventListener('input',clearAdminLoginError);
  $('#adminPassword').addEventListener('input',clearAdminLoginError);
  $('#joinFilter').addEventListener('change',renderJoins);
