@@ -1,5 +1,5 @@
 import {HAS_BACKEND} from './config.js';
-import {db,$,$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
+import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
 let pendingRewardPoll=null,pendingRewardKnownIds=null,pendingRewardCount=0,pendingRewardDirty=false;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
