@@ -1,4 +1,42 @@
-<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5d8e2"><title>Administración | BellaLovers</title><link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=adminacceso20261121b"></head><body class="admin-body">
+<!doctype html><html lang="es-CO"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5d8e2"><title>Administración | BellaLovers</title>
+<script>
+/* Protección independiente: ningún fallo de carga permite que el navegador
+   envíe el formulario de acceso como una página normal y borre los campos. */
+(function(){
+ function showLoadError(message){
+  var el=document.getElementById('adminLoginFeedback');
+  if(el){
+   el.textContent=message;
+   el.classList.remove('hidden');
+  }
+ }
+ document.addEventListener('submit',function(event){
+  if(event.target && event.target.id==='adminLoginForm'){
+   event.preventDefault();
+   if(!window.__bellaAdminLoginHandlerReady){
+    showLoadError('La conexión con BellaLovers no terminó de cargar. No se enviaron tus datos. Actualiza la página y vuelve a intentarlo.');
+   }
+  }
+ },true);
+ window.addEventListener('error',function(event){
+  if(!window.__bellaAdminLoginHandlerReady){
+   showLoadError('No se pudo cargar el sistema de acceso. Comprueba tu conexión y actualiza esta página.');
+  }
+ });
+ window.addEventListener('unhandledrejection',function(){
+  if(!window.__bellaAdminLoginHandlerReady){
+   showLoadError('La conexión del administrador falló al iniciar. Actualiza la página para reintentar.');
+  }
+ });
+ window.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+   if(!window.__bellaAdminLoginHandlerReady){
+    showLoadError('No se pudo iniciar el formulario de acceso. Actualiza la página para cargar los archivos nuevos.');
+   }
+  },5000);
+ });
+})();
+</script><link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=adminacceso20261121b"></head><body class="admin-body">
 <div id="adminLogin" class="admin-login"><div class="access-panel"><a href="./index.html" class="brand"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>de BellaShop</small></span></a><span class="kicker">ÁREA PRIVADA</span><h1>Administración</h1><p class="muted">El centro de control de BellaLovers. Todo lo importante, claro, seguro y en un solo lugar.</p>
   <form id="adminLoginForm" class="stack"><label for="adminEmail">Correo del administrador</label><input type="email" autocomplete="username" id="adminEmail" placeholder="Correo autorizado" required><label for="adminPassword">Contraseña</label><input id="adminPassword" type="password" autocomplete="current-password" required placeholder="Tu contraseña"><button type="submit" class="btn btn-primary btn-full">Ingresar al administrador</button></form><div class="admin-login-feedback hidden" id="adminLoginFeedback" role="alert" aria-live="assertive"></div>
   <button type="button" id="sendRecoveryEmail" class="btn btn-text btn-full" style="margin-top:9px">¿Olvidaste la contraseña? Recuperar acceso</button>
@@ -164,4 +202,4 @@
    </div>
  </section>
  <section class="admin-panel" id="section-audit"><div class="admin-card"><div class="admin-card-header"><h2>Historial de movimientos de administración</h2><button id="csvAudit" class="btn btn-outline btn-small" type="button">Exportar auditoría CSV</button></div><p>Registro de actividades críticas: compras, anulaciones, ajustes, solicitudes, regalos y activación de profesoras.</p><div class="table-scroll" id="auditTable"></div></div></section>
-</main></div><div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=adminacceso20261121c"></script></body></html>
+</main></div><div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=adminform20261121d"></script></body></html>
