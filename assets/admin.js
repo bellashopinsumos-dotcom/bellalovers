@@ -33,16 +33,70 @@ function enter(){
  $('#staffIdentity').textContent=staff.role;
 }
 
-async function login(e){e.preventDefault();const btn=$('#adminLoginForm button[type=submit]');
- try{setLoading(btn,true);sb=await db('admin');await run(sb.auth.signInWithPassword({email:$('#adminEmail').value.trim(),password:$('#adminPassword').value}));await initAdmin();}
- catch(err){notify('No se pudo ingresar: '+err.message,'error');}
- finally{setLoading(btn,false);}
+function explainAdminError(error){
+ const raw=String(error?.message||error||'Error desconocido');
+ if(/invalid login credentials|invalid credentials|incorrect password/i.test(raw))
+  return 'El correo o la contraseña no coinciden. Revisa los datos o selecciona «Recuperar acceso».';
+ if(/email not confirmed|email_not_confirmed/i.test(raw))
+  return 'El correo del administrador todavía no está confirmado.';
+ if(/failed to fetch|network|load failed|fetch failed|err_network|importing a module|dynamically imported/i.test(raw))
+  return 'No se pudo conectar con Supabase. Comprueba internet y vuelve a intentarlo.';
+ if(/jwt|refresh token|session not found|session expired/i.test(raw))
+  return 'La sesión anterior venció. Ingresa nuevamente con tu correo y contraseña.';
+ return raw;
 }
-async function initAdmin(){
- const {data:{user}}=await sb.auth.getUser();if(!user){$('#adminLogin').classList.remove('hidden');return;}
- staff=await run(sb.from('bl_staff').select('*').eq('user_id',user.id).eq('active',true).maybeSingle());
- if(!staff){await sb.auth.signOut();throw new Error('Este correo no tiene acceso de administrador. Debe estar autorizado previamente en Supabase.');}
- enter();await loadAll();startPendingRewardPoll();
+function showAdminLoginError(message){
+ const el=$('#adminLoginFeedback');
+ if(el){el.textContent=message;el.classList.remove('hidden');}
+}
+function clearAdminLoginError(){
+ const el=$('#adminLoginFeedback');
+ if(el){el.textContent='';el.classList.add('hidden');}
+}
+function showAdminLoadError(message){
+ const el=$('#adminLoadFeedback');
+ if(el){$('#adminLoadMessage').textContent=message;el.classList.remove('hidden');}
+}
+function clearAdminLoadError(){$('#adminLoadFeedback')?.classList.add('hidden');}
+async function login(e){
+ e.preventDefault();
+ const btn=$('#adminLoginForm button[type=submit]');
+ clearAdminLoginError();
+ try{
+  setLoading(btn,true,'Comprobando acceso…');
+  sb=sb||await db('admin');
+  if(!sb)throw new Error('El servicio de autenticación no está disponible.');
+  const {data,error}=await sb.auth.signInWithPassword({
+   email:$('#adminEmail').value.trim().toLowerCase(),password:$('#adminPassword').value
+  });
+  if(error)throw error;
+  if(!data?.user)throw new Error('Supabase no devolvió una sesión válida.');
+  await initAdmin(data.user);
+ }catch(err){
+  const message=explainAdminError(err);
+  showAdminLoginError(message);
+  notify('No se pudo ingresar: '+message,'error');
+ }finally{setLoading(btn,false);}
+}
+async function initAdmin(verifiedUser=null){
+ let user=verifiedUser;
+ if(!user){
+  const {data,error}=await sb.auth.getUser();
+  if(error)throw error;
+  user=data?.user;
+ }
+ if(!user)throw new Error('No se encontró una sesión activa. Ingresa con tu correo y contraseña.');
+ const {data:member,error}=await sb.from('bl_staff').select('*').eq('user_id',user.id).eq('active',true).maybeSingle();
+ if(error)throw error;
+ if(!member){
+  await sb.auth.signOut({scope:'local'});
+  throw new Error('Este correo no está autorizado como administrador de BellaLovers.');
+ }
+ staff=member;
+ clearAdminLoginError();
+ enter();
+ await loadAll();
+ startPendingRewardPoll();
 }
 async function loadAll(){if(mode!=='live')return;
  const reqs=[
@@ -68,8 +122,8 @@ async function loadAll(){if(mode!=='live')return;
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
    staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];guestRewardRequests=d.guestRewardRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();
    pendingRewardKnownIds=new Set(guestRewardRequests.filter(r=>r.status==='pendiente').map(r=>r.id));
-   pendingRewardCount=pendingRewardKnownIds.size;pendingRewardDirty=false;updatePendingRewardAlerts();}
- catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
+   pendingRewardCount=pendingRewardKnownIds.size;pendingRewardDirty=false;updatePendingRewardAlerts();clearAdminLoadError();}
+ catch(err){const message=explainAdminError(err);showAdminLoadError('Iniciaste sesión, pero no se cargaron todos los datos: '+message);notify('Error cargando datos: '+message,'error');}
 }
 function updatePendingRewardAlerts(){
  const count=staff?.role==='admin'?pendingRewardCount:0;
@@ -771,6 +825,9 @@ function setup(){
  $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
  $('#adminLoginForm').addEventListener('submit',login);
+ $('#adminRetryLoad').addEventListener('click',()=>loadAll());
+ $('#adminEmail').addEventListener('input',clearAdminLoginError);
+ $('#adminPassword').addEventListener('input',clearAdminLoginError);
  $('#joinFilter').addEventListener('change',renderJoins);
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
@@ -801,15 +858,26 @@ function setup(){
  $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
  $('#csvPurchases').onclick=()=>{if(!requireLive())return;downloadCsv(['Registro','Canal','Cliente','Valor productos','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,CHANNEL_LABEL[p.channel]||'No especificado',uname(p.customer_id),p.products_total,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');};
  $('#csvAudit').onclick=()=>{if(!requireLive()||!checkManager())return;downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');};
- if(!HAS_BACKEND){$('#adminLoginForm').classList.add('hidden');return;}
+ if(!HAS_BACKEND){showAdminLoginError('El servicio BellaLovers no está configurado. Contacta al encargado.');return;}
  db('admin').then(async s=>{
    sb=s;
    sb.auth.onAuthStateChange((event)=>{
      if(event==='PASSWORD_RECOVERY')showRecoveryForm();
    });
    const {data:{session}}=await sb.auth.getSession();
-   if(session&&!recoveryMode)await initAdmin();
- }).catch(err=>notify(err.message,'error'));
+   if(session&&!recoveryMode){
+    try{await initAdmin();}
+    catch(err){
+     $('#adminApp').classList.add('hidden');
+     $('#adminLogin').classList.remove('hidden');
+     showAdminLoginError(explainAdminError(err));
+    }
+   }
+ }).catch(err=>{
+  const message=explainAdminError(err);
+  showAdminLoginError(message);
+  notify('No fue posible conectar: '+message,'error');
+ });
 }
 async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;stopPendingRewardPoll();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
 setup();
