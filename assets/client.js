@@ -4,6 +4,51 @@ let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], c
 let cart={}; let giftClaims=[]; let serverBalance=null;
 let requestsOpen=false;
 
+
+function applyPublicRules(){
+ const min=Math.max(0,Number(rules.min_purchase)||50000);
+ const unit=Math.max(1,Number(rules.point_value)||10000);
+ const threshold=Math.max(1,Number(rules.unlock_points)||50);
+ const welcome=Math.max(0,Number(rules.student_gift_min)||150000);
+ const months=Math.max(1,Number(rules.cycle_months)||12);
+ const grace=Math.max(0,Number(rules.grace_days)||0);
+ const firstExcluded=rules.student_first_no_points!==false;
+ const discountsExcluded=rules.exclude_discounts!==false;
+ const base=Math.floor(min/unit);
+ const sample=min+unit;
+ const set=(key,value)=>$('[data-live-rule="'+key+'"]').forEach(element=>{element.textContent=value;});
+ set('base-eq',fmt(min)+' = '+base+' puntos');
+ set('point-extra','+'+fmt(unit)+' = +1 punto');
+ set('unlock',threshold+' puntos');
+ set('spotlight-points',String(threshold));
+ set('student-benefit',(firstExcluded?'Tu primera compra no suma puntos. ':'')+
+  'Una primera compra desde '+fmt(welcome)+' puede darte un regalo físico de bienvenida. '+
+  (firstExcluded?'Desde tu segunda compra válida comienzas a sumar puntos.':'Tus compras válidas suman puntos según las reglas del club.'));
+ set('regular-benefit','En compras desde '+fmt(min)+' recibes '+base+' puntos. '+
+  'Por cada '+fmt(unit)+' completos en tu compra se calcula un punto. Ejemplo: '+fmt(sample)+' = '+Math.floor(sample/unit)+' puntos.');
+ set('step-buy','Una compra válida desde '+fmt(min)+' genera '+base+' puntos. Por cada '+fmt(unit)+' completos de la compra se calcula 1 punto. También cuentan las ventas por WhatsApp.');
+ set('step-reward','Al alcanzar '+threshold+' puntos puedes solicitar regalos disponibles, sujetos a existencias y confirmación de BellaShop.');
+ set('rule-points','1. Acumulación: compras desde '+fmt(min)+' en productos; 1 punto por cada '+fmt(unit)+' completo.');
+ set('rule-exceptions','3. Excepciones: el transporte no suma; '+
+  (discountsExcluded?'tampoco las compras con descuento especial. ':'')+
+  'Las compras anuladas o devueltas no acumulan puntos.');
+ set('rule-students','4. Estudiantes: '+(firstExcluded?'la primera compra no genera puntos; ':'')+
+  'la primera compra desde '+fmt(welcome)+' puede incluir regalo de bienvenida.');
+ set('rule-rewards','5. Premios: puedes solicitarlos desde '+threshold+' puntos, sujetos a disponibilidad y confirmación de BellaShop.');
+ set('rule-duration','6. Vigencia: ciclo de '+months+' meses'+
+  (grace?', con '+grace+' días adicionales para redimir según las condiciones del club.':'.'));
+ const shop=safeUrl(rules.shop_url||CONFIG.shopUrl);
+ if(shop)$('#storeLink').href=shop;
+}
+async function loadPublicRules(){
+ try {
+  const {data,error}=await sb.functions.invoke('bellalovers-consulta',{body:{action:'public_rules'}});
+  if(error||!data?.success||!data?.rules)throw new Error('Reglas no disponibles');
+  rules={...rules,...data.rules};
+  applyPublicRules();
+ }catch(err){console.warn('No se pudo actualizar la información del club:',err.message);}
+}
+
 function configureHomeNavigation() {
  // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
  document.addEventListener('click', event => {
@@ -411,6 +456,7 @@ function setup(){
  if(!HAS_BACKEND)return;
  db().then(async x=>{
   sb=x;
+  await loadPublicRules();
   try{await loadAffiliatedTeachers();}catch(err){console.warn('Profesoras afiliadas no disponibles:',err.message);$('#joinTeacherHelp').textContent='No pudimos cargar las profesoras. Puedes continuar sin seleccionar ninguna.';}
   try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);}
   const stored=sessionStorage.getItem(GUEST_SESSION_KEY);
