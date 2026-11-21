@@ -16,7 +16,7 @@ function applyPublicRules(){
  const discountsExcluded=rules.exclude_discounts!==false;
  const base=Math.floor(min/unit);
  const sample=min+unit;
- const set=(key,value)=>$('[data-live-rule="'+key+'"]').forEach(element=>{element.textContent=value;});
+ const set=(key,value)=>$$('[data-live-rule="'+key+'"]').forEach(element=>{element.textContent=value;});
  set('base-eq',fmt(min)+' = '+base+' puntos');
  set('point-extra','+'+fmt(unit)+' = +1 punto');
  set('unlock',threshold+' puntos');
