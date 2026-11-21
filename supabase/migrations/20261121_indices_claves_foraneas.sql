@@ -1,0 +1,19 @@
+-- Índices de claves foráneas detectados por el analizador de Supabase.
+CREATE INDEX IF NOT EXISTS idx_bl_adjustment_reversals_created_by ON public.bl_adjustment_reversals (created_by);
+CREATE INDEX IF NOT EXISTS idx_bl_affiliate_attributions_affiliate_id ON public.bl_affiliate_attributions (affiliate_id);
+CREATE INDEX IF NOT EXISTS idx_bl_affiliated_teachers_created_by ON public.bl_affiliated_teachers (created_by);
+CREATE INDEX IF NOT EXISTS idx_bl_gift_claims_delivered_by ON public.bl_gift_claims (delivered_by);
+CREATE INDEX IF NOT EXISTS idx_bl_gift_claims_gift_id ON public.bl_gift_claims (gift_id);
+CREATE INDEX IF NOT EXISTS idx_bl_gift_claims_purchase_id ON public.bl_gift_claims (purchase_id);
+CREATE INDEX IF NOT EXISTS idx_bl_guest_reward_requests_reviewed_by ON public.bl_guest_reward_requests (reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_bl_join_requests_approved_user_id ON public.bl_join_requests (approved_user_id);
+CREATE INDEX IF NOT EXISTS idx_bl_join_requests_first_purchase_id ON public.bl_join_requests (first_purchase_id);
+CREATE INDEX IF NOT EXISTS idx_bl_join_requests_reviewed_by ON public.bl_join_requests (reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_bl_login_requests_member_id ON public.bl_login_requests (member_id);
+CREATE INDEX IF NOT EXISTS idx_bl_login_requests_reviewed_by ON public.bl_login_requests (reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_bl_points_created_by ON public.bl_points (created_by);
+CREATE INDEX IF NOT EXISTS idx_bl_points_redemption_id ON public.bl_points (redemption_id);
+CREATE INDEX IF NOT EXISTS idx_bl_profiles_archived_by ON public.bl_profiles (archived_by);
+CREATE INDEX IF NOT EXISTS idx_bl_purchases_created_by ON public.bl_purchases (created_by);
+CREATE INDEX IF NOT EXISTS idx_bl_redemption_items_reward_id ON public.bl_redemption_items (reward_id);
+CREATE INDEX IF NOT EXISTS idx_bl_redemptions_processed_by ON public.bl_redemptions (processed_by);
