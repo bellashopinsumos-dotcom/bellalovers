@@ -536,7 +536,7 @@ async function approveJoin(e){
   const {data,error}=await sb.functions.invoke('bellalovers-aprobar',{body:payload});
   if(error)throw error;
   if(!data?.success)throw new Error(data?.error||'El servidor no pudo confirmar la membresía');
-  notify('Membresía aprobada y compra registrada. Podrá solicitar ingreso desde la página y tú autorizarás el acceso.');
+  notify('Membresía aprobada y compra registrada. Ahora podrá consultar sus puntos directamente con su nombre y celular o correo.');
   selectedJoinId=null;$('#joinApprovalCard').classList.add('hidden');
   $('#joinApprovalForm').reset();await loadAll();
 
