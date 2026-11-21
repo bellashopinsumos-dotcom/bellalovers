@@ -137,4 +137,23 @@ assert.doesNotMatch(clientJs,/sb\.rpc\('bl_redeem'/,'El cliente no puede reserva
 assert.match(clientJs,/if\(session\)\s*\{[\s\S]*?sb\.auth\.signOut/,'Se deben cerrar las sesiones antiguas de miembros');
 const legacyLock=readFileSync(new URL('../supabase/migrations/20261121_bloquear_canje_directo_anterior.sql',import.meta.url),'utf8');
 assert.match(legacyLock,/REVOKE EXECUTE ON FUNCTION public\.bl_redeem\(jsonb\)/,'Cierre del canje directo antiguo también en servidor');
+
+for(const id of ['progressCounter','progressPercent','pointsProgress','pointsCelebration','memberQrPanel','memberQrImage','memberQrCode','showMemberQr','copyMemberCode','rewardPublishedCount','rewardSort']){
+ assert.match(publicHtml,new RegExp('id="'+id+'"'),'Control público: '+id);
+}
+for(const id of ['adminRewardBadge','adminRewardAlerts','goPendingRewards','clubMonthlyChart','csvSummary','adminRewardsEmpty']){
+ assert.match(adminHtml,new RegExp('id="'+id+'"'),'Control administrativo: '+id);
+}
+assert.match(clientJs,/const set=\(key,value\)=>\$\$\(/,'Actualizar todas las reglas dinámicas, no solo un elemento');
+assert.match(clientJs,/showMemberQr\(\)/,'El carné tiene un código QR generado localmente');
+assert.match(clientJs,/copyMemberCode\(\)/,'El carné permite copiar el identificador');
+assert.match(clientJs,/rewardSort==='available'/,'La vitrina puede priorizar premios disponibles');
+assert.match(clientJs,/Próximamente, sorpresas para nuestras BellaLovers/,'Sin premios, el catálogo debe mostrar un mensaje real');
+assert.match(clientJs,/qty<5/,'No permitir seleccionar más de 5 unidades de un mismo premio');
+assert.match(adminJs,/startPendingRewardPoll\(\)/,'Se activa la comprobación periódica de nuevos canjes');
+assert.match(adminJs,/stopPendingRewardPoll\(\)/,'Se detiene la comprobación al salir');
+assert.match(adminJs,/updatePendingRewardAlerts\(\)/,'Administración muestra el número de canjes pendientes');
+assert.match(adminJs,/renderMonthlyChart\(valid\)/,'Estadísticas basadas en compras confirmadas');
+assert.match(adminJs,/exportClubSummary\(\)/,'El resumen mensual se puede exportar');
+assert.match(adminJs,/p\.id\.slice\(0,8\)/,'Búsqueda administrativa por código de carné');
 console.log('OK: pruebas BellaLovers y regresión de acceso, recompensas y configuración');
