@@ -104,6 +104,47 @@ function stopPendingRewardPoll(){
  pendingRewardPoll=null;pendingRewardKnownIds=null;pendingRewardCount=0;pendingRewardDirty=false;
  updatePendingRewardAlerts();
 }
+function purchaseMonth(value){
+ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit'})
+  .format(new Date(value)).replace(/^(\d{2})\/(\d{4})$/,'$2-$1');
+}
+function monthlyClubData(valid){
+ const local=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit'}).format(new Date());
+ const matched=local.match(/(\d{4}).?(\d{2})/);
+ const y=matched?Number(matched[1]):new Date().getFullYear(),m=matched?Number(matched[2])-1:new Date().getMonth();
+ const months=[];
+ for(let offset=5;offset>=0;offset--){
+  const d=new Date(Date.UTC(y,m-offset,1,12));
+  const key=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+  const rows=valid.filter(p=>purchaseMonth(p.created_at)===key);
+  months.push({key,name:new Intl.DateTimeFormat('es-CO',{month:'short',timeZone:'UTC'}).format(d),
+   count:rows.length,total:rows.reduce((s,p)=>s+Number(p.products_total||0),0)});
+ }
+ return months;
+}
+function renderMonthlyChart(valid){
+ const wrap=$('#clubMonthlyChart');if(!wrap)return;
+ const months=monthlyClubData(valid),max=Math.max(1,...months.map(m=>m.total));
+ wrap.innerHTML=months.map(m=>'<div class="club-month">'+
+  '<div class="club-month-value">'+esc(fmt(m.total))+'</div>'+
+  '<div class="club-month-track"><span style="height:'+Math.round(m.total/max*100)+'%" aria-hidden="true"></span></div>'+
+  '<strong class="club-month-name">'+esc(m.name)+'</strong><small>'+m.count+' compra'+(m.count===1?'':'s')+'</small>'+
+  '</div>').join('');
+}
+function exportClubSummary(){
+ if(!requireLive())return;
+ const valid=purchases.filter(p=>p.status==='confirmada');
+ const groups=new Map();
+ valid.forEach(p=>{
+  const month=purchaseMonth(p.created_at);
+  const row=groups.get(month)||{count:0,total:0,points:0};
+  row.count++;row.total+=Number(p.products_total||0);row.points+=Number(p.points_awarded||0);
+  groups.set(month,row);
+ });
+ downloadCsv(['Mes','Compras confirmadas','Total de productos (COP)','Puntos otorgados por compras'],
+  [...groups.entries()].sort((a,b)=>b[0].localeCompare(a[0]))
+   .map(([month,row])=>[month,row.count,row.total,row.points]),'bellalovers-resumen.csv');
+}
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
 function renderOverview(){
  const valid=purchases.filter(p=>p.status==='confirmada');const pending=redemptions.filter(p=>p.status==='solicitada').length+guestRewardRequests.filter(p=>p.status==='pendiente').length;
@@ -111,6 +152,7 @@ function renderOverview(){
  const claimsCost=giftClaims.reduce((s,g)=>s+(giftOptions.find(o=>o.id===g.gift_id)?.unit_cost||0),0);
  const prizesCost=redemptions.filter(r=>r.status==='aprobada').reduce((s,r)=>s+redemptionItems.filter(i=>i.redemption_id===r.id).reduce((a,i)=>a+i.qty*(rewards.find(w=>w.id===i.reward_id)?.unit_cost||0),0),0);
  $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.filter(p=>!p.deleted_at).length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',earned)+statTile('Solicitudes por revisar',joinRequests.filter(x=>x.status==='pendiente').length);
+ renderMonthlyChart(valid);
  $('#recentPurchases').innerHTML=table(['Factura','Canal','Clienta','Productos','Puntos','Estado'],purchases.slice(0,7).map(p=>`<tr><td>${esc(p.invoice)}</td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.points_awarded}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td></tr>`));
  if(!$('#additionalStats')) {const card=document.createElement('div');card.className='admin-card';card.id='additionalStats';$('#section-overview').append(card);}
  const repeat=profiles.filter(c=>valid.filter(p=>p.customer_id===c.id).length>1).length;
@@ -120,7 +162,14 @@ function renderOverview(){
  const topTeachers=profiles.filter(p=>p.category==='profesora').map(p=>({name:p.full_name,awards:referrals.filter(r=>r.teacher_id===p.id&&r.awarded_at).length,pts:points.filter(x=>x.customer_id===p.id&&x.kind==='referido').reduce((s,x)=>s+x.delta,0)})).sort((a,b)=>b.awards-a.awards).slice(0,5);
  const channelTotals=Object.entries(CHANNEL_LABEL).map(([id,label])=>({label,count:valid.filter(p=>(p.channel||'tienda')===id).length,total:valid.filter(p=>(p.channel||'tienda')===id).reduce((n,p)=>n+p.products_total,0)}));
  const prizeRank=rewards.map(r=>({name:r.name,qty:redemptionItems.filter(i=>i.reward_id===r.id&&redemptions.some(d=>d.id===i.redemption_id&&d.status==='aprobada')).reduce((s,i)=>s+i.qty,0)})).filter(x=>x.qty>0).sort((a,b)=>b.qty-a.qty).slice(0,5);
- $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.filter(p=>!p.deleted_at).length?(valid.length/profiles.filter(p=>!p.deleted_at).length).toFixed(1):'—')}</div><div class="admin-card-header"><h2>Ventas por canal</h2><span class="info-inline">Solo productos facturados</span></div>${table(['Canal','Facturas','Valor productos'],channelTotals.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td><td>${fmt(x.total)}</td></tr>`))}<div class="admin-form"><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
+ const activeClients=profiles.filter(p=>!p.deleted_at&&!p.blocked&&!p.archived_at);
+ const repeatPercent=activeClients.length?Math.round(repeat/activeClients.length*100):0;
+ const readyClients=activeClients.filter(p=>ubalance(p.id)>=Number(settings.unlock_points||50)).length;
+ const regularCustomers=activeClients.map(p=>({name:p.full_name,
+  count:valid.filter(x=>x.customer_id===p.id).length,
+  total:valid.filter(x=>x.customer_id===p.id).reduce((s,x)=>s+Number(x.products_total||0),0)
+ })).filter(x=>x.count>0).sort((a,b)=>b.count-a.count||b.total-a.total).slice(0,5);
+ $('#additionalStats').innerHTML=`<h2>Indicadores adicionales</h2><div class="stats-grid">${statTile('Clientas con recompra',repeat)}${statTile('Recompra entre activas',repeatPercent+'%')}${statTile('Clientas con meta cumplida',readyClients)}${statTile('Estudiantes que regresaron',returnedStudents)}${statTile('Puntos redimidos',-points.filter(p=>p.kind==='redencion').reduce((s,p)=>s+p.delta,0))}${statTile('Puntos vencidos',expired)}${statTile('Costo estimado de premios',fmt(prizesCost+claimsCost))}${statTile('Costo de premios / ventas',sales?((prizesCost+claimsCost)/sales*100).toFixed(1)+'%':'—')}${statTile('Ticket promedio',valid.length?fmt(Math.round(sales/valid.length)):'—')}${statTile('Compras por clienta',profiles.filter(p=>!p.deleted_at).length?(valid.length/profiles.filter(p=>!p.deleted_at).length).toFixed(1):'—')}</div><div class="admin-card-header"><h2>Ventas por canal</h2><span class="info-inline">Solo productos facturados</span></div>${table(['Canal','Facturas','Valor productos'],channelTotals.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td><td>${fmt(x.total)}</td></tr>`))}<div class="admin-form"><div><h2>Clientas más frecuentes</h2>${regularCustomers.length?table(['Clienta','Compras','Valor productos'],regularCustomers.map(c=>`<tr><td>${esc(c.name)}</td><td>${c.count}</td><td>${fmt(c.total)}</td></tr>`)):'<p class="muted">Todavía no hay compras confirmadas.</p>'}</div><div><h2>Profesoras con más primeras compras referidas</h2>${topTeachers.length?table(['Profesora','Referidos','Puntos'],topTeachers.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.awards}</td><td>${t.pts}</td></tr>`)):'<p class="muted">Sin profesoras verificadas aún.</p>'}</div><div><h2>Recompensas más elegidas</h2>${prizeRank.length?table(['Producto','Entregas'],prizeRank.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.qty}</td></tr>`)):'<p class="muted">Sin recompensas entregadas aún.</p>'}</div></div><p class="form-help">Indicadores descriptivos calculados con los registros cargados. Los costos de premio son manuales; no representan el margen bruto real de BellaShop.</p>`;
 }
 function populateClientSelects(){
  // Las compras ya no usan una lista de cientos de nombres: búsqueda exacta por celular.
@@ -718,6 +767,7 @@ async function saveJoinStatus(open){
 
 function setup(){
  $('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
+ $('#csvSummary').addEventListener('click',exportClubSummary);
  $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
  $('#adminLoginForm').addEventListener('submit',login);
