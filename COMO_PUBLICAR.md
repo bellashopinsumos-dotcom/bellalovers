@@ -1,47 +1,44 @@
-# BellaLovers ♡ — Guía para la jefa
+# Guía para BellaShop — BellaLovers 💗
 
 **Página:** https://bellashopinsumos-dotcom.github.io/bellalovers/
 
 **Administrador:** https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-## Inicio de sesión sin claves
+## 1. ¿Cómo entra una clienta a Mi cuenta?
 
-Cuando una clienta toca **Iniciar sesión**, aparece una ventana con **Iniciar sesión**, **Registrarse** y una X para cerrarla.
+Toca **Iniciar sesión** en la página: se abre una ventanita con **Iniciar sesión**, **Registrarse** y la **X**.
 
-La clienta escribe **celular o correo** y **nombre completo**. No necesita ninguna clave privada, contraseña, Gmail ni código SMS.
+Escribe **celular o correo** y **nombre completo registrado**. Pulsa **Iniciar sesión** y aparecerán directamente fecha de ingreso, puntos, movimientos, compras y premios. **No hay claves, SMS, correos de verificación ni aprobaciones para entrar.**
 
-- **Si ya tiene una sesión válida en el mismo celular:** podrá entrar a su cuenta.
-- **Si entra por primera vez desde ese dispositivo:** verá «Esperando autorización de BellaShop». La solicitud aparece en el administrador y **vence a los 10 minutos**. La clienta debe mantener abierta la ventana.
-- En Administrador → **Solicitudes de ingreso → Solicitudes para entrar a Mi cuenta**, busca el nombre y celular de la clienta. **Antes de pulsar Aprobar**, verifica por WhatsApp o en persona que es la titular; el sistema te pedirá escribir **VERIFICADO** para confirmarlo.
-- Al aprobar, la ventana del celular permite entrar automáticamente y consultar compras, puntos y premios. No se envían correos ni SMS y no se muestran contraseñas.
+Si usa un correo, debe ser el mismo que indicó al registrarse; si no indicó correo, puede ingresar con su celular.
 
-**Es importante verificar la identidad.** Saber nombre y teléfono no autoriza a otra persona a consultar compras ajenas.
+**Importante:** quien conozca el nombre y celular de una clienta podría consultar la información simplificada de sus compras y puntos. El sistema oculta facturas, contactos y notas internas, y no permite modificaciones directas.
 
-## Primera compra e inscripción
+## 2. ¿Cómo se registra una persona nueva?
 
-En Administrador → **Solicitudes de ingreso**, revisa la solicitud de inscripción, comprueba la primera compra y registra el valor de productos; factura y canal son opcionales. La aprobación crea la cuenta, registra los puntos que correspondan y no genera claves para la clienta.
+Abre **Registrarse** en la ventana. Llena nombre, celular, correo opcional, categoría y profesora afiliada si la recomendó alguna. Luego de la primera compra real, la jefa revisa **Administrador → Solicitudes de ingreso**, comprueba el valor de productos y aprueba la membresía.
 
-La clienta luego podrá usar el botón **Iniciar sesión** y solicitar la autorización de acceso desde su dispositivo.
+No hace falta entregar claves privadas. La clienta ya podrá entrar con sus dos datos.
 
-## ¿Cómo registro una compra sin tanta información?
+## 3. ¿Qué pasa si pide un premio?
 
-En **Compras**, busca el celular de la clienta y pulsa **Buscar**. Comprueba su nombre, escribe el importe de productos y guarda. Factura y canal son opcionales. Sin factura, el sistema crea una referencia interna única; esto no reemplaza un documento de facturación comercial.
+La clienta debe alcanzar **50 puntos**. Si BellaShop todavía no tiene premios publicados, aparecerá **Próximamente**.
 
-## ¿Cómo corrijo puntos o elimino cuentas?
+Si hay recompensas, la clienta las selecciona y pulsa **Solicitar recompensa**. **Esto solo envía una solicitud; no descuenta puntos, no reserva el producto ni envía nada automáticamente.**
 
-En **Clientas → Ver ficha** puedes **sumar o descontar puntos** y **deshacer** un ajuste manual sin borrar el historial.
+En el administrador abre **Recompensas → Solicitudes desde BellaLovers (confirmar por WhatsApp)**:
 
-- **Archivar**: desactiva temporalmente la cuenta; se puede restaurar.
-- **Eliminar cuenta y acceso**: solo administrador; exige confirmaciones, retira los datos de contacto y bloquea el ingreso, conservando facturas y movimientos comerciales necesarios.
+1. Mira el nombre, celular registrado, premio y puntos solicitados.
+2. **Escríbele por WhatsApp al teléfono registrado** o llámala para comprobar que realmente hizo esa solicitud y quiere reclamar el premio.
+3. Solo después de confirmar pulsa **Ya confirmé con clienta**, escribe `CONFIRMADO` y confirma. **En ese momento** se revisan existencias y se descuentan los puntos.
+4. Si no reconoce el pedido o no hay confirmación, pulsa **Rechazar**. No se descuentan puntos.
 
-## Profesoras afiliadas
+Por seguridad, **nunca entregues un premio solo porque llegó una solicitud a la web**.
 
-En **Profesoras** puedes agregar, editar, retirar o reactivar a las profesoras. Las personas que se inscriban solo podrán seleccionar **profesoras activas del directorio** o «Ninguna». Retirar no elimina el historial.
+## 4. Compras, ajustes y otras funciones
 
-## Recompensas
+En **Compras** busca el celular de la clienta, verifica su nombre, escribe el valor pagado en productos y guarda. Factura y canal opcionales. No se registra el transporte.
 
-En el administrador se crean/actualizan los productos de premios, fotografías, existencias y puntos. Dentro de la cuenta aparecerá **Próximamente** si no hay premios; si hay y la clienta tiene menos de 50 puntos, se ven bloqueados; cuando cumpla la meta podrá solicitar canjes según su saldo y existencias.
+En **Clientas → Ver ficha** puedes sumar/descontar puntos, deshacer ajustes, bloquear, archivar, restaurar y eliminar el acceso de cuentas con las confirmaciones requeridas. En **Profesoras** se administran solo las afiliadas autorizadas.
 
-## Antes de lanzar públicamente
-
-La política de datos de BellaShop sigue en borrador; la jefa debe terminarla y aprobarla antes de promocionar solicitudes. También conviene probar con una clienta real autorizada la aprobación del primer ingreso, la autorización desde el administrador y la consulta del historial.
+La política de datos está pendiente de revisión final por BellaShop; antes de difundir el club debe explicar los datos visibles en la modalidad de acceso elegida.
