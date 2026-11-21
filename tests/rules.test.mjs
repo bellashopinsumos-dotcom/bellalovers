@@ -170,4 +170,12 @@ assert.match(adminJs,/await initAdmin\(data\.user\)/,'La sesión autenticada no 
 const coreJs=readFileSync(new URL('../assets/core.js',import.meta.url),'utf8');
 assert.match(coreJs,/esm\.sh\/\@supabase\/supabase-js\@2\.47\.16/,'CDN alternativo si la fuente habitual falla');
 assert.match(coreJs,/clientPromise = null/,'Permitir un segundo intento de conexión tras error temporal');
+
+assert.match(adminHtml,/document\.addEventListener\('submit',function\(event\)/,'El navegador debe impedir el envío nativo antes de que cargue el módulo');
+assert.match(adminHtml,/event\.preventDefault\(\)/,'Evitar recarga que borra correo y contraseña');
+assert.match(adminHtml,/__bellaAdminLoginHandlerReady/,'Aviso cuando no cargó el controlador de acceso');
+assert.match(adminJs,/window\.__bellaAdminLoginHandlerReady=true/,'Controlador de inicio marca disponibilidad después de conectarse al formulario');
+const setupFragment=adminJs.slice(adminJs.lastIndexOf('function setup(){'),adminJs.lastIndexOf('function setup(){')+350);
+assert.match(setupFragment,/\$\('#adminLoginForm'\)\.addEventListener\('submit',login\)/,'Registrar el login antes de los demás controles');
+assert.equal([...adminJs.matchAll(/\$\('#adminLoginForm'\)\.addEventListener\('submit',login\)/g)].length,1,'No duplicar el controlador de login');
 console.log('OK: pruebas BellaLovers y regresión de acceso, recompensas y configuración');
