@@ -6,12 +6,12 @@ let requestsOpen=false;
 
 
 function applyPublicRules(){
- const min=Math.max(0,Number(rules.min_purchase)||50000);
+ const min=Number.isFinite(Number(rules.min_purchase))?Math.max(0,Number(rules.min_purchase)):50000;
  const unit=Math.max(1,Number(rules.point_value)||10000);
  const threshold=Math.max(1,Number(rules.unlock_points)||50);
- const welcome=Math.max(0,Number(rules.student_gift_min)||150000);
+ const welcome=Number.isFinite(Number(rules.student_gift_min))?Math.max(0,Number(rules.student_gift_min)):150000;
  const months=Math.max(1,Number(rules.cycle_months)||12);
- const grace=Math.max(0,Number(rules.grace_days)||0);
+ const grace=Number.isFinite(Number(rules.grace_days))?Math.max(0,Number(rules.grace_days)):0;
  const firstExcluded=rules.student_first_no_points!==false;
  const discountsExcluded=rules.exclude_discounts!==false;
  const base=Math.floor(min/unit);
@@ -301,7 +301,7 @@ function renderAccount(){
   if(customer.category==='estudiante') {
     const eligible=purchases.some(p=>p.status==='confirmada'&&p.welcome_eligible);
     const claimed=giftClaims.length>0;
-    welcome.textContent=claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde $150.000 puede darte un regalo de bienvenida.';
+    welcome.textContent=claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde '+fmt(Number(rules.student_gift_min??150000))+' puede darte un regalo de bienvenida.';
   }
   const matchingRewards=rewards.filter(r=>r.active&&(r.audience==='todas'||r.audience===customer.category));
   $('#rewardHint').textContent=!matchingRewards.length?'Los productos de recompensa aparecerán aquí cuando BellaShop los publique.':
