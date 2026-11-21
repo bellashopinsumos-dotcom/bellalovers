@@ -4,7 +4,7 @@
 <script>if('scrollRestoration' in history) history.scrollRestoration='manual';</script>
 <meta name="theme-color" content="#f5d8e2"><meta name="description" content="BellaLovers, el club de beneficios de BellaShop. Tus compras tienen recompensa.">
 <title>BellaLovers ♡ | Club de beneficios de BellaShop</title>
-<link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=accesodirecto20261121a">
+<link rel="stylesheet" href="./assets/style.css"><link rel="stylesheet" href="./assets/premium.css?v=reparacion20261121b">
 </head><body>
 <div class="club-topline"><div class="wrap"><span aria-hidden="true">♡</span> UN CLUB CREADO PARA QUIENES AMAN LA BELLEZA <span class="topline-divider" aria-hidden="true">•</span> BELLASHOP</div></div>
 <header class="site-header"><div class="wrap nav-bar">
@@ -56,9 +56,9 @@
   </div>
 </section>
 <section class="club-principles" aria-label="Reglas principales del club"><div class="wrap">
-    <div class="club-principle"><strong>$50.000 = 5 puntos</strong><small>En compras elegibles de productos</small></div>
-    <div class="club-principle"><strong>+$10.000 = +1 punto</strong><small>Por cada $10.000 completos adicionales</small></div>
-    <div class="club-principle"><strong>50 puntos</strong><small>Para empezar a solicitar premios</small></div>
+    <div class="club-principle"><strong data-live-rule="base-eq">$50.000 = 5 puntos</strong><small>En compras elegibles de productos</small></div>
+    <div class="club-principle"><strong data-live-rule="point-extra">+$10.000 = +1 punto</strong><small>Por cada $10.000 completos adicionales</small></div>
+    <div class="club-principle"><strong data-live-rule="unlock">50 puntos</strong><small>Para empezar a solicitar premios</small></div>
   </div></section>
 <section class="section section-soft section-benefits" id="beneficios">
   <div class="wrap">
@@ -70,13 +70,13 @@
       <article class="benefit-card benefit-student">
         <div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">✧</span><span class="benefit-label">01 · ESTOY APRENDIENDO</span></div>
         <h3>Estudiantes</h3>
-        <p>Tu primera compra desde $150.000 puede darte un regalo físico de bienvenida. Desde tu segunda compra válida comienzas a sumar puntos.</p>
+        <p data-live-rule="student-benefit">Tu primera compra desde $150.000 puede darte un regalo físico de bienvenida. Desde tu segunda compra válida comienzas a sumar puntos.</p>
         <div class="benefit-foot"><strong>Una bienvenida especial</strong><span aria-hidden="true">♡</span></div>
       </article>
       <article class="benefit-card benefit-regular">
         <div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">♡</span><span class="benefit-label">02 · AMO LO QUE HAGO</span></div>
         <h3>Manicuristas y clientes</h3>
-        <p>Por compras desde <strong>$50.000 recibes 5 puntos</strong>. Después, por cada <strong>$10.000 adicionales sumas 1 punto más</strong>. Por ejemplo: $60.000 = 6 puntos.</p>
+        <p data-live-rule="regular-benefit">Por compras desde <strong>$50.000 recibes 5 puntos</strong>. Después, por cada <strong>$10.000 adicionales sumas 1 punto más</strong>. Por ejemplo: $60.000 = 6 puntos.</p>
         <div class="benefit-foot"><strong>Tu fidelidad cuenta</strong><span aria-hidden="true">♡</span></div>
       </article>
       <article class="benefit-card benefit-teacher">
@@ -98,26 +98,26 @@
       <p>Sin tarjetas físicas ni procesos complicados. Tu espacio BellaLovers reúne tus puntos, movimientos y recompensas.</p>
       <div class="steps-spotlight">
         <span class="spotlight-label">TU META PARA DESBLOQUEAR PREMIOS</span>
-        <strong>50 <small>puntos</small></strong>
+        <strong><span data-live-rule="spotlight-points">50</span> <small>puntos</small></strong>
         <span>Después eliges entre las recompensas disponibles para tu categoría.</span>
       </div>
     </div>
     <div class="steps-grid">
       <article class="step"><span class="step-num">01</span><div class="step-body"><span class="step-icon" aria-hidden="true">♡</span><h3>Envía tu solicitud</h3><p>Déjanos tu nombre y datos. BellaShop aprobará tu ingreso al confirmar tu primera compra.</p></div></article>
-      <article class="step"><span class="step-num">02</span><div class="step-body"><span class="step-icon" aria-hidden="true">✧</span><h3>Compra y suma puntos</h3><p>Una compra válida de $50.000 genera 5 puntos y cada $10.000 completos adicionales suman 1 punto. También cuentan las ventas por WhatsApp.</p></div></article>
-      <article class="step"><span class="step-num">03</span><div class="step-body"><span class="step-icon" aria-hidden="true">✦</span><h3>Elige tu recompensa</h3><p>Al alcanzar 50 puntos puedes solicitar regalos disponibles, sujetos a existencias y confirmación de BellaShop.</p></div></article>
+      <article class="step"><span class="step-num">02</span><div class="step-body"><span class="step-icon" aria-hidden="true">✧</span><h3>Compra y suma puntos</h3><p data-live-rule="step-buy">Una compra válida de $50.000 genera 5 puntos y cada $10.000 completos adicionales suman 1 punto. También cuentan las ventas por WhatsApp.</p></div></article>
+      <article class="step"><span class="step-num">03</span><div class="step-body"><span class="step-icon" aria-hidden="true">✦</span><h3>Elige tu recompensa</h3><p data-live-rule="step-reward">Al alcanzar 50 puntos puedes solicitar regalos disponibles, sujetos a existencias y confirmación de BellaShop.</p></div></article>
     </div>
   </div>
 </section>
 <section class="section closing" id="condiciones"><div class="wrap closing-inner">
   <div><span class="kicker">TODO MUY CLARO</span><h2>Beneficios claros, <em>en pocos puntos.</em></h2>
     <ul class="club-rules-list">
-      <li><strong>1. Acumulación:</strong> $50.000 en productos = 5 puntos; cada $10.000 completos adicionales = 1 punto más.</li>
+      <li data-live-rule="rule-points"><strong>1. Acumulación:</strong> $50.000 en productos = 5 puntos; cada $10.000 completos adicionales = 1 punto más.</li>
       <li><strong>2. Canales:</strong> cuentan las compras facturadas en tienda, WhatsApp, página web y con domicilio.</li>
-      <li><strong>3. Excepciones:</strong> el transporte no suma; tampoco las compras con descuento especial ni las anuladas o devueltas.</li>
-      <li><strong>4. Estudiantes:</strong> su primera compra no genera puntos; desde $150.000 puede incluir regalo de bienvenida.</li>
-      <li><strong>5. Premios:</strong> puedes solicitarlos desde 50 puntos, sujetos a disponibilidad y confirmación de BellaShop.</li>
-      <li><strong>6. Vigencia:</strong> ciclo de 12 meses, con condiciones especiales de redención durante los 30 días posteriores.</li>
+      <li data-live-rule="rule-exceptions"><strong>3. Excepciones:</strong> el transporte no suma; tampoco las compras con descuento especial ni las anuladas o devueltas.</li>
+      <li data-live-rule="rule-students"><strong>4. Estudiantes:</strong> su primera compra no genera puntos; desde $150.000 puede incluir regalo de bienvenida.</li>
+      <li data-live-rule="rule-rewards"><strong>5. Premios:</strong> puedes solicitarlos desde 50 puntos, sujetos a disponibilidad y confirmación de BellaShop.</li>
+      <li data-live-rule="rule-duration"><strong>6. Vigencia:</strong> ciclo de 12 meses, con condiciones especiales de redención durante los 30 días posteriores.</li>
     </ul>
   </div>
   <div class="closing-cta"><p>¿Quieres seguir viendo tus productos favoritos?</p><a id="storeLink" class="btn btn-outline" href="https://bellashopinsumos-dotcom.github.io/bella-shop-pruebas/" target="_blank" rel="noopener noreferrer">Ir al catálogo BellaShop ↗</a><small>Los precios del catálogo no incluyen los beneficios especiales del club; cualquier descuento se confirma al facturar.</small></div>
@@ -178,5 +178,5 @@
 </div>
 
 <div id="toast" class="toast" aria-live="polite"></div>
-<script type="module" src="./assets/client.js?v=accesodirecto20261121a"></script>
+<script type="module" src="./assets/client.js?v=reparacion20261121b"></script>
 </body></html>
