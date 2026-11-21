@@ -5,9 +5,14 @@ export async function db(area = 'client') {
   if (!HAS_BACKEND) return null;
   if (!clientPromise) {
     clientPromise = import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.16/+esm')
+      .catch(async firstError => {
+        console.warn('Primera fuente de conexión no disponible, intentando la alternativa:', firstError?.message);
+        return import('https://esm.sh/@supabase/supabase-js@2.47.16');
+      })
       .then(({createClient}) => createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
         auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true, storageKey: area === 'admin' ? 'bellalovers-admin-auth' : 'bellalovers-client-auth' },
-      }));
+      }))
+      .catch(error => { clientPromise = null; throw error; });
   }
   return clientPromise;
 }
