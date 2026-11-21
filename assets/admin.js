@@ -847,7 +847,7 @@ function setup(){
  // parte del panel falla durante el montaje de sus controles.
  $('#adminLoginForm').addEventListener('submit',login);
  window.__bellaAdminLoginHandlerReady=true;
- $('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
+ document.querySelectorAll('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#csvSummary').addEventListener('click',exportClubSummary);
  $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
