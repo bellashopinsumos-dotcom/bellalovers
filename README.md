@@ -52,3 +52,22 @@ La Edge Function `bellalovers-aprobar` crea la cuenta sin claves, contraseña co
 La política `politica-datos.html` sigue siendo un borrador y BellaShop debe aprobarla antes de recolectar solicitudes públicamente. Debe explicar expresamente la visibilidad limitada asociada a entrar por nombre y celular/correo. La lógica de canjes se probó en una transacción de base de datos revertida sin crear registros ficticios persistentes. Es recomendable probar el uso real desde un celular autorizado antes del lanzamiento general.
 
 Auth de administradores sigue separado, con control de permisos RLS. Nunca incluir `service_role` en JavaScript público. Las funciones antiguas `bellalovers-ingresar`, `bellalovers-acceso` y `bellalovers-clave` están desactivadas.
+
+
+## Correcciones implementadas el 21 de noviembre de 2026
+
+- La consulta pública usa límites compatibles con `bl_limit_member_access` (60 por identificador/hora y 100 por IP/hora; la base solo permite máximos de hasta 100). Ya no bloquea toda consulta por el límite de 120/200.
+- El servidor devuelve el motivo específico de error y un indicador de regalo de estudiante entregado, sin filtrar detalles del regalo.
+- Los saldos se calculan sobre el historial completo de movimientos, mientras la interfaz presenta solamente los más recientes.
+- La meta de canjes se toma de `bl_settings.unlock_points`, sin un segundo límite fijo de 50 puntos.
+- Los textos públicos de acumulación, estudiantes, vencimientos y premios se actualizan con la configuración administrativa mediante `public_rules`; el enlace al catálogo también se actualiza desde la misma configuración.
+- El resumen administrativo cuenta solicitudes nuevas por WhatsApp y no repite canjes ya confirmados en la tabla del sistema anterior; incluye un acceso directo para contactar a la titular por WhatsApp.
+- Se agregaron índices a 18 relaciones foráneas y se quitaron tres políticas RLS de lectura duplicadas, conservando los permisos del administrador.
+- Las nuevas inscripciones se **pausaron temporalmente** mientras se completa y aprueba la política de tratamiento de datos. El acceso de las miembros existentes y sus compras no se modificó.
+- La protección contra contraseñas filtradas de Supabase Auth debe habilitarse desde el Dashboard de Supabase, ya que no hay un ajuste conectado para modificarla aquí.
+- Actualmente no hay premios configurados; deben registrarse en Administrador → Recompensas, usando referencias reales y existencias verificadas, antes de habilitar canjes visibles.
+
+### Pendiente de BellaShop para reabrir inscripciones
+
+Completar nombre o razón social legal, identificación/NIT aplicable, domicilio/dirección de notificaciones, teléfono oficial, datos de proveedores y fechas de tratamiento/conservación. Después de que la jefa apruebe la política, usar la sección Configuración → Recepción de solicitudes para reabrir. No se inventan datos legales.
+
