@@ -61,15 +61,22 @@ async function resolveMember(identifier:string,fullName:string){
 async function balanceFor(memberId:string){
  const {data:cycles,error:cycleError}=await client.from("bl_cycles")
   .select("id,started_at,expires_at,grace_until,closed_at")
-  .eq("customer_id",memberId).order("expires_at",{ascending:true}).limit(30);
+  .eq("customer_id",memberId).order("expires_at",{ascending:true}).limit(500);
  if(cycleError)throw cycleError;
- const {data:points,error:pointError}=await client.from("bl_points")
-  .select("cycle_id,delta,kind,created_at").eq("customer_id",memberId)
-  .order("created_at",{ascending:false}).limit(500);
- if(pointError)throw pointError;
+ const points:Array<{cycle_id:string,delta:number,kind:string,created_at:string}>=[];
+ // Consultar todas las páginas; no limitar el saldo a los últimos 500 movimientos.
+ for(let offset=0;offset<50000;offset+=1000){
+  const {data:batch,error:pointError}=await client.from("bl_points")
+   .select("cycle_id,delta,kind,created_at").eq("customer_id",memberId)
+   .order("created_at",{ascending:false}).order("id",{ascending:false})
+   .range(offset,offset+999);
+  if(pointError)throw pointError;
+  points.push(...(batch||[]));
+  if((batch||[]).length<1000)break;
+ }
  const ids=new Set((cycles||[]).filter(c=>!c.closed_at&&Date.parse(c.grace_until)>Date.now()).map(c=>c.id));
  const amount=(points||[]).filter(p=>ids.has(p.cycle_id)).reduce((a,p)=>a+Number(p.delta),0);
- return {balance:Math.max(0,amount),cycles:cycles||[],points:points||[]};
+ return {balance:Math.max(0,amount),cycles:cycles||[],points};
 }
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
@@ -132,7 +139,7 @@ Deno.serve(async(req:Request)=>{
     },
     settings:{unlock_points:settingsResult.data.unlock_points||50,
      student_gift_min:settingsResult.data.student_gift_min||150000},
-    balance,cycles,ledger:points.map(p=>({
+    balance,cycles,ledger:points.slice(0,250).map(p=>({
      cycle_id:p.cycle_id,created_at:p.created_at,kind:p.kind,delta:p.delta,detail:""
     })),
     purchases:(purchasesResult.data||[]).map(p=>({...p,invoice:null})),
@@ -141,9 +148,10 @@ Deno.serve(async(req:Request)=>{
   }
   if(action==="request_reward"){
    if(!await limit(key,"reward",3))return respond({error:"Límite de solicitudes alcanzado. Consulta con BellaShop."},429);
-   if(balance<50)return respond({error:"Necesitas al menos 50 puntos para solicitar un premio."},422);
-   const {data:settings}=await client.from("bl_settings").select("unlock_points").eq("id",1).single();
-   if(balance<Number(settings?.unlock_points||50))return respond({error:"Aún no has desbloqueado las recompensas."},422);
+   const {data:settings,error:settingsError}=await client.from("bl_settings").select("unlock_points").eq("id",1).single();
+   if(settingsError)throw settingsError;
+   const threshold=Math.max(1,Number(settings?.unlock_points||50));
+   if(balance<threshold)return respond({error:"Necesitas al menos "+threshold+" puntos para solicitar un premio."},422);
    const raw=body.items;
    if(!Array.isArray(raw)||raw.length<1||raw.length>10)return respond({error:"Selecciona de 1 a 10 premios."},400);
    const ids=new Set<string>(),chosen:{reward_id:string,qty:number}[]=[];
