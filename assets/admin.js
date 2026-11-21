@@ -843,11 +843,14 @@ async function saveJoinStatus(open){
 }
 
 function setup(){
- $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
+ // Primero registrar el ingreso. El formulario debe funcionar incluso si otra
+ // parte del panel falla durante el montaje de sus controles.
+ $('#adminLoginForm').addEventListener('submit',login);
+ window.__bellaAdminLoginHandlerReady=true;
+ $('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#csvSummary').addEventListener('click',exportClubSummary);
  $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
- $('#adminLoginForm').addEventListener('submit',login);
  $('#adminRetryLoad').addEventListener('click',()=>loadAll());
  $('#adminClearSession').addEventListener('click',clearStaleAdminSession);
  $('#adminEmail').addEventListener('input',clearAdminLoginError);
