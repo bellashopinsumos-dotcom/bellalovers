@@ -24,16 +24,6 @@
 
 <section class="admin-panel active" id="section-overview"><div id="overviewStats" class="stats-grid"></div><div class="admin-card"><div class="admin-card-header"><h2>Últimas compras</h2><span class="info-inline">Puntos solo al confirmar factura</span></div><div class="table-scroll" id="recentPurchases"></div></div><div class="admin-card"><h2>Accesos rápidos</h2><p>Para no enredarse: primero revisa la solicitud; cuando haga su primera compra, registra la factura y aprueba su membresía. BellaLovers calcula los puntos automáticamente.</p><div class="admin-actions"><button class="btn btn-outline" data-go="joins">Revisar solicitudes de ingreso</button><button class="btn btn-outline" data-go="purchases">Registrar otra compra</button><button class="btn btn-outline" data-go="redemptions">Revisar recompensas</button><button class="btn btn-outline" data-go="customers">Buscar clienta</button></div></div></section>
 <section class="admin-panel" id="section-joins">
-<div class="admin-card" id="loginRequestsCard">
- <div class="admin-card-header">
-  <div><h2>Solicitudes para entrar a Mi cuenta</h2>
-   <p>Las clientas ingresan con celular o correo y su nombre, sin clave. Antes de autorizar el acceso por primera vez en otro dispositivo, <strong>comprueba su identidad por WhatsApp o en la tienda</strong>.</p></div>
-  <span id="loginPendingBadge" class="status">0 pendientes</span>
- </div>
- <p class="form-help">Las solicitudes vencen en 10 minutos. Aprobar permite ver el historial personal de esa cuenta en el dispositivo que hizo la solicitud.</p>
- <div class="table-scroll" id="loginRequestsTable"></div>
-</div>
-
   <div class="admin-card">
     <div class="admin-card-header"><div><h2>Solicitudes de BellaLovers</h2><p>Solicitar ingreso no crea una cuenta. Solo se aprueba después de comprobar la primera compra facturada.</p></div><span id="joinPendingBadge" class="status">0 pendientes</span></div>
     <div class="admin-tools"><select id="joinFilter" class="admin-input" aria-label="Filtrar solicitudes"><option value="pendiente">Pendientes</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="todas">Todas</option></select><button id="reloadJoins" class="btn btn-outline" type="button">Actualizar solicitudes</button></div>
@@ -43,7 +33,7 @@
     <h2>Confirmar primera compra y aprobar</h2>
     <p class="admin-section-hint">La clienta debe haber comprado realmente en BellaShop. Registra el valor de productos y aprueba su membresía. Después podrá solicitar acceso desde la página con su celular o correo y nombre, sin claves.</p>
     <div id="joinSelectedInfo" class="join-selected-info"></div>
-    <p class="form-help">No se generan ni entregan claves privadas a las clientas. La aprobación de su primer ingreso se realiza en «Solicitudes para entrar a Mi cuenta».</p>
+    <p class="form-help">Al aprobar la primera compra la persona queda registrada y puede consultar sus puntos con celular o correo y nombre. No se envían claves ni se requiere autorización adicional para entrar.</p>
     <form id="joinApprovalForm" class="admin-form">
       <input id="joinRequestId" type="hidden">
       <div><label for="joinInvoice">Factura (opcional)</label><input class="admin-input" id="joinInvoice" maxlength="80" placeholder="Si no tiene, crearemos una referencia interna"></div>
@@ -97,7 +87,16 @@
  <input id="rewardPhoto" class="admin-input" type="file" accept="image/jpeg,image/png,image/webp">
  <div id="rewardPhotoPreview" class="reward-photo-preview" aria-live="polite">La fotografía aparecerá aquí antes de guardarla.</div>
  </div><div class="span2"><label for="rewardImage">O usa un enlace HTTPS de fotografía</label><input id="rewardImage" class="admin-input" type="url" placeholder="https://…"></div><div><label class="checkline"><input id="rewardActive" type="checkbox" checked> Publicar en el catálogo</label></div><div class="span2 admin-actions"><button type="submit" class="btn btn-primary">Guardar recompensa</button><button type="button" id="resetRewardForm" class="btn btn-outline">Limpiar formulario</button></div></form></div><div class="admin-card"><div class="admin-card-header"><div><h2>Premios del club</h2><p>Los premios activos aparecen dentro de la cuenta de las clientas, después de iniciar sesión. No se muestran en la portada pública.</p></div></div><div class="table-scroll" id="rewardsTable"></div></div></section>
-<section class="admin-panel" id="section-redemptions"><div class="admin-card"><h2>Solicitudes de recompensas</h2><p>Las cantidades quedan reservadas al solicitar. Al aprobar, se descuenta del stock de premios; al rechazar, se liberan las unidades y se reintegran puntos.</p><div class="table-scroll" id="redemptionsTable"></div></div></section>
+<section class="admin-panel" id="section-redemptions">
+ <div class="admin-card" id="guestRewardAdminCard">
+  <div class="admin-card-header"><div><h2>Solicitudes desde BellaLovers (confirmar por WhatsApp)</h2>
+   <p>Estas solicitudes <strong>NO descuentan puntos ni reservan premios</strong>. Contacta a la titular al número registrado y confirma qué premio desea antes de aprobar.</p></div>
+   <span id="guestRewardPendingCount" class="status">0 pendientes</span>
+  </div>
+  <div class="table-scroll" id="guestRedemptionsTable"></div>
+ </div>
+ <div class="admin-card"><h2>Canjes del sistema anterior</h2><p>Las solicitudes realizadas desde sesiones autenticadas pueden tener puntos y stock reservados. Revisa antes de aprobar o rechazar.</p><div class="table-scroll" id="redemptionsTable"></div></div>
+</section>
 <section class="admin-panel" id="section-teachers">
   <div class="admin-card">
     <div class="admin-card-header">
