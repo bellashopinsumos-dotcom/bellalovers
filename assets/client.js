@@ -1,7 +1,7 @@
 import {CONFIG,HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
-let cart={}; let giftClaims=[]; let serverBalance=null;
+let cart={}; let giftClaims=[]; let serverBalance=null; let rewardSort='points';
 let requestsOpen=false;
 
 
@@ -274,7 +274,11 @@ function renderAccount(){
   $('#memberName').textContent=customer.full_name;
   $('#memberCategory').textContent=TYPE[customer.category]||customer.category;
   $('#myJoinedDate').textContent=date(customer.created_at);
-  $('#memberCode').textContent='BL-'+String(customer.id).replace(/^public-/,'').slice(0,8).toUpperCase();
+  const memberCode='BL-'+String(customer.id).replace(/^public-/,'').slice(0,8).toUpperCase();
+  $('#memberCode').textContent=memberCode;
+  $('#memberQrCode').textContent=memberCode;
+  $('#memberQrPanel').classList.add('hidden');$('#showMemberQr').setAttribute('aria-expanded','false');
+  $('#memberQrImage').replaceChildren();
   const pending=requests.filter(r=>r.status==='solicitada').length;
   const expiring=cycles.filter(c=>!c.closed_at && Date.parse(c.expires_at)>Date.now()
        && Date.parse(c.expires_at)-Date.now()<=30*86400000);
@@ -287,8 +291,18 @@ function renderAccount(){
 
   $('#accountSub').textContent='Este es tu espacio BellaLovers.';
   $('#balance').textContent=points;
-  $('#progressBar').style.width=`${Math.min(100,Math.max(0,points/unlock*100))}%`;
-  $('#pointsTip').textContent=missing>0 ? `¡Te faltan ${missing} puntos para desbloquear tus recompensas!` : '¡Ya puedes seleccionar recompensas disponibles!';
+  const progress=Math.round(Math.min(100,Math.max(0,points/unlock*100)));
+  $('#progressBar').style.width=progress+'%';
+  $('#progressCounter').textContent=Math.min(unlock,points)+' / '+unlock+' puntos';
+  $('#progressPercent').textContent=progress+'%';
+  $('#pointsProgress').setAttribute('aria-valuemax',String(unlock));
+  $('#pointsProgress').setAttribute('aria-valuenow',String(Math.min(unlock,Math.max(0,points))));
+  $('#pointsCelebration').classList.toggle('hidden',missing>0);
+  $('#pointsTip').textContent=missing>0
+   ?'Te faltan '+missing+' punto'+(missing===1?'':'s')+' para desbloquear tus premios ♡'
+   :rewards.some(r=>r.active&&(r.audience==='todas'||r.audience===customer.category))
+    ?'¡Meta cumplida! Explora los premios publicados y solicita el que prefieras.'
+    :'¡Meta cumplida! Tus puntos estarán listos cuando BellaShop publique sus primeros premios.';
   $('#myType').textContent=TYPE[customer.category]||customer.category;
   const today=Date.now(); const activeCycle=cycles.filter(c=>!c.closed_at && new Date(c.grace_until).getTime()>today).sort((a,b)=>new Date(a.expires_at)-new Date(b.expires_at))[0];
   $('#myExpires').textContent=date(activeCycle?.expires_at);
@@ -316,10 +330,18 @@ function renderRewards(){
  const total=availablePoints(),unlock=rules.unlock_points||50;
  const unlocked=total>=unlock&&!customer.blocked;
  const filtered=rewards.filter(r=>r.active&&(r.audience==='todas'||r.audience===customer.category));
+ const published=filtered.length;
+ $('#rewardPublishedCount').textContent=published+' premio'+(published===1?'':'s')+' publicado'+(published===1?'':'s');
+ $('#rewardSortWrap').classList.toggle('hidden',!published);
+ const sorted=[...filtered].sort((a,b)=>rewardSort==='max'
+  ?b.points_cost-a.points_cost
+  :rewardSort==='available'
+  ?Math.max(0,b.stock-b.reserved)-Math.max(0,a.stock-a.reserved)||a.points_cost-b.points_cost
+  :a.points_cost-b.points_cost);
  const lock=$('#rewardsLock'),bar=$('#redeemBar');
  if(!filtered.length){
   lock.classList.remove('hidden');
-  lock.innerHTML='<span class="reward-lock-icon" aria-hidden="true">♡</span><strong>Próximamente tendremos recompensas para ti</strong><p>BellaShop está preparando sus premios. Cuando los publique en el administrador, aparecerán en esta sección.</p>';
+  lock.innerHTML='<span class="reward-lock-icon" aria-hidden="true">✧</span><strong>Próximamente, sorpresas para nuestras BellaLovers ♡</strong><p>Todavía estamos escogiendo los premios con mucho cariño. Puedes seguir acumulando tus puntos y, cuando BellaShop publique sus primeras recompensas, aparecerán aquí con su foto, puntos necesarios y disponibilidad.</p><span class="reward-coming-chip">Tus puntos siguen acumulándose</span>';
   $('#rewardsGrid').innerHTML='';
   bar.classList.add('hidden');cart={};
   return;
@@ -330,11 +352,11 @@ function renderRewards(){
   '<span class="reward-lock-icon" aria-hidden="true">🔒</span><strong>Premios bloqueados hasta '+unlock+' puntos</strong><p>Actualmente tienes '+total+' puntos. Te faltan '+Math.max(0,unlock-total)+' para empezar a canjear. Sigue acumulando con tus compras válidas.</p>';
  bar.classList.toggle('hidden',!unlocked);
  if(!unlocked)cart={};
- $('#rewardsGrid').innerHTML=filtered.map(r=>{
+ $('#rewardsGrid').innerHTML=sorted.map(r=>{
   const max=Math.max(0,r.stock-r.reserved);
   const qty=cart[r.id]||0;
   const used=Object.entries(cart).reduce((n,[id,q])=>n+(rewards.find(x=>x.id===id)?.points_cost||0)*q,0);
-  const canAdd=unlocked&&max>qty&&used+r.points_cost<=total;
+  const canAdd=unlocked&&max>qty&&qty<5&&used+r.points_cost<=total;
   const badge=!unlocked?'🔒 Bloqueada':max===0?'Agotada':r.points_cost>total?'Necesitas más puntos':'Lista para canjear';
   return '<article class="reward-card '+(!unlocked?'reward-card-locked':'')+'">'+
    '<div class="reward-image">'+imageCard(r)+'</div>'+
@@ -347,8 +369,8 @@ function renderRewards(){
  for(const btn of $$('[data-plus]'))btn.addEventListener('click',()=>{
   const r=rewards.find(x=>x.id===btn.dataset.plus);if(!r||!unlocked)return;
   const max=Math.max(0,r.stock-r.reserved),selected=Object.entries(cart).reduce((n,[id,q])=>n+(rewards.find(x=>x.id===id)?.points_cost||0)*q,0);
-  if(selected+r.points_cost>total||cart[r.id]>=max)return;
-  cart[r.id]=Math.min(max,(cart[r.id]||0)+1);renderRewards();
+  if(selected+r.points_cost>total||(cart[r.id]||0)>=Math.min(max,5))return;
+  cart[r.id]=Math.min(max,5,(cart[r.id]||0)+1);renderRewards();
  });
  for(const btn of $$('[data-minus]'))btn.addEventListener('click',()=>{
   cart[btn.dataset.minus]=Math.max(0,(cart[btn.dataset.minus]||0)-1);renderRewards();
@@ -405,6 +427,37 @@ async function logOut(){
  ledger=[];purchases=[];requests=[];rewards=[];cycles=[];cart={};
  show('login');window.scrollTo({top:0,behavior:'smooth'});
 }
+function showMemberQr(){
+ if(!customer)return;
+ const panel=$('#memberQrPanel');
+ const opening=panel.classList.contains('hidden');
+ panel.classList.toggle('hidden',!opening);
+ $('#showMemberQr').setAttribute('aria-expanded',String(opening));
+ $('#showMemberQr').textContent=opening?'Ocultar mi QR':'Ver mi QR';
+ if(!opening)return;
+ const code=$('#memberCode').textContent;
+ if(window.QRCode){
+  const target=$('#memberQrImage');
+  target.replaceChildren();
+  new window.QRCode(target,{text:code,width:150,height:150,colorDark:'#6e445b',colorLight:'#ffffff',correctLevel:window.QRCode.CorrectLevel.M});
+ }else{
+  $('#memberQrImage').textContent='Código: '+code;
+ }
+}
+async function copyMemberCode(){
+ if(!customer)return;
+ const code=$('#memberCode').textContent;
+ try{
+  if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(code);
+  else{
+   const field=document.createElement('textarea');
+   field.value=code;document.body.append(field);field.select();
+   const copied=document.execCommand('copy');field.remove();
+   if(!copied)throw Error('No fue posible copiar');
+  }
+  notify('¡Código de carné copiado! ♡');
+ }catch{notify('Tu código es '+code+'. Puedes mostrarlo en caja.');}
+}
 async function loadAffiliatedTeachers(){
  const select=$('#joinTeacherCode');
  if(!select||!sb)return;
@@ -440,7 +493,10 @@ function setup(){
   setAuthScreen(button.dataset.authScreen);
   $('#memberLoginFeedback').classList.add('hidden');
  }));
- $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)refreshAccount().then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
+ $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)loadPublicRules().then(()=>refreshAccount()).then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
+ $('#showMemberQr').addEventListener('click',showMemberQr);
+ $('#copyMemberCode').addEventListener('click',copyMemberCode);
+ $('#rewardSort').addEventListener('change',event=>{rewardSort=event.target.value;renderRewards();});
 
  $('#logout').addEventListener('click',logOut);
  $('#submitRedeem').addEventListener('click',submitRedemption);
