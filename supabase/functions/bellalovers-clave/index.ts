@@ -9,6 +9,6 @@ const HEADERS={
 };
 Deno.serve(req=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:HEADERS});
- return new Response(JSON.stringify({error:"BellaLovers ya no utiliza claves privadas. Solicita autorización desde el administrador."}),
+ return new Response(JSON.stringify({error:"BellaLovers ya no utiliza claves privadas ni autorización para iniciar sesión."}),
  {status:410,headers:HEADERS});
 });
