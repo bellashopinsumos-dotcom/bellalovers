@@ -133,4 +133,8 @@ assert.match(adminJs,/guestRedemptionIds/,'Evitar repetir los premios confirmado
 assert.match(adminJs,/parseFunctionFailure/,'Mostrar por qué falló la aprobación de membresía');
 assert.match(publicHtml,/data-live-rule="base-eq"/,'Acumulación pública editable');
 assert.match(publicHtml,/data-live-rule="rule-duration"/,'Vigencia pública editable');
+assert.doesNotMatch(clientJs,/sb\.rpc\('bl_redeem'/,'El cliente no puede reservar canjes directamente con sesiones antiguas');
+assert.match(clientJs,/if\(session\)\s*\{[\s\S]*?sb\.auth\.signOut/,'Se deben cerrar las sesiones antiguas de miembros');
+const legacyLock=readFileSync(new URL('../supabase/migrations/20261121_bloquear_canje_directo_anterior.sql',import.meta.url),'utf8');
+assert.match(legacyLock,/REVOKE EXECUTE ON FUNCTION public\.bl_redeem\(jsonb\)/,'Cierre del canje directo antiguo también en servidor');
 console.log('OK: pruebas BellaLovers y regresión de acceso, recompensas y configuración');
