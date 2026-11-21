@@ -7,6 +7,6 @@ export const CONFIG = {
   brand: 'BellaLovers',
   // Las solicitudes de ingreso se abren desde Configuración,
   // solo después de aprobar la política de datos definitiva.
-  // Las clientas entran con celular + clave aprobada, sin correo ni SMS.
+  // Las clientas consultan su cuenta con celular o correo y nombre, sin clave ni aprobación del inicio de sesión.
 };
 export const HAS_BACKEND = Boolean(CONFIG.supabaseUrl && CONFIG.supabasePublishableKey);
