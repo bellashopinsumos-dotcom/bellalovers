@@ -1,55 +1,54 @@
-# BellaLovers ♡ — Club de beneficios BellaShop
+# BellaLovers ♡ — club de puntos BellaShop
 
 Sitio: https://bellashopinsumos-dotcom.github.io/bellalovers/
 
 Administrador: https://bellashopinsumos-dotcom.github.io/bellalovers/admin.html
 
-Proyecto Supabase exclusivo: `xpnfdyfnaromfwkontid`.
+Supabase: `xpnfdyfnaromfwkontid`. Despliegue GitHub Pages desde `main`.
 
-## Inicio de sesión SIN clave, correo de confirmación ni SMS
+## Inicio de sesión tal como lo pidió BellaShop
 
-La portada se mantiene normal. Al tocar **Iniciar sesión** se abre una ventana con las pestañas **Iniciar sesión**, **Registrarse** y una **X** para cerrar. La clienta escribe únicamente **celular o correo y nombre completo**.
+La portada no contiene un formulario fijo. Al tocar **Iniciar sesión** aparece una ventana con **Iniciar sesión**, **Registrarse** y una **X** para cerrar.
 
-- **Sesión previamente autorizada en el mismo dispositivo:** entra directamente si los datos corresponden a la clienta de esa sesión.
-- **Dispositivo nuevo o sin sesión:** se envía una **solicitud temporal de acceso** al administrador; no aparece ninguna clave. En Administrador → **Solicitudes de ingreso → Solicitudes para entrar a Mi cuenta**, BellaShop **comprueba la identidad de la persona por WhatsApp o presencialmente**, pulsa Aprobar o Rechazar y la ventana del dispositivo original se actualiza automáticamente, mientras permanezca abierta.
-- Las solicitudes vencen a los **10 minutos**. El servidor no indica a un desconocido si el celular o correo existe. El reto aleatorio se genera localmente con un generador criptográfico y solo su huella se almacena en la base de datos. Una aprobación solo sirve para ese dispositivo y se consume una vez.
-- Para crear una sesión válida, Supabase genera un enlace de Auth interno y de uso único que se **consume dentro de la función de servidor**; no se envía un correo ni SMS a la clienta. Los tokens de sesión solo se entregan al dispositivo aprobado.
-- El administrador únicamente puede autorizar accesos si tiene la sesión y el rol apropiados. Su aprobación se guarda en auditoría.
-- **Registrarse** sigue siendo solicitar ingreso al club; no equivale a crear una cuenta. La jefa aprueba la membresía cuando verifica la primera compra real.
+**La clienta entra inmediatamente al escribir solamente:**
+- **Celular colombiano o correo** (el correo solo sirve si lo informó en su inscripción).
+- **Nombre completo**, como quedó registrado en BellaShop.
 
-El endpoint anterior de generar claves de clientas está **desactivado**. Las cuentas previamente aprobadas no pierden su historial, compras ni puntos. No modificar la contraseña del administrador ni exponerla en frontend. Este flujo requiere comprobar extremo a extremo la emisión de sesión Auth con una cuenta real autorizada.
+No se necesita contraseña, clave privada, correo de confirmación, SMS ni aprobación de administración **para entrar**. El inicio se resuelve con la función de servidor `bellalovers-consulta`, que solo devuelve un perfil de consulta limitado: nombre, categoría, fecha de ingreso, puntos, movimientos, historial simplificado de compras, estado de solicitudes y premios.
 
-## Cuenta de BellaLover
+### Privacidad y limitaciones de este diseño
 
-Una vez autenticada, la clienta consulta su carné digital con fecha de ingreso, categoría, compras, canales (incluidas compras por WhatsApp o domicilio), movimientos y saldo de puntos, solicitudes y catálogo privado de recompensas.
+**Nombre y teléfono/correo NO demuestran identidad.** Otras personas que los conozcan podrían consultar el historial simplificado. BellaShop decidió priorizar un acceso sencillo; por eso se limita la información expuesta: **no** se devuelven datos de contacto, números de factura, identificadores internos de usuario, notas de caja o recibos. Se aplican límites de consultas y no se crea un token de Supabase Auth para quien solo introduce esos datos. Nadie puede editar puntos, facturas, inventario ni datos del perfil desde esta consulta.
 
-Premios: si BellaShop todavía no publicó ninguno aparece **Próximamente**; si hay pero faltan puntos, se muestran bloqueados hasta **50 puntos**; desde entonces permite solicitar premios que alcance a cubrir con su saldo, sujetos a disponibilidad y revisión de BellaShop. No hay pagos en línea desde BellaLovers.
+La sesión de consulta se conserva únicamente en el almacenamiento de la pestaña durante un máximo de 8 horas; cerrar sesión borra el acceso guardado.
 
-## Reglas y operaciones administrativas
+### Inscripciones y profesoras
 
-- **Compras:** buscar por celular, confirmar la clienta y escribir valor de productos. Factura y canal opcionales, sin campo de transporte. Una referencia `REG-...` generada internamente no equivale a factura fiscal.
-- **Puntos:** $50.000 en productos = 5 puntos y cada $10.000 completos adicionales, 1 punto. No se suman puntos sobre transporte ni compras de descuento especial. La primera compra de una estudiante no acumula puntos; su regalo de bienvenida depende de las reglas.
-- **Clientas:** editar categoría autorizada, bloquear, desbloquear, archivar/restaurar, sumar/descontar puntos, **deshacer ajustes con auditoría** y eliminar acceso/datos de contacto, conservando trazabilidad contable.
-- **Profesoras afiliadas:** solo el administrador agrega, edita, retira o reactiva profesoras. El formulario de solicitud muestra solo profesoras activas o Ninguna. Puntos de referidos sujetos a aprobación y afiliación real.
-- **Premios:** crear/modificar productos de recompensa, foto, stock, costo y puntos. El catálogo se muestra dentro de la cuenta, no en el inicio público.
-- **Equipo:** permisos separados y autorizados por la jefa, no registro público de administradores.
+**Registrarse** crea una **solicitud de ingreso**, no una cuenta activa. La jefa aprueba la solicitud una vez comprueba una primera compra real y registra el importe de productos. El correo es opcional; el teléfono obligatorio. Las profesoras afiliadas disponibles provienen exclusivamente del directorio que administra BellaShop; no se puede autoproclamar profesora.
 
-## Pendientes antes de difundir masivamente
+La Edge Function `bellalovers-aprobar` crea la cuenta sin claves, contraseña compartida, SMS ni correos de invitación.
 
-1. La política publicada `politica-datos.html` todavía es un **borrador**, pendiente de completar por BellaShop y aprobar según la normativa. Debe actualizarse antes de recabar nuevos registros.
-2. Probar el flujo completo con una primera compra real autorizada: solicitud de ingreso, aprobación, solicitud de acceso desde celular, verificación humana por BellaShop, autorización en admin y consulta de compras y premios.
-3. Configurar mitigación anti-bots en registro y revisar los límites de Supabase Auth. El sistema ya limita intentos de inicio, pero no reemplaza CAPTCHA.
-4. Definir quién en BellaShop atiende por WhatsApp la verificación de identidad antes de autorizar el acceso; no se envían mensajes automáticamente.
-5. En Supabase Auth habilitar, si el plan lo permite, protección contra contraseñas filtradas para el equipo.
+### Premios y canjes seguros
 
-El acceso con aprobación humana no exige SMTP ni proveedor de SMS. La cuenta se autentica con tokens válidos emitidos por Supabase tras la autorización.
+- Los premios se configuran desde el administrador (referencia, foto, puntos, inventario, categoría).
+- Con menos de **50 puntos**, las recompensas están bloqueadas. Si no hay premios cargados, aparece **Próximamente**.
+- Con **50 puntos** o más y saldo suficiente, la clienta puede **enviar una solicitud de canje** desde su cuenta.
+- **Enviar NO descuenta puntos, reserva stock ni entrega artículos.** Se guarda una solicitud `bl_guest_reward_requests` con estado `pendiente` (máximo una pendiente por clienta).
+- **Administrador → Recompensas → Solicitudes desde BellaLovers** muestra a la titular, su teléfono registrado y los premios pedidos. BellaShop debe escribir o llamar a ese teléfono para confirmar la solicitud.
+- **Solo cuando la jefa confirma** y escribe `CONFIRMADO`, se llama a la función privada `bl_decide_guest_reward`; el servidor verifica stock y saldo, genera el canje definitivo, **descuenta puntos y stock**, y registra el cambio en auditoría. Rechazar no descuenta ni reserva nada.
+- Las solicitudes antiguas realizadas con sesiones Supabase Auth siguen visibles en un apartado separado para evitar perder historial.
 
-## Archivos y despliegue
+**Importante:** Una persona que conoce el nombre y celular de otra podría ver el resumen y **enviar una solicitud falsa**, pero no podrá obtener premios sin la confirmación de BellaShop a la titular. Esa responsabilidad operativa es obligatoria.
 
-- UI: `index.html`, `assets/client.js`, `assets/premium.css`, `admin.html`, `assets/admin.js`.
-- Auth clientas: `supabase/functions/bellalovers-ingresar/index.ts`, `supabase/functions/bellalovers-aprobar/index.ts` y la tabla `bl_login_requests`; `bellalovers-clave` permanece deshabilitada (HTTP 410).
-- Función antigua de correo (deshabilitada): `supabase/functions/bellalovers-acceso/index.ts`.
-- Scripts SQL en `supabase/migrations/` y configuración en `assets/config.js` (solo clave pública).
-- Pruebas automáticas: `npm test` y GitHub Actions.
+## Otras operaciones
 
-No se debe usar service_role en frontend ni cambiar cuentas administrativas desde el formulario de clientas.
+- Compra por celular en administración, con factura y canal opcionales y sin campo de transporte.
+- Acumulación: $50.000 en productos = 5 puntos; por cada $10.000 completos extra, 1 punto. No se otorgan puntos de productos con descuentos especiales si esa exclusión está activa. Primera compra de estudiantes no genera puntos.
+- Administrador puede sumar, descontar y revertir puntos con auditoría, anular compras, manejar profesoras, bloquear/archivar/restaurar clientas y cerrar cuentas conservando la trazabilidad comercial.
+- Recompensas ocultas de la portada; aparecen dentro de la cuenta después de entrar.
+
+## Revisión antes del lanzamiento
+
+La política `politica-datos.html` sigue siendo un borrador y BellaShop debe aprobarla antes de recolectar solicitudes públicamente. Debe explicar expresamente la visibilidad limitada asociada a entrar por nombre y celular/correo. La lógica de canjes se probó en una transacción de base de datos revertida sin crear registros ficticios persistentes. Es recomendable probar el uso real desde un celular autorizado antes del lanzamiento general.
+
+Auth de administradores sigue separado, con control de permisos RLS. Nunca incluir `service_role` en JavaScript público. Las funciones antiguas `bellalovers-ingresar`, `bellalovers-acceso` y `bellalovers-clave` están desactivadas.
