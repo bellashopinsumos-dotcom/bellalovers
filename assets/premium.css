@@ -1265,3 +1265,60 @@ footer{background:#f7e4eb;border-top:1px solid #e6c5d2;}
 #loginRequestsCard #loginRequestsTable{overflow-x:auto;}
 #loginRequestsCard .account-actions{display:flex;flex-wrap:wrap;gap:6px;}
 #loginRequestsCard .account-actions .btn{white-space:nowrap;min-height:35px;font-size:11px;}
+
+
+/* BellaLovers · mejoras graduales de puntos, carné y administración */
+.member-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;position:relative;z-index:1}
+.member-quiet-btn{border:1px solid rgba(141,93,114,.30);border-radius:9px;background:rgba(255,255,255,.67);color:#81526a;padding:8px 12px;font-size:11px;font-weight:750;min-height:34px;cursor:pointer}
+.member-quiet-btn:hover,.member-quiet-btn:focus-visible{background:#fff;border-color:#c6a06f}
+.member-qr-panel{display:flex;align-items:center;gap:22px;border:1px solid #e7d2d7;border-radius:17px;background:#fffafc;padding:20px 23px;margin-bottom:18px;box-shadow:0 9px 22px rgba(117,70,90,.035)}
+.member-qr-panel.hidden{display:none}
+.member-qr-image{width:164px;height:164px;flex-shrink:0;display:grid;place-items:center;background:#fff;border:1px solid #f0e6ea;border-radius:11px;padding:7px;color:#89566b;font-size:12px;text-align:center}
+.member-qr-image img,.member-qr-image canvas{max-width:100%;height:auto}
+.member-qr-panel strong{color:#71495d;font-size:16px}
+.member-qr-panel p{max-width:520px;margin:8px 0 10px;color:#7d6671;font-size:12px;line-height:1.75}
+.member-qr-code{display:inline-block;background:#f7e9ee;border:1px solid #e8cbd5;border-radius:9px;color:#794762;padding:8px 12px;font-size:12px;font-weight:850;letter-spacing:.08em}
+.progress-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0 8px;font-size:12px;color:#765268}
+.progress-head strong{font-weight:850}
+.progress-head span{font-weight:800;color:#7e6650}
+#pointsProgress{overflow:hidden}
+#progressBar{transition:width .45s ease-out}
+.points-celebration{margin:14px 0 0;font-weight:800;font-size:12px;color:#75445e;line-height:1.6}
+.points-celebration.hidden{display:none}
+.reward-catalog-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:12px 0 18px;flex-wrap:wrap;color:#7d6370;font-size:12px}
+.reward-catalog-head>span{font-weight:750}
+.reward-sort-wrap{display:flex;align-items:center;gap:8px;font-size:12px}
+.reward-sort-wrap select{border:1px solid #e6d3db;color:#744e64;background:#fff;border-radius:10px;padding:8px;font:inherit;max-width:100%}
+.reward-coming-chip{display:inline-flex;align-items:center;justify-content:center;border:1px solid #dfc79e;background:#fff8ec;color:#967242;font-size:11px;font-weight:800;border-radius:999px;padding:7px 12px}
+.admin-nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;border:1px solid #edcfda;background:#fce8ef;color:#8d4967;font-size:11px;font-weight:850;margin-left:auto}
+.admin-pending-banner{display:flex;align-items:center;gap:16px;background:#fff9fa;border:1px solid #e8cbd5;border-left:4px solid #c7a06b;border-radius:16px;padding:14px 18px;margin-bottom:20px}
+.admin-pending-banner.hidden{display:none}
+.pending-banner-symbol{color:#b48d56;font-size:26px;line-height:1}
+.admin-pending-banner p{flex:1;margin:0;display:grid;gap:3px;font-size:12px;line-height:1.5;color:#816671}
+.admin-pending-banner strong{color:#794963;font-size:13px}
+.club-monthly-chart{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px;align-items:end;min-height:240px;margin:15px 0 0}
+.club-month{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;color:#785969;font-size:12px;text-align:center}
+.club-month-value{font-size:11px;font-weight:800;overflow-wrap:anywhere;line-height:1.35}
+.club-month-track{width:min(100%,80px);height:134px;border-radius:9px;background:#fcf2f5;border:1px solid #f0e2e8;display:flex;align-items:end;overflow:hidden}
+.club-month-track span{display:block;width:100%;min-height:0;background:linear-gradient(180deg,#ddb98a,#b48b62);border-radius:8px 8px 0 0;transition:height .4s}
+.club-month-name{font-weight:800;font-size:12px;text-transform:capitalize;color:#77506a}
+.club-month small{font-size:10px;color:#937f87}
+.admin-rewards-empty{border:1px solid #e9d9df;background:#fff8fb;border-radius:15px;padding:18px 21px;margin:0 0 20px;color:#754a63}
+.admin-rewards-empty.hidden{display:none}
+.admin-rewards-empty strong{font-size:14px}
+.admin-rewards-empty p{font-size:12px;line-height:1.75;margin:6px 0 0}
+@media(max-width:690px){
+ .member-card-actions{gap:8px}
+ .member-qr-panel{padding:15px;gap:14px;flex-direction:column;text-align:center}
+ .member-qr-panel p{margin-left:auto;margin-right:auto}
+ .admin-pending-banner{gap:10px;flex-wrap:wrap;padding:13px}
+ .admin-pending-banner .btn{width:100%}
+ .club-monthly-chart{gap:7px;min-height:200px}
+ .club-month-value{font-size:9px;min-height:29px;display:flex;align-items:end}
+ .club-month-track{height:100px}
+ .club-month-name{font-size:10px}
+ .club-month small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ #progressBar,.club-month-track span{transition:none}
+}
