@@ -1,6 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=solicitudes20261120final';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
+let pendingRewardPoll=null,pendingRewardKnownIds=null,pendingRewardCount=0,pendingRewardDirty=false;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
 const titles={joins:['Solicitudes de ingreso','Solo la primera factura confirmada activa una membresía.'],overview:['Resumen general','Lo importante de tu club, en un solo lugar.'],customers:['Clientas registradas','Información, saldos y permisos de las BellaLovers.'],purchases:['Compras y puntos','Solo las facturas confirmadas generan puntos.'],rewards:['Catálogo de recompensas','Premios, referencias, puntos e inventario.'],redemptions:['Solicitudes de premios','Aprueba o rechaza las redenciones pendientes.'],teachers:['Profesoras afiliadas','Solo las profesoras autorizadas por BellaShop aparecen en las solicitudes.'],gifts:['Regalos de bienvenida','Un detalle especial para estudiantes elegibles.'],settings:['Configuración del club','Las reglas que puede ajustar la jefa.'],staff:['Equipo y accesos','Autoriza, suspende y restaura accesos del equipo.'],audit:['Auditoría','Registro de cambios y autorizaciones.']};
@@ -17,7 +18,10 @@ function table(headers, rows){
  return `<table class="admin-table"><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${headers.length}" class="empty">Aún no hay registros.</td></tr>`}</tbody></table>`;
 }
 function showPanel(name){
- $$('.admin-panel').forEach(e=>e.classList.toggle('active',e.id===`section-${name}`));$$('#adminNav button').forEach(b=>b.classList.toggle('active',b.dataset.section===name));
+ if(name==='redemptions'&&pendingRewardDirty){
+  pendingRewardDirty=false;loadAll().catch(err=>notify(err.message,'error'));
+ }
+ $('.admin-panel').forEach(e=>e.classList.toggle('active',e.id===`section-${name}`));$$('#adminNav button').forEach(b=>b.classList.toggle('active',b.dataset.section===name));
  $('#sectionTitle').textContent=titles[name][0];$('#sectionSubtitle').textContent=titles[name][1];
  if(window.innerWidth<690) window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -38,7 +42,7 @@ async function initAdmin(){
  const {data:{user}}=await sb.auth.getUser();if(!user){$('#adminLogin').classList.remove('hidden');return;}
  staff=await run(sb.from('bl_staff').select('*').eq('user_id',user.id).eq('active',true).maybeSingle());
  if(!staff){await sb.auth.signOut();throw new Error('Este correo no tiene acceso de administrador. Debe estar autorizado previamente en Supabase.');}
- enter();await loadAll();
+ enter();await loadAll();startPendingRewardPoll();
 }
 async function loadAll(){if(mode!=='live')return;
  const reqs=[
@@ -62,8 +66,43 @@ async function loadAll(){if(mode!=='live')return;
   ...(staff?.role==='admin'?[['staffDirectory',sb.rpc('bl_list_staff')]]:[]),
  ];
  try{const results=await Promise.all(reqs.map(async ([name,q])=>[name,await run(q)]));   const d=Object.fromEntries(results);({profiles,purchases,points,cycles,rewards,redemptions,redemptionItems,teachers,referrals,tiers,giftOptions,giftClaims,audit,settings}=d);
-   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];guestRewardRequests=d.guestRewardRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();}
+   staffDirectory=d.staffDirectory||[];joinRequests=d.joinRequests||[];guestRewardRequests=d.guestRewardRequests||[];adjustmentReversals=d.adjustmentReversals||[];affiliatedTeachers=d.affiliatedTeachers||[];affiliateAttributions=d.affiliateAttributions||[];renderAll();
+   pendingRewardKnownIds=new Set(guestRewardRequests.filter(r=>r.status==='pendiente').map(r=>r.id));
+   pendingRewardCount=pendingRewardKnownIds.size;pendingRewardDirty=false;updatePendingRewardAlerts();}
  catch(err){notify('No se pudieron cargar todos los datos: '+err.message,'error');}
+}
+function updatePendingRewardAlerts(){
+ const count=staff?.role==='admin'?pendingRewardCount:0;
+ const badge=$('#adminRewardBadge'),banner=$('#adminRewardAlerts');
+ badge.textContent=String(count);badge.classList.toggle('hidden',count===0);
+ banner.classList.toggle('hidden',count===0||mode!=='live');
+ $('#adminRewardAlertTitle').textContent=count===1?'Tienes 1 canje pendiente':'Tienes '+count+' canjes pendientes';
+ $('#adminRewardAlertText').textContent='Las solicitudes no descuentan puntos. Confirma por WhatsApp antes de aprobar.';
+}
+async function pollPendingRewards(){
+ if(mode!=='live'||staff?.role!=='admin'||document.visibilityState==='hidden')return;
+ try{
+  const list=await run(sb.from('bl_guest_reward_requests').select('id').eq('status','pendiente').order('created_at',{ascending:false}).limit(300));
+  const next=new Set((list||[]).map(r=>r.id));
+  if(pendingRewardKnownIds!==null){
+   const newCount=[...next].filter(id=>!pendingRewardKnownIds.has(id)).length;
+   if(newCount){
+    pendingRewardDirty=true;
+    notify(newCount===1?'Nueva solicitud de premio recibida ♡':newCount+' solicitudes de premio nuevas ♡');
+   }
+   if(next.size!==pendingRewardCount)pendingRewardDirty=true;
+  }
+  pendingRewardKnownIds=next;pendingRewardCount=next.size;updatePendingRewardAlerts();
+ }catch(err){console.warn('No se pudo comprobar los canjes:',err.message);}
+}
+function startPendingRewardPoll(){
+ if(pendingRewardPoll!==null)clearInterval(pendingRewardPoll);
+ pendingRewardPoll=setInterval(pollPendingRewards,45000);
+}
+function stopPendingRewardPoll(){
+ if(pendingRewardPoll!==null)clearInterval(pendingRewardPoll);
+ pendingRewardPoll=null;pendingRewardKnownIds=null;pendingRewardCount=0;pendingRewardDirty=false;
+ updatePendingRewardAlerts();
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
 function renderOverview(){
@@ -121,7 +160,7 @@ function renderCustomers(){
  const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
  const chosen=$('#customerStatusFilter')?.value||'all';
  const filtered=profiles.filter(p=>{
-   const match=(p.full_name+' '+(p.phone||'')).toLowerCase().includes(term);
+   const match=(p.full_name+' '+(p.phone||'')+' BL-'+p.id.slice(0,8)).toLowerCase().includes(term);
    const status=p.deleted_at?'deleted':p.archived_at?'archived':p.blocked?'blocked':'active';
    return match&&(chosen==='all'?status!=='deleted':chosen===status);
  });
@@ -257,6 +296,7 @@ function updateRewardPhotoPreview(src,description=''){
  }else preview.textContent='Puedes subir una fotografía desde tu celular antes de guardar el premio.';
 }
 function renderRewards(){
+ $('#adminRewardsEmpty').classList.toggle('hidden',rewards.length!==0);
  $('#rewardsTable').innerHTML=table(['Foto','Producto','Referencia','Puntos','Disponibles','Costo','Categoría','Estado',''],rewards.map(r=>
   `<tr><td>${r.image_url?'<img class="reward-admin-thumb" src="'+esc(safeUrl(r.image_url))+'" alt="" loading="lazy">':'♡'}</td><td><strong>${esc(r.name)}</strong></td><td>${esc(r.product_ref)}</td><td>${r.points_cost}</td><td>${r.stock-r.reserved} <small>(${r.reserved} reservadas)</small></td><td>${fmt(r.unit_cost)}</td><td>${esc(r.audience)}</td><td>${r.active?pill('Publicado','green'):pill('Oculto','neutral')}</td><td><button class="btn btn-outline" data-edit-reward="${esc(r.id)}">Editar</button></td></tr>`));
  $$('[data-edit-reward]').forEach(b=>b.onclick=()=>{
@@ -677,7 +717,9 @@ async function saveJoinStatus(open){
 }
 
 function setup(){
- $$('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
+ $('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
+ $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
  $('#adminLoginForm').addEventListener('submit',login);
  $('#joinFilter').addEventListener('change',renderJoins);
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
@@ -719,5 +761,5 @@ function setup(){
    if(session&&!recoveryMode)await initAdmin();
  }).catch(err=>notify(err.message,'error'));
 }
-async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
+async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;stopPendingRewardPoll();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
 setup();
