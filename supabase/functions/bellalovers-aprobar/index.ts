@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
  if(invoiceExists)return send({error:"Esa factura ya está registrada"},409);
  const adminClient=createClient(SUPABASE_URL,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
  // Crear membresía aprobada sin contraseña, envío de SMS ni invitación por correo.
- // El acceso posterior requiere revisión humana y un enlace interno de uso único.
+ // La clienta podrá consultar su membresía directamente con nombre y celular o correo.
  const {data:created,error:createError}=await adminClient.auth.admin.createUser({
   email:pending.email,email_confirm:true
  });
@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
   });
   if(error)throw error;
   return send({success:true,purchase:data,reference:invoice,internal_reference:!submittedInvoice,
-   notice:"Membresía aprobada. La clienta solicita acceso con celular o correo y nombre; el administrador verifica identidad y autoriza."});
+   notice:"Membresía aprobada. La clienta puede ingresar directamente con su nombre y celular o correo registrado."});
  } catch(error){
   // Si la factura falla, eliminar únicamente la cuenta recién creada.
   await adminClient.auth.admin.deleteUser(newId);
