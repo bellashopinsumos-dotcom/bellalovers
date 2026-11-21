@@ -67,7 +67,7 @@ async function loadAll(){if(mode!=='live')return;
 }
 function statTile(label,n){return `<article class="stat-tile"><p>${esc(label)}</p><strong>${esc(n)}</strong></article>`;}
 function renderOverview(){
- const valid=purchases.filter(p=>p.status==='confirmada');const pending=redemptions.filter(p=>p.status==='solicitada').length;
+ const valid=purchases.filter(p=>p.status==='confirmada');const pending=redemptions.filter(p=>p.status==='solicitada').length+guestRewardRequests.filter(p=>p.status==='pendiente').length;
  const earned=points.filter(p=>p.delta>0&&['compra','referido'].includes(p.kind)).reduce((s,p)=>s+p.delta,0);
  const claimsCost=giftClaims.reduce((s,g)=>s+(giftOptions.find(o=>o.id===g.gift_id)?.unit_cost||0),0);
  const prizesCost=redemptions.filter(r=>r.status==='aprobada').reduce((s,r)=>s+redemptionItems.filter(i=>i.redemption_id===r.id).reduce((a,i)=>a+i.qty*(rewards.find(w=>w.id===i.reward_id)?.unit_cost||0),0),0);
@@ -285,7 +285,7 @@ function renderGuestRewardRequests(){
   return '<tr><td>'+date(r.created_at)+'</td><td><strong>'+esc(member?.full_name||'Cuenta no disponible')+'</strong><small>'+esc(member?.phone||'Sin celular')+'</small></td>'+
    '<td>'+esc(descriptions)+'</td><td>'+Number(r.total_points)+'</td>'+
    '<td>'+pill(r.status,r.status==='aprobada'?'green':r.status==='rechazada'?'red':'neutral')+'</td>'+
-   '<td>'+(r.status==='pendiente'?'<div class="admin-actions">'+
+   '<td>'+(r.status==='pendiente'?'<div class="admin-actions">'+(member?.phone?'<a class="btn btn-outline btn-small" href="https://wa.me/'+esc(member.phone.replace(/\D/g,''))+'" target="_blank" rel="noopener noreferrer">Escribir WhatsApp</a>':'')+
     '<button class="btn btn-primary btn-small" data-guest-confirm="'+esc(r.id)+'">Ya confirmé con clienta</button>'+
     '<button class="btn btn-outline btn-small" data-guest-reject="'+esc(r.id)+'">Rechazar</button></div>':
     r.status==='aprobada'?'Confirmado y descontado':'Rechazado')+'</td></tr>';
@@ -321,7 +321,8 @@ async function reviewGuestReward(id,approve){
 }
 
 function renderRedemptions(){
- $('#redemptionsTable').innerHTML=table(['ID','Clienta','Premios','Puntos','Fecha','Estado',''],redemptions.map(r=>{
+ const guestRedemptionIds=new Set(guestRewardRequests.map(r=>r.redemption_id).filter(Boolean));
+ $('#redemptionsTable').innerHTML=table(['ID','Clienta','Premios','Puntos','Fecha','Estado',''],redemptions.filter(r=>!guestRedemptionIds.has(r.id)).map(r=>{
    const items=redemptionItems.filter(i=>i.redemption_id===r.id).map(i=>`${i.qty} × ${rewards.find(x=>x.id===i.reward_id)?.name||'Premio'}`).join(', ');
    return `<tr><td>${esc(r.id.slice(0,8))}</td><td>${esc(uname(r.customer_id))}</td><td>${esc(items)}</td><td>${r.total_points}</td><td>${date(r.created_at)}</td><td>${pill(r.status,r.status==='aprobada'?'green':r.status==='rechazada'?'red':'')}</td><td>${r.status==='solicitada'?`<div class="admin-actions"><button class="btn btn-outline" data-approve="${esc(r.id)}">Aprobar</button><button class="btn btn-outline admin-danger" data-reject="${esc(r.id)}">Rechazar</button></div>`:''}</td></tr>`;
  }));
@@ -516,6 +517,13 @@ async function rejectJoin(id){
   notify('Solicitud rechazada; quedó en el historial.');selectedJoinId=null;await loadAll();
  }catch(err){notify('No se pudo rechazar: '+err.message,'error');}
 }
+async function parseFunctionFailure(error,data,defaultMessage){
+ if(data?.error)return String(data.error);
+ if(error?.context?.json){
+  try{const info=await error.context.clone().json();if(info?.error)return String(info.error);}catch{}
+ }
+ return defaultMessage;
+}
 async function approveJoin(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
  const req=joinRequests.find(x=>x.id===$('#joinRequestId').value&&x.status==='pendiente');
@@ -534,8 +542,7 @@ async function approveJoin(e){
  try{
   setLoading(btn,true,'Aprobando y creando acceso…');
   const {data,error}=await sb.functions.invoke('bellalovers-aprobar',{body:payload});
-  if(error)throw error;
-  if(!data?.success)throw new Error(data?.error||'El servidor no pudo confirmar la membresía');
+  if(error||!data?.success)throw new Error(await parseFunctionFailure(error,data,'No fue posible confirmar la membresía.'));
   notify('Membresía aprobada y compra registrada. Ahora podrá consultar sus puntos directamente con su nombre y celular o correo.');
   selectedJoinId=null;$('#joinApprovalCard').classList.add('hidden');
   $('#joinApprovalForm').reset();await loadAll();
