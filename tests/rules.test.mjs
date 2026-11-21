@@ -156,4 +156,18 @@ assert.match(adminJs,/updatePendingRewardAlerts\(\)/,'Administración muestra el
 assert.match(adminJs,/renderMonthlyChart\(valid\)/,'Estadísticas basadas en compras confirmadas');
 assert.match(adminJs,/exportClubSummary\(\)/,'El resumen mensual se puede exportar');
 assert.match(adminJs,/p\.id\.slice\(0,8\)/,'Búsqueda administrativa por código de carné');
+
+// Regresión del acceso administrativo: el error debe permanecer visible
+// y las sesiones antiguas se pueden reiniciar sin tocar usuarios del servidor.
+assert.match(adminHtml,/id="adminLoginFeedback"/,'Los fallos de inicio deben mostrarse debajo del formulario');
+assert.match(adminHtml,/id="adminClearSession"/,'Recuperación local de sesiones antiguas');
+assert.match(adminHtml,/id="adminLoadFeedback"/,'Los fallos de carga deben estar visibles en el panel');
+assert.match(adminHtml,/id="adminRetryLoad"/,'Permitir reintentar la carga administrativa');
+assert.match(adminJs,/showAdminLoginError\(/,'Mostrar errores de autenticación sin ocultarlos');
+assert.match(adminJs,/clearStaleAdminSession\(/,'Reiniciar una sesión guardada');
+assert.match(adminJs,/sb\.auth\.signOut\(\{scope:'local'\}\)/,'Reinicio de sesión solo local');
+assert.match(adminJs,/await initAdmin\(data\.user\)/,'La sesión autenticada no requiere otra petición obligatoria');
+const coreJs=readFileSync(new URL('../assets/core.js',import.meta.url),'utf8');
+assert.match(coreJs,/esm\.sh\/\@supabase\/supabase-js\@2\.47\.16/,'CDN alternativo si la fuente habitual falla');
+assert.match(coreJs,/clientPromise = null/,'Permitir un segundo intento de conexión tras error temporal');
 console.log('OK: pruebas BellaLovers y regresión de acceso, recompensas y configuración');
