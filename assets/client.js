@@ -396,9 +396,7 @@ async function submitRedemption(){
    finally{setLoading(btn,false);}
    return;
   }
-  if(!confirm('¿Confirmas que deseas reservar estos premios usando tus puntos?')) return;
-  const btn=$('#submitRedeem');try {setLoading(btn,true);await run(sb.rpc('bl_redeem',{p_items:selected}));notify('¡Solicitud enviada! BellaShop revisará tu recompensa.');await refreshAccount();}
-  catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
+  notify('Para solicitar premios, cierra sesión y vuelve a entrar con tu nombre y celular o correo.','error');
 }
 async function logOut(){
  sessionStorage.removeItem(GUEST_SESSION_KEY);
@@ -471,7 +469,11 @@ function setup(){
    sessionStorage.removeItem(GUEST_SESSION_KEY);
   }
   const {data:{session}}=await sb.auth.getSession();
-  if(session)await loadUser();
+  if(session){
+   // Cerrar cualquier sesión antigua para mantener un único flujo de consulta.
+   await sb.auth.signOut();
+   show('login');
+  }
  }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
 }
 
