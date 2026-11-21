@@ -86,7 +86,7 @@ assert.match(publicHtml, /id="joinEmail"[^>]*type="email"[^>]*>/, 'Correo opcion
 assert.doesNotMatch(publicHtml, /id="joinEmail"[^>]*required/, 'El correo nunca es obligatorio');
 assert.doesNotMatch(publicHtml, /id="memberPhone"/, 'No pedir celular como único identificador');
 assert.doesNotMatch(clientJs, /signInWithOtp/, 'El ingreso no debe enviar magic links al correo');
-assert.match(clientJs, /auth\.setSession/, 'La sesión se establece con credenciales verificadas');
+assert.doesNotMatch(clientJs, /auth\.setSession/, 'Consulta por nombre y celular no emite sesiones de Auth');
 assert.match(approvalFn, /auth\.admin\.createUser/, 'Nueva membresía creada sin invitación de correo');
 assert.doesNotMatch(approvalFn, /inviteUserByEmail/, 'Aprobación sin enviar invitaciones por correo');
 assert.doesNotMatch(adminHtml, /id="loginRequestsTable"/, 'Admin ya no aprueba ingresos de clientas');
