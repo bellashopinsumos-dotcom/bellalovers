@@ -131,6 +131,33 @@ Deno.serve(async(req:Request)=>{
     status:r.status==="pendiente"?"solicitada":r.status==="aprobada"?"aprobada":"rechazada"
    }));
    const requests=[...traditional,...guests].sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)).slice(0,65);
+   let teacher_summary=null;
+   if(person.category==="profesora"){
+    const {data:affiliate,error:affiliateError}=await client.from("bl_affiliated_teachers").select("id,code,active").eq("linked_profile_id",person.id).maybeSingle();
+    if(affiliateError)throw affiliateError;
+    const {data:tiers,error:tierError}=await client.from("bl_referral_tiers").select("min_amount,points").order("min_amount");
+    if(tierError)throw tierError;
+    const history=new Map<string,{date:string,points:number,status:string,kind:string}>();
+    let pending=0;
+    if(affiliate){
+     const [joins,first,selected,earned]=await Promise.all([
+      client.from("bl_join_requests").select("id",{count:"exact",head:true}).eq("affiliate_teacher_id",affiliate.id).eq("status","pendiente"),
+      client.from("bl_affiliate_attributions").select("first_purchase_id,awarded_points,awarded_at,created_at").eq("affiliate_id",affiliate.id).order("created_at",{ascending:false}).limit(250),
+      client.from("bl_purchases").select("id,created_at,status").eq("selected_affiliate_id",affiliate.id).order("created_at",{ascending:false}).limit(250),
+      client.from("bl_referrals").select("awarded_purchase,awarded_at").eq("teacher_id",person.id).not("awarded_purchase","is",null).limit(250)
+     ]);
+     for(const item of [joins,first,selected,earned])if(item.error)throw item.error;
+     pending=joins.count||0;
+     const ids=[...new Set([...(first.data||[]).map(x=>x.first_purchase_id),...(earned.data||[]).map(x=>x.awarded_purchase)].filter(Boolean))];
+     const verified=ids.length?await client.from("bl_purchases").select("id,created_at,status,referral_awarded").in("id",ids):{data:[],error:null};
+     if(verified.error)throw verified.error;
+     const purchaseMap=new Map((verified.data||[]).map(x=>[x.id,x]));
+     for(const x of first.data||[]){const v=purchaseMap.get(x.first_purchase_id);if(v)history.set(v.id,{date:v.created_at,points:v.status==="confirmada"?Number(x.awarded_points||0):0,status:v.status,kind:"Primera compra referida"});}
+     for(const x of earned.data||[]){const v=purchaseMap.get(x.awarded_purchase);if(v)history.set(v.id,{date:v.created_at,points:v.status==="confirmada"?Number(v.referral_awarded||0):0,status:v.status,kind:"Compra referida con puntos"});}
+     for(const x of selected.data||[]){if(!history.has(x.id))history.set(x.id,{date:x.created_at,points:0,status:x.status,kind:"Compra con recomendación"});}
+    }
+    teacher_summary={active:affiliate?.active===true,code:affiliate?.active?affiliate.code:null,pending,tiers:tiers||[],referral_points:points.filter(x=>x.kind==="referido").reduce((n,x)=>n+Number(x.delta),0),history:[...history.values()].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,100)};
+   }
    // Never disclose phone, email, database UUID, invoice number, internal notes or payment receipts.
    return respond({
     success:true,profile:{
@@ -143,7 +170,7 @@ Deno.serve(async(req:Request)=>{
      cycle_id:p.cycle_id,created_at:p.created_at,kind:p.kind,delta:p.delta,detail:""
     })),
     purchases:(purchasesResult.data||[]).map(p=>({...p,invoice:null})),
-    requests,rewards,gift_claimed:(giftResult.data||[]).length>0,teacher_code:teacherResult.data?.code||null
+    requests,rewards,gift_claimed:(giftResult.data||[]).length>0,teacher_code:teacher_summary?.code||null,teacher_summary
    });
   }
   if(action==="request_reward"){

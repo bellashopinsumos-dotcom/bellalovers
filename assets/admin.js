@@ -214,7 +214,7 @@ function renderOverview(){
  const prizesCost=redemptions.filter(r=>r.status==='aprobada').reduce((s,r)=>s+redemptionItems.filter(i=>i.redemption_id===r.id).reduce((a,i)=>a+i.qty*(rewards.find(w=>w.id===i.reward_id)?.unit_cost||0),0),0);
  $('#overviewStats').innerHTML=statTile('Clientas registradas',profiles.filter(p=>!p.deleted_at).length)+statTile('Ventas del club',fmt(valid.reduce((s,p)=>s+p.products_total,0)))+statTile('Solicitudes pendientes',pending)+statTile('Puntos emitidos',earned)+statTile('Solicitudes por revisar',joinRequests.filter(x=>x.status==='pendiente').length);
  renderMonthlyChart(valid);
- $('#recentPurchases').innerHTML=table(['Factura','Canal','Clienta','Productos','Puntos','Estado'],purchases.slice(0,7).map(p=>`<tr><td>${esc(p.invoice)}</td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.points_awarded}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td></tr>`));
+ $('#recentPurchases').innerHTML=table(['Factura','Canal','Clienta','Productos','Puntos','Estado'],purchases.slice(0,7).map(p=>`<tr><td>${esc(p.invoice)}</td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${esc(affiliatedTeachers.find(t=>t.id===(p.selected_affiliate_id||affiliateAttributions.find(x=>x.first_purchase_id===p.id)?.affiliate_id))?.display_name||'—')}</td><td>${fmt(p.products_total)}</td><td>${p.points_awarded}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td></tr>`));
  if(!$('#additionalStats')) {const card=document.createElement('div');card.className='admin-card';card.id='additionalStats';$('#section-overview').append(card);}
  const repeat=profiles.filter(c=>valid.filter(p=>p.customer_id===c.id).length>1).length;
  const sales=valid.reduce((s,p)=>s+p.products_total,0);
@@ -248,6 +248,11 @@ function normalizedPurchasePhone(input){
  if(!/^3\d{9}$/.test(local))throw new Error('Escribe un celular colombiano de 10 dígitos.');
  return '+57'+local;
 }
+function populatePurchaseAffiliates(){
+ const select=$('#purchaseAffiliate'),old=select.value;const list=affiliatedTeachers.filter(t=>t.active&&t.linked_profile_id!==cashMember?.id);
+ select.replaceChildren(new Option('Ninguna',''));list.forEach(t=>select.append(new Option(t.display_name,t.id)));if(list.some(t=>t.id===old))select.value=old;
+ for(const id of ['purchaseAffiliate','purchaseAffiliateLabel','purchaseAffiliateHelp'])$('#'+id).classList.toggle('hidden',list.length===0||staff?.role!=='admin');
+}
 function updateCashPreview(){
  const amount=Number($('#purchaseAmount').value),min=Number(settings.min_purchase)||50000,unit=Number(settings.point_value)||10000;
  const valid=Number.isSafeInteger(amount)&&amount>0&&amount<=500000000;
@@ -278,7 +283,7 @@ async function findPurchaseCustomer(){
   if(seq!==cashLookupSeq||raw!==$('#purchasePhone').value.trim()||staff?.role!=='admin')return null;
   if(!profile){result.innerHTML='<span class="status red">No encontrada</span> No hay una membresía aprobada. <button type="button" class="btn btn-outline btn-small" id="cashGoJoins">Revisar solicitudes</button>';$('#cashGoJoins').onclick=()=>showPanel('joins');return null;}
   if(profile.blocked||profile.archived_at||profile.deleted_at){result.textContent='Esta cuenta está suspendida, archivada o eliminada.';return null;}
-  cashMember=profile;$('#purchaseCustomer').value=profile.id;
+  cashMember=profile;$('#purchaseCustomer').value=profile.id;populatePurchaseAffiliates();
   result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span><small>BL-'+esc(profile.id.slice(0,8).toUpperCase())+' · Membresía activa</small>';
   updateCashPreview();return profile;
  }catch(err){if(seq===cashLookupSeq)result.textContent=err.message;return null;}
@@ -303,7 +308,7 @@ async function startCashScan(){
   scanFrame=requestAnimationFrame(scan);
  }catch(err){if(generation!==scanGeneration)return;stopCashScan();panel.classList.remove('hidden');info.textContent=err.name==='NotAllowedError'?'Permiso de cámara denegado. Puedes buscar por celular.':err.message;}
 }
-function resetCashForm(){stopCashScan();$('#purchaseForm').reset();clearCashMember();$('#purchaseLookupResult').textContent='Busca una membresía activa.';$('#purchaseReceipt').classList.add('hidden');$('#purchasePhone').focus();}
+function resetCashForm(){stopCashScan();$('#purchaseForm').reset();clearCashMember();populatePurchaseAffiliates();$('#purchaseLookupResult').textContent='Busca una membresía activa.';$('#purchaseReceipt').classList.add('hidden');$('#purchasePhone').focus();}
 
 function renderCustomers(){
  const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
@@ -432,7 +437,7 @@ async function deleteMemberAccount(p){
 }
 
 function renderPurchases(){
- $('#purchasesTable').innerHTML=table(['Registro','Canal','Clienta','Productos','Descuento','Puntos','Estado',''],purchases.map(p=>`<tr><td>${esc(p.invoice?.startsWith('REG-')?'Registro interno '+p.invoice:'Factura '+p.invoice)}<div class="form-help">${date(p.created_at)}</div></td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.special_discount?'Sí':'No'}</td><td>${p.points_awarded}${p.referral_awarded?` +${p.referral_awarded} referido`:''}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td><td>${p.status==='confirmada'?`<button class="btn btn-outline admin-danger" data-void="${esc(p.id)}">Anular</button>`:''}</td></tr>`));
+ $('#purchasesTable').innerHTML=table(['Registro','Canal','Clienta','Profesora','Productos','Descuento','Puntos','Estado',''],purchases.map(p=>`<tr><td>${esc(p.invoice?.startsWith('REG-')?'Registro interno '+p.invoice:'Factura '+p.invoice)}<div class="form-help">${date(p.created_at)}</div></td><td>${esc(CHANNEL_LABEL[p.channel]||'Tienda')}</td><td>${esc(uname(p.customer_id))}</td><td>${fmt(p.products_total)}</td><td>${p.special_discount?'Sí':'No'}</td><td>${p.points_awarded}${p.referral_awarded?` +${p.referral_awarded} referido`:''}</td><td>${pill(p.status,p.status==='confirmada'?'green':'red')}</td><td>${p.status==='confirmada'?`<button class="btn btn-outline admin-danger" data-void="${esc(p.id)}">Anular</button>`:''}</td></tr>`));
  $$('[data-void]').forEach(b=>b.onclick=async()=>{if(!requireLive()||!checkManager())return;const reason=prompt('Motivo obligatorio de anulación (mínimo 5 caracteres):');if(reason===null)return;if(!confirm('Se revertirán los puntos relacionados. ¿Continuar?'))return;try{await rpc('bl_void_purchase',{p_purchase:b.dataset.void,p_reason:reason});notify('Factura anulada y puntos revertidos');await loadAll();}catch(e){notify(e.message,'error');}});
 }
 
@@ -742,7 +747,7 @@ async function approveJoin(e){
  finally{setLoading(btn,false);}
 }
 
-function renderAll(){updateJoinBadge();renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
+function renderAll(){populatePurchaseAffiliates();updateJoinBadge();renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){
  e.preventDefault();if(cashBusy||!requireLive()||!checkManager())return;
  const btn=$('#purchaseSave'),amount=Number($('#purchaseAmount').value);
@@ -754,7 +759,7 @@ async function purchaseSubmit(e){
   if(!customer||customer.id!==original)throw Error('No se pudo comprobar la misma clienta. Revisa sus datos.');
   if(!confirm('¿Confirmas la compra de '+customer.full_name+' por '+fmt(amount)+' en productos?'))return;
   setLoading(btn,true,'Guardando compra…');
-  const result=await rpc('bl_purchase_simple',{p_customer:customer.id,p_amount:amount,p_invoice:$('#purchaseInvoice').value.trim()||null,p_channel:$('#purchaseChannel').value||null,p_discount:$('#purchaseDiscount').checked,p_notes:$('#purchaseNotes').value.trim()||null});
+  const result=await rpc('bl_purchase_with_affiliate',{p_affiliate:$('#purchaseAffiliate').value||null,p_customer:customer.id,p_amount:amount,p_invoice:$('#purchaseInvoice').value.trim()||null,p_channel:$('#purchaseChannel').value||null,p_discount:$('#purchaseDiscount').checked,p_notes:$('#purchaseNotes').value.trim()||null});
   if(!result)throw Error('No se confirmó el registro.');
   resetCashForm();
   const receipt=$('#purchaseReceipt');receipt.textContent='✓ Compra registrada: '+customer.full_name+' · '+fmt(amount)+' · '+result.points+' puntos. '+(result.internal_reference?'Referencia interna: ':'Factura: ')+result.reference;receipt.classList.remove('hidden');

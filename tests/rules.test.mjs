@@ -204,3 +204,9 @@ assert.match(adminHtml,/id="purchasePreview"/);
 assert.match(adminJs,/cashBusy\|\|!requireLive\(\)\|\|!checkManager\(\)/);
 const cashMigration=readFileSync(new URL('../supabase/migrations/20261127_purchase_registration_admin_only.sql',import.meta.url),'utf8');
 assert.equal((cashMigration.match(/staff\(true\)/g)||[]).length,3);
+
+assert.doesNotMatch(adminHtml,/data-cash-amount=/);
+assert.match(adminHtml,/id="purchaseAffiliate"/);
+assert.match(adminJs,/bl_purchase_with_affiliate/);
+assert.match(publicAccountFn,/teacher_summary/);
+assert.match(publicHtml,/id="teacherDashboard"/);
