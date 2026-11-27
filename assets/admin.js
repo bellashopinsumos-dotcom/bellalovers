@@ -35,7 +35,7 @@ function enter(){
  $('#adminApp').classList.remove('hidden');
  $('#adminMode').textContent=staff.role==='admin'?'Administrador':'Operador';
  $('#staffIdentity').textContent=staff.role;
- const admin=staff.role==='admin';$('[data-go="purchases"],[data-section="purchases"]').forEach(el=>el.classList.toggle('hidden',!admin));$('#cashShortcut').classList.toggle('hidden',!admin);if(!admin)showPanel('overview');
+ const admin=staff.role==='admin';$$('[data-go="purchases"],[data-section="purchases"]').forEach(el=>el.classList.toggle('hidden',!admin));$('#cashShortcut').classList.toggle('hidden',!admin);if(!admin)showPanel('overview');
 }
 
 function explainAdminError(error){
@@ -926,7 +926,7 @@ function setup(){
  $('#purchaseFind').addEventListener('click',async()=>{if(await findPurchaseCustomer())$('#purchaseAmount').focus();});
  $('#purchasePhone').addEventListener('keydown',async e=>{if(e.key==='Enter'){e.preventDefault();if(await findPurchaseCustomer())$('#purchaseAmount').focus();}});
  $('#purchaseScan').addEventListener('click',startCashScan);$('#purchaseScanClose').addEventListener('click',stopCashScan);$('#purchaseReset').addEventListener('click',()=>{if(!cashBusy)resetCashForm();});
- $('#purchaseAmount').addEventListener('input',updateCashPreview);$('#purchaseDiscount').addEventListener('change',updateCashPreview);$('[data-cash-amount]').forEach(b=>b.onclick=()=>{$('#purchaseAmount').value=b.dataset.cashAmount;updateCashPreview();});window.addEventListener('pagehide',stopCashScan);
+ $('#purchaseAmount').addEventListener('input',updateCashPreview);$('#purchaseDiscount').addEventListener('change',updateCashPreview);window.addEventListener('pagehide',stopCashScan);
  $('#purchasePhone').addEventListener('input',()=>{
    clearCashMember();
    $('#purchaseLookupResult').textContent='Pulsa Buscar para confirmar la clienta.';
