@@ -1,5 +1,5 @@
 import {CONFIG,HAS_BACKEND} from './config.js';
-import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js?v=estudiantes10020261127';
+import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from './core.js?v=iniciante20261127';
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
 let teacherSummary=null;
 let cart={}; let giftClaims=[]; let serverBalance=null; let rewardSort='points';
@@ -13,10 +13,9 @@ function applyPublicRules(){
  const min=Number.isFinite(Number(rules.min_purchase))?Math.max(0,Number(rules.min_purchase)):50000;
  const unit=Math.max(1,Number(rules.point_value)||10000);
  const threshold=Math.max(1,Number(rules.unlock_points)||50);
- const welcome=Number.isFinite(Number(rules.student_gift_min))?Math.max(0,Number(rules.student_gift_min)):100000;
+ const welcome=Number.isFinite(Number(rules.student_gift_min))?Math.max(0,Number(rules.student_gift_min)):200000;
  const months=Math.max(1,Number(rules.cycle_months)||12);
  const grace=Number.isFinite(Number(rules.grace_days))?Math.max(0,Number(rules.grace_days)):0;
- const firstExcluded=rules.student_first_no_points!==false;
  const discountsExcluded=rules.exclude_discounts!==false;
  const base=Math.floor(min/unit);
  const sample=min+unit;
@@ -25,9 +24,8 @@ function applyPublicRules(){
  set('point-extra','+'+fmt(unit)+' = +1 punto');
  set('unlock',threshold+' puntos');
  set('spotlight-points',String(threshold));
- set('student-benefit',(firstExcluded?'Tu primera compra no suma puntos. ':'')+
-  'Una primera compra desde '+fmt(welcome)+' puede darte un regalo físico de bienvenida. '+
-  (firstExcluded?'Desde tu segunda compra válida comienzas a sumar puntos.':'Tus compras válidas suman puntos según las reglas del club.'));
+ set('student-benefit','Acumula puntos desde tu primera compra válida de '+fmt(min)+' o más.');
+ set('beginner-benefit','En una compra desde '+fmt(welcome)+' antes de descuentos, elige una sola vez un kit de bienvenida o un 5% de descuento. No se combinan ni generan puntos en esa compra. Tus demás compras elegibles suman puntos.');
  set('regular-benefit','En compras desde '+fmt(min)+' recibes '+base+' puntos. '+
   'Por cada '+fmt(unit)+' completos en tu compra se calcula un punto. Ejemplo: '+fmt(sample)+' = '+Math.floor(sample/unit)+' puntos.');
  set('step-buy','Una compra válida desde '+fmt(min)+' genera '+base+' puntos. Por cada '+fmt(unit)+' completos de la compra se calcula 1 punto. También cuentan las ventas por WhatsApp.');
@@ -36,8 +34,8 @@ function applyPublicRules(){
  set('rule-exceptions','3. Excepciones: el transporte no suma; '+
   (discountsExcluded?'tampoco las compras con descuento especial. ':'')+
   'Las compras anuladas o devueltas no acumulan puntos.');
- set('rule-students','4. Estudiantes: '+(firstExcluded?'la primera compra no genera puntos; ':'')+
-  'la primera compra desde '+fmt(welcome)+' puede incluir regalo de bienvenida.');
+ set('rule-students','4. Estudiantes y manicuristas: acumulan puntos desde su primera compra válida.');
+ set('rule-beginners','Iniciantes: elige kit o 5% de descuento desde '+fmt(welcome)+' antes de descuentos, una sola vez. No se combinan ni generan puntos en esa compra.');
  set('rule-rewards','5. Premios: puedes solicitarlos desde '+threshold+' puntos, sujetos a disponibilidad y confirmación de BellaShop.');
  set('rule-duration','6. Vigencia: ciclo de '+months+' meses'+
   (grace?', con '+grace+' días adicionales para redimir según las condiciones del club.':'.'));
@@ -274,7 +272,7 @@ function renderAccount(){
   $('#memberName').textContent=customer.full_name;
   $('#memberCategory').textContent=TYPE[customer.category]||customer.category;
   $('#myJoinedDate').textContent=date(customer.created_at);
-  const memberCode='BL-'+String(customer.id).replace(/^public-/,'').slice(0,8).toUpperCase();
+  const memberCode=customer.member_code||('BL-'+String(customer.id).replace(/^public-/,'').slice(0,8).toUpperCase());
   $('#memberCode').textContent=memberCode;
   $('#memberQrCode').textContent=memberCode;
   $('#memberQrPanel').classList.add('hidden');$('#showMemberQr').setAttribute('aria-expanded','false');
@@ -311,11 +309,10 @@ function renderAccount(){
   $('#myTeacherCode').textContent=teacherCode || 'Pendiente de validación';
   const refpts=teacherSummary?.referral_points??ledger.filter(x=>x.kind==='referido').reduce((s,x)=>s+x.delta,0);
   $('#myRefPointsRow').hidden=customer.category!=='profesora'||!teacherSummary?.referral_points_enabled; $('#myRefPoints').textContent=String(refpts)+' puntos';
-  const welcome=$('#welcomeBanner'); welcome.classList.toggle('hidden',customer.category!=='estudiante');
-  if(customer.category==='estudiante') {
-    const eligible=purchases.some(p=>p.status==='confirmada'&&p.welcome_eligible);
-    const claimed=giftClaims.length>0;
-    welcome.textContent=claimed?'♡ Ya recibiste tu regalo de bienvenida.':eligible?'♡ ¡Tienes un regalo de bienvenida pendiente! Pregunta por él en BellaShop.':'♡ Tu primera compra desde '+fmt(Number(rules.student_gift_min??100000))+' puede darte un regalo de bienvenida.';
+  const welcome=$('#welcomeBanner'); welcome.classList.toggle('hidden',customer.category!=='iniciante');
+  if(customer.category==='iniciante'){
+    const benefit=purchases.find(p=>p.status==='confirmada'&&p.welcome_choice);
+    welcome.textContent=giftClaims.length?'♡ Ya recibiste tu kit de bienvenida.':benefit?.welcome_choice==='kit'?'♡ Elegiste el kit de bienvenida. Consulta su entrega en BellaShop.':benefit?.welcome_choice==='descuento5'?'♡ Ya utilizaste tu 5% de descuento de bienvenida.':'♡ En una compra desde '+fmt(Number(rules.student_gift_min??200000))+' antes de descuentos, elige una sola vez tu kit o un 5% de descuento. BellaShop confirma el beneficio.';
   }
   const matchingRewards=rewards.filter(r=>r.active&&(r.audience==='todas'||r.audience===customer.category));
   $('#rewardHint').textContent=!matchingRewards.length?'Los productos de recompensa aparecerán aquí cuando BellaShop los publique.':

@@ -55,7 +55,8 @@ Deno.serve(async (req: Request) => {
  }
  const newId=created.user.id;
  try {
-  const {data,error}=await userClient.rpc("bl_approve_join_request",{
+  const {data,error}=await userClient.rpc("bl_approve_join_with_welcome",{
+   p_welcome_choice:payload.welcome_choice||null,
    p_request:requestId,p_user:newId,p_invoice:invoice,p_amount:products,p_delivery:delivery,
    p_discount:payload.special_discount===true,p_channel:channel,
    p_notes:((submittedInvoice?"":"Registro interno sin factura comercial. ")+String(payload.notes||"")).slice(0,500)

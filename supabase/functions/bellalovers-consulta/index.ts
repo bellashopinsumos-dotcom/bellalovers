@@ -51,7 +51,7 @@ async function resolveMember(identifier:string,fullName:string){
  }
  if(!id)return null;
  const {data:person,error}=await client.from("bl_profiles")
-  .select("id,full_name,category,created_at,blocked,archived_at,deleted_at").eq("id",id).maybeSingle();
+  .select("id,member_code,full_name,category,created_at,blocked,archived_at,deleted_at").eq("id",id).maybeSingle();
  if(error||!person||person.blocked||person.archived_at||person.deleted_at||
   normalizeName(person.full_name)!==normalizeName(fullName))return null;
  const {data:staff}=await client.from("bl_staff").select("user_id").eq("user_id",id).maybeSingle();
@@ -109,7 +109,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="view"){
    const [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult,giftResult]=await Promise.all([
     client.from("bl_settings").select("unlock_points,student_gift_min").eq("id",1).single(),
-    client.from("bl_purchases").select("created_at,products_total,points_awarded,status,channel,special_discount,welcome_eligible")
+    client.from("bl_purchases").select("created_at,products_total,points_awarded,status,channel,special_discount,welcome_eligible,welcome_choice")
       .eq("customer_id",person.id).order("created_at",{ascending:false}).limit(80),
     client.from("bl_rewards").select("id,name,product_ref,image_url,points_cost,stock,reserved,active,audience")
       .eq("active",true).order("points_cost",{ascending:true}).limit(100),
@@ -161,11 +161,11 @@ Deno.serve(async(req:Request)=>{
    // Never disclose phone, email, database UUID, invoice number, internal notes or payment receipts.
    return respond({
     success:true,profile:{
-     id:"public-"+String(person.id).slice(0,8),full_name:person.full_name,
+     id:"public-"+String(person.id).slice(0,8),member_code:person.member_code,full_name:person.full_name,
      category:person.category,created_at:person.created_at,blocked:false
     },
     settings:{unlock_points:settingsResult.data.unlock_points||50,
-     student_gift_min:settingsResult.data.student_gift_min??100000},
+     student_gift_min:settingsResult.data.student_gift_min??200000},
     balance,cycles,ledger:points.slice(0,250).map(p=>({
      cycle_id:p.cycle_id,created_at:p.created_at,kind:p.kind,delta:p.delta,detail:""
     })),

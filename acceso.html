@@ -19,7 +19,7 @@
     <div class="member-card" aria-label="Carné digital BellaLovers">
       <div class="member-card-top"><strong>BellaLovers ♡</strong><span>MIEMBRO</span></div>
       <div><small>ESTA BELLEZA ES PARTE DEL CLUB</small><h3 id="memberName">BellaLover</h3><p id="memberCategory">Mi categoría</p></div>
-      <div class="member-card-bottom"><span>BELLA SHOP · CLUB DE BENEFICIOS</span><span id="memberCode">••••••••</span></div>
+      <div class="member-card-bottom"><span>BELLA SHOP · CLUB DE BENEFICIOS</span><span>ID: <span id="memberCode">••••••••</span></span></div>
       <div class="member-card-actions"><button id="showMemberQr" type="button" class="member-quiet-btn" aria-controls="memberQrPanel" aria-expanded="false">Ver mi QR</button><button id="copyMemberCode" type="button" class="member-quiet-btn">Copiar código</button></div>
     </div>
     <div class="member-notices" id="accountNotices" aria-live="polite"></div>
@@ -69,11 +69,11 @@
       <p>Estés aprendiendo, trabajando en lo que amas o enseñando a otras, queremos reconocer tu confianza en BellaShop.</p>
     </div>
     <div class="benefits-grid">
-      <article class="benefit-card benefit-student">
+      <article class="benefit-card benefit-student"><div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">✧</span><span class="benefit-label">ESTOY EMPEZANDO</span></div><h3>Iniciantes</h3><p data-live-rule="beginner-benefit">En una compra de productos desde $200.000, elige una sola vez tu kit de bienvenida o un 5% de descuento. No son acumulables ni generan puntos en esa compra. Tus demás compras elegibles suman puntos.</p><div class="benefit-foot"><strong>Elige tu bienvenida</strong><span aria-hidden="true">♡</span></div></article><article class="benefit-card benefit-student">
         <div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">✧</span><span class="benefit-label">01 · ESTOY APRENDIENDO</span></div>
         <h3>Estudiantes</h3>
-        <p data-live-rule="student-benefit">Tu primera compra desde $100.000 puede darte un regalo físico de bienvenida. Desde tu segunda compra válida comienzas a sumar puntos.</p>
-        <div class="benefit-foot"><strong>Una bienvenida especial</strong><span aria-hidden="true">♡</span></div>
+        <p data-live-rule="student-benefit">Acumula puntos desde tu primera compra válida de $50.000 o más, sin kit de bienvenida.</p>
+        <div class="benefit-foot"><strong>Tus compras suman desde el inicio</strong><span aria-hidden="true">♡</span></div>
       </article>
       <article class="benefit-card benefit-regular">
         <div class="benefit-top"><span class="benefit-symbol" aria-hidden="true">♡</span><span class="benefit-label">02 · AMO LO QUE HAGO</span></div>
@@ -117,7 +117,7 @@
       <li data-live-rule="rule-points"><strong>1. Acumulación:</strong> $50.000 en productos = 5 puntos; cada $10.000 completos adicionales = 1 punto más.</li>
       <li><strong>2. Canales:</strong> cuentan las compras facturadas en tienda, WhatsApp, página web y con domicilio.</li>
       <li data-live-rule="rule-exceptions"><strong>3. Excepciones:</strong> el transporte no suma; tampoco las compras con descuento especial ni las anuladas o devueltas.</li>
-      <li data-live-rule="rule-students"><strong>4. Estudiantes:</strong> su primera compra no genera puntos; desde $100.000 puede incluir regalo de bienvenida.</li>
+      <li data-live-rule="rule-students"><strong>4. Estudiantes y manicuristas:</strong> acumulan puntos desde su primera compra válida.</li><li data-live-rule="rule-beginners"><strong>Iniciantes:</strong> kit o 5% de descuento desde $200.000 antes de descuentos, una sola vez. No se combinan ni suman puntos en la compra del beneficio.</li>
       <li data-live-rule="rule-rewards"><strong>5. Premios:</strong> puedes solicitarlos desde 50 puntos, sujetos a disponibilidad y confirmación de BellaShop.</li>
       <li data-live-rule="rule-duration"><strong>6. Vigencia:</strong> ciclo de 12 meses, con condiciones especiales de redención durante los 30 días posteriores.</li>
     </ul>
@@ -160,7 +160,7 @@
      <label for="joinEmail">Correo electrónico <span class="field-optional">(opcional)</span></label>
      <input id="joinEmail" type="email" autocomplete="email" maxlength="254" placeholder="Si prefieres usarlo para iniciar sesión">
      <label for="joinCategory">¿Qué categoría te representa?</label>
-     <select id="joinCategory" required><option value="">Selecciona una</option><option value="estudiante">Estudiante de uñas</option><option value="manicurista">Manicurista / clienta frecuente</option></select>
+     <select id="joinCategory" required><option value="">Selecciona una</option><option value="iniciante">Iniciante · Estoy empezando</option><option value="estudiante">Estudiante de uñas</option><option value="manicurista">Manicurista / clienta frecuente</option></select>
      <div id="joinTeacherField" class="hidden"><label for="joinTeacherCode">¿Qué profesora afiliada te recomendó? (opcional)</label>
       <select id="joinTeacherCode" aria-describedby="joinTeacherHelp"><option value="">Ninguna / no me recomendó una profesora</option></select>
       <p class="helper" id="joinTeacherHelp">Solo aparecen profesoras afiliadas activas de BellaShop.</p>
@@ -180,5 +180,5 @@
 </div>
 
 <div id="toast" class="toast" aria-live="polite"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/client.js?v=estudiantes10020261127"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/client.js?v=iniciante20261127"></script>
 </body></html>

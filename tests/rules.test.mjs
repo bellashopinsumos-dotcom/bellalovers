@@ -10,7 +10,7 @@ assert.equal(calcPoints(70000),7,'Compra de 70 mil genera siete puntos');
 assert.equal(calcPoints(150000),15,'Compra de 150 mil');
 assert.equal(calcPoints(500000),50,'Compra de 500 mil');
 assert.equal(calcPoints(100000,DEFAULT_RULES,true),0,'Descuento excluido');
-assert.equal(calcPoints(150000,DEFAULT_RULES,false,1,'estudiante'),0,'Primera compra estudiante');
+assert.equal(calcPoints(150000,DEFAULT_RULES,false,1,'estudiante'),15,'Primera compra estudiante');
 assert.equal(calcPoints(150000,DEFAULT_RULES,false,2,'estudiante'),15,'Segunda compra estudiante');
 for (const [n,p] of [[50000,1],[99999,1],[100000,2],[200000,4],[400000,6],[600000,8],[1000000,10]]) assert.equal(referralPoints(n),p);
 
@@ -67,7 +67,7 @@ assert.match(adminHtml,/id="purchaseFind"/, 'Confirmar cliente antes de guardar 
 assert.doesNotMatch(adminHtml,/id="purchaseDelivery"/, 'No mostrar costo de transporte en compras');
 assert.doesNotMatch(adminHtml,/id="joinDelivery"/, 'No mostrar costo de transporte al aprobar primera compra');
 assert.doesNotMatch(adminHtml,/id="purchaseInvoice"[^>]*\srequired/, 'Factura debe ser opcional');
-assert.match(adminJs,/bl_purchase_with_affiliate/, 'Compra sencilla validada en el servidor');
+assert.match(adminJs,/bl_purchase_with_welcome/, 'Compra sencilla validada en el servidor');
 assert.match(adminJs,/bl_reverse_manual_adjustment/, 'Deshacer ajuste realmente revierte puntos');
 assert.match(adminJs,/bellalovers-eliminar/, 'Solo admin puede iniciar cierre de cuenta');
 assert.match(adminJs,/data-reverse-adjustment/, 'Mostrar botón de deshacer en ficha');
@@ -207,12 +207,14 @@ assert.equal((cashMigration.match(/staff\(true\)/g)||[]).length,3);
 
 assert.doesNotMatch(adminHtml,/data-cash-amount=/);
 assert.match(adminHtml,/id="purchaseAffiliate"/);
-assert.match(adminJs,/bl_purchase_with_affiliate/);
+assert.match(adminJs,/bl_purchase_with_welcome/);
 assert.match(publicAccountFn,/teacher_summary/);
 assert.match(publicHtml,/id="teacherDashboard"/);
 
 assert.doesNotMatch(publicHtml,/Registro gratuito · ingreso desde/);
 assert.match(publicAccountFn,/referral_points_enabled/);
 
-assert.equal(DEFAULT_RULES.student_gift_min,100000,'Regalo estudiantil desde cien mil');
-assert.match(publicHtml,/primera compra desde \$100\.000/);
+assert.equal(DEFAULT_RULES.student_gift_min,200000,'Beneficio iniciante desde doscientos mil');
+assert.match(publicHtml,/value="iniciante"/);
+assert.match(adminHtml,/id="purchaseBenefit"/);
+assert.match(adminJs,/member_code/);
