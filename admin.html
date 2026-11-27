@@ -48,7 +48,7 @@
 <div class="admin-shell hidden" id="adminApp"><aside class="admin-side"><a href="./index.html" class="brand"><span class="brand-mark">♡</span><span><strong>BellaLovers</strong><small>ADMINISTRACIÓN</small></span></a>
   <nav class="admin-menu" id="adminNav" aria-label="Secciones de administración">
     <button class="active" data-section="overview">◫ <span>Resumen</span></button>
-    <button data-section="joins">✉ <span>Solicitudes de ingreso</span></button>
+    <button data-section="joins">✉ <span>Solicitudes de ingreso</span><span id="adminJoinBadge" class="admin-nav-badge hidden" aria-label="Inscripciones pendientes"></span></button>
     <button data-section="customers">♡ <span>Clientas</span></button>
     <button data-section="purchases">▣ <span>Compras</span></button>
     <button data-section="rewards">✧ <span>Recompensas</span></button>
@@ -64,8 +64,8 @@
 <section class="admin-panel active" id="section-overview"><div id="overviewStats" class="stats-grid"></div><div class="admin-card"><div class="admin-card-header"><div><h2>Actividad del club</h2><p>Compras confirmadas en los últimos seis meses.</p></div><button type="button" id="csvSummary" class="btn btn-outline btn-small">Exportar resumen CSV</button></div><div id="clubMonthlyChart" class="club-monthly-chart" aria-label="Ventas por mes"></div></div><div class="admin-card"><div class="admin-card-header"><h2>Últimas compras</h2><span class="info-inline">Puntos solo al confirmar factura</span></div><div class="table-scroll" id="recentPurchases"></div></div><div class="admin-card"><h2>Accesos rápidos</h2><p>Para no enredarse: primero revisa la solicitud; cuando haga su primera compra, registra la factura y aprueba su membresía. BellaLovers calcula los puntos automáticamente.</p><div class="admin-actions"><button class="btn btn-outline" data-go="joins">Revisar solicitudes de ingreso</button><button class="btn btn-outline" data-go="purchases">Registrar otra compra</button><button class="btn btn-outline" data-go="redemptions">Revisar recompensas</button><button class="btn btn-outline" data-go="customers">Buscar clienta</button></div></div></section>
 <section class="admin-panel" id="section-joins">
   <div class="admin-card">
-    <div class="admin-card-header"><div><h2>Solicitudes de BellaLovers</h2><p>Solicitar ingreso no crea una cuenta. Solo se aprueba después de comprobar la primera compra facturada.</p></div><span id="joinPendingBadge" class="status">0 pendientes</span></div>
-    <div class="admin-tools"><select id="joinFilter" class="admin-input" aria-label="Filtrar solicitudes"><option value="pendiente">Pendientes</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="todas">Todas</option></select><button id="reloadJoins" class="btn btn-outline" type="button">Actualizar solicitudes</button></div>
+    <div class="admin-card-header"><div><h2>Solicitudes de BellaLovers</h2><p>Solicitar ingreso no crea una cuenta. Solo se aprueba después de comprobar una compra de mínimo $50.000 en productos, sin domicilio.</p></div><span id="joinPendingBadge" class="status">0 pendientes</span></div>
+    <div class="admin-tools"><input id="joinSearch" class="admin-input admin-search" placeholder="Buscar por celular o nombre…" aria-label="Buscar solicitudes"><select id="joinFilter" class="admin-input" aria-label="Filtrar solicitudes"><option value="pendiente">Pendientes</option><option value="aprobada">Aprobadas</option><option value="rechazada">Rechazadas</option><option value="todas">Todas</option></select><button id="reloadJoins" class="btn btn-outline" type="button">Actualizar solicitudes</button></div>
     <div class="table-scroll" id="joinRequestsTable"></div>
   </div>
   <div class="admin-card hidden" id="joinApprovalCard">
@@ -76,7 +76,7 @@
     <form id="joinApprovalForm" class="admin-form">
       <input id="joinRequestId" type="hidden">
       <div><label for="joinInvoice">Factura (opcional)</label><input class="admin-input" id="joinInvoice" maxlength="80" placeholder="Si no tiene, crearemos una referencia interna"></div>
-      <div><label for="joinProductsTotal">Valor de productos (COP)</label><input class="admin-input" id="joinProductsTotal" type="number" min="1" step="1" required></div>
+      <div><label for="joinProductsTotal">Valor de productos (COP) · mínimo $50.000</label><input class="admin-input" id="joinProductsTotal" type="number" min="50000" step="1" required></div>
       <div><label for="joinChannel">Canal de la compra (opcional)</label><select class="admin-input" id="joinChannel"><option value="">No especificado</option><option value="tienda">En tienda</option><option value="whatsapp">Por WhatsApp</option><option value="domicilio">Pedido con domicilio</option><option value="web">Por la web</option><option value="otro">Otro</option></select></div>
       
       <div><label class="checkline"><input id="joinDiscount" type="checkbox"> Compra con descuento especial (no suma puntos)</label></div>
@@ -202,4 +202,4 @@
    </div>
  </section>
  <section class="admin-panel" id="section-audit"><div class="admin-card"><div class="admin-card-header"><h2>Historial de movimientos de administración</h2><button id="csvAudit" class="btn btn-outline btn-small" type="button">Exportar auditoría CSV</button></div><p>Registro de actividades críticas: compras, anulaciones, ajustes, solicitudes, regalos y activación de profesoras.</p><div class="table-scroll" id="auditTable"></div></div></section>
-</main></div><div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=adminform20261121d"></script></body></html>
+</main></div><div class="toast" id="toast" aria-live="polite"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script><script type="module" src="./assets/admin.js?v=launch20261127b"></script></body></html>

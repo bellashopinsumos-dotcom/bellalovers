@@ -163,7 +163,7 @@ async function sendJoinRequest(event) {
   await run(sb.rpc('bl_submit_join_request',payload));
   $('#joinForm').reset();$('#joinForm').classList.add('hidden');
   $('#joinSent').classList.remove('hidden');
-  notify('Solicitud recibida. BellaShop la revisará cuando hagas tu primera compra.');
+  notify('Solicitud recibida. Activa tu membresía con una compra confirmada desde $50.000.');
  }catch(err){notify(err.message,'error');}finally{setLoading(btn,false);}
 }
 async function edgeErrorMessage(error,data,fallback='No pudimos completar la solicitud.'){
@@ -485,6 +485,7 @@ async function loadJoinStatus(){
 }
 
 function setup(){
+ $('#shareClub')?.addEventListener('click',async()=>{const url=new URL('./index.html',location.href).href;try{if(navigator.share){await navigator.share({title:'BellaLovers',text:'Descubre el club de beneficios de BellaShop ♡',url});}else if(navigator.clipboard){await navigator.clipboard.writeText(url);notify('Enlace copiado ♡');}else prompt('Comparte este enlace:',url);}catch(err){if(err.name!=='AbortError')prompt('Comparte este enlace:',url);}});
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
  $('#closeAuthModal').addEventListener('click',closeAuthModal);

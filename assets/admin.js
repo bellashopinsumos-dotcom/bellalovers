@@ -1,6 +1,7 @@
 import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
+let knownJoinIds=null;
 let pendingRewardPoll=null,pendingRewardKnownIds=null,pendingRewardCount=0,pendingRewardDirty=false;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
@@ -133,6 +134,8 @@ function updatePendingRewardAlerts(){
  $('#adminRewardAlertTitle').textContent=count===1?'Tienes 1 canje pendiente':'Tienes '+count+' canjes pendientes';
  $('#adminRewardAlertText').textContent='Las solicitudes no descuentan puntos. Confirma por WhatsApp antes de aprobar.';
 }
+function updateJoinBadge(){const badge=$('#adminJoinBadge');if(!badge)return;const count=staff?.role==='admin'?joinRequests.filter(x=>x.status==='pendiente').length:0;badge.textContent=String(count);badge.classList.toggle('hidden',count===0);}
+async function pollJoins(){if(mode!=='live'||staff?.role!=='admin'||document.visibilityState==='hidden')return;try{const rows=await run(sb.from('bl_join_requests').select('*').order('created_at',{ascending:false}).limit(1000));if(mode!=='live'||staff?.role!=='admin')return;const next=new Set(rows.filter(x=>x.status==='pendiente').map(x=>x.id));const added=knownJoinIds===null?0:[...next].filter(id=>!knownJoinIds.has(id)).length;knownJoinIds=next;joinRequests=rows;updateJoinBadge();if(added)notify(added===1?'Nueva solicitud de ingreso ♡':added+' nuevas solicitudes de ingreso ♡');if(!selectedJoinId)renderJoins();}catch(err){console.warn('No se pudieron comprobar inscripciones:',err.message);}}
 async function pollPendingRewards(){
  if(mode!=='live'||staff?.role!=='admin'||document.visibilityState==='hidden')return;
  try{
@@ -151,12 +154,12 @@ async function pollPendingRewards(){
 }
 function startPendingRewardPoll(){
  if(pendingRewardPoll!==null)clearInterval(pendingRewardPoll);
- pendingRewardPoll=setInterval(pollPendingRewards,45000);
+ pollJoins();pendingRewardPoll=setInterval(()=>{pollPendingRewards();pollJoins();},45000);
 }
 function stopPendingRewardPoll(){
  if(pendingRewardPoll!==null)clearInterval(pendingRewardPoll);
- pendingRewardPoll=null;pendingRewardKnownIds=null;pendingRewardCount=0;pendingRewardDirty=false;
- updatePendingRewardAlerts();
+ knownJoinIds=null;pendingRewardPoll=null;pendingRewardKnownIds=null;pendingRewardCount=0;pendingRewardDirty=false;
+ updatePendingRewardAlerts();updateJoinBadge();
 }
 function purchaseMonth(value){
  return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bogota',year:'numeric',month:'2-digit'})
@@ -566,13 +569,14 @@ async function changeAffiliateStatus(id,active){
  }catch(err){notify('No se pudo cambiar el estado: '+err.message,'error');}
 }
 function showTeacherQR(p,c){
- const link=new URL('./index.html',location.href);link.searchParams.set('ref',c.code);
+ const link=new URL('./acceso.html',location.href);link.searchParams.set('modo','registro');link.searchParams.set('ref',c.code);
  const modal=document.createElement('div');modal.className='modal-overlay';
- modal.innerHTML=`<div class="modal-dialog" role="dialog" aria-modal="true" aria-label="QR de profesora"><button type="button" class="modal-close" aria-label="Cerrar">×</button><span class="kicker">RECOMIENDA BELLALOVERS</span><h3>${esc(p.full_name)}</h3><p class="muted">Escanea este QR para inscribirte con el código ${esc(c.code)}.</p><div class="qr-area"></div><p class="form-help">${esc(link.toString())}</p><button type="button" class="btn btn-primary btn-full" id="copyTeacherUrl">Copiar enlace de referido</button><p class="form-help">Para usar el QR con el enlace definitivo, primero publica BellaLovers en su dirección final.</p></div>`;
+ modal.innerHTML=`<div class="modal-dialog" role="dialog" aria-modal="true" aria-label="QR de profesora"><button type="button" class="modal-close" aria-label="Cerrar">×</button><span class="kicker">RECOMIENDA BELLALOVERS</span><h3>${esc(p.full_name)}</h3><p class="muted">Escanea este QR para inscribirte con el código ${esc(c.code)}.</p><div class="qr-area"></div><p class="form-help">${esc(link.toString())}</p><button type="button" class="btn btn-primary btn-full" id="copyTeacherUrl">Copiar enlace de referido</button><button type="button" class="btn btn-outline btn-full" id="downloadTeacherQr">Descargar QR</button><p class="form-help">Comparte este enlace exclusivo con tus estudiantes. La afiliación requiere una compra confirmada desde $50.000.</p></div>`;
  document.body.append(modal);modal.querySelector('.modal-close').onclick=()=>modal.remove();modal.onclick=e=>{if(e.target===modal)modal.remove();};
  const area=modal.querySelector('.qr-area');
  if(window.QRCode)new window.QRCode(area,{text:link.toString(),width:210,height:210,colorDark:'#44393d',colorLight:'#ffffff'});
  else area.textContent='QR no disponible sin conexión; el enlace sí se puede copiar.';
+ modal.querySelector('#downloadTeacherQr').onclick=()=>{const canvas=area.querySelector('canvas');if(!canvas)return notify('QR no disponible. Copia el enlace.','error');const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='BellaLovers-'+c.code+'.png';a.click();};
  modal.querySelector('#copyTeacherUrl').onclick=async()=>{try{await navigator.clipboard.writeText(link.toString());notify('Enlace copiado');}catch{prompt('Copia el enlace:',link.toString());}};
 }
 function renderGifts(){
@@ -625,7 +629,8 @@ function renderJoins(){
  const pending=joinRequests.filter(x=>x.status==='pendiente').length;
  $('#joinPendingBadge').textContent=pending+' pendiente'+(pending===1?'':'s');
  const filter=$('#joinFilter').value;
- const selected=joinRequests.filter(x=>filter==='todas'||x.status===filter);
+ const term=$('#joinSearch').value.trim().toLocaleLowerCase('es');
+ const selected=joinRequests.filter(x=>(filter==='todas'||x.status===filter)&&(!term||[x.full_name,x.phone,x.email].some(v=>String(v||'').toLocaleLowerCase('es').includes(term))));
  tableEl.innerHTML=table(['Fecha','Solicitante','Celular','Categoría','Profesora afiliada','Estado','Acción'],selected.map(x=>
   '<tr><td>'+date(x.created_at)+'</td><td><strong>'+esc(x.full_name)+'</strong></td><td>'+esc(x.phone)+'</td>'+
   '<td>'+esc(TYPE[x.category]||x.category)+'</td><td>'+
@@ -678,8 +683,8 @@ async function approveJoin(e){
   special_discount:$('#joinDiscount').checked,
   channel:$('#joinChannel').value,notes:$('#joinNotes').value.trim()
  };
- if(!Number.isSafeInteger(payload.products_total)||payload.products_total<=0)
-  return notify('Debes comprobar que la primera compra sea real y registrar el valor de productos.','error');
+ if(!Number.isSafeInteger(payload.products_total)||payload.products_total<50000)
+  return notify('Para activar una membresía, confirma una compra de mínimo $50.000 en productos, sin domicilio.','error');
  if(!confirm('¿Ya comprobaste la primera compra de '+req.full_name+'? Se activará su membresía sin crear claves para la clienta.'))return;
  const btn=$('#joinApprovalForm button[type=submit]');
  try{
@@ -694,7 +699,7 @@ async function approveJoin(e){
  finally{setLoading(btn,false);}
 }
 
-function renderAll(){renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
+function renderAll(){updateJoinBadge();renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){
  e.preventDefault();if(!requireLive())return;
  const btn=$('#purchaseForm button[type=submit]');
@@ -850,12 +855,13 @@ function setup(){
  document.querySelectorAll('#adminNav button').forEach(b=>b.onclick=()=>showPanel(b.dataset.section));$$('[data-go]').forEach(b=>b.onclick=()=>showPanel(b.dataset.go));
  $('#csvSummary').addEventListener('click',exportClubSummary);
  $('#goPendingRewards').addEventListener('click',async()=>{await loadAll();showPanel('redemptions');$('#guestRewardAdminCard').scrollIntoView({behavior:'smooth',block:'start'});});
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pollPendingRewards();});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){pollPendingRewards();pollJoins();}});
  $('#adminRetryLoad').addEventListener('click',()=>loadAll());
  $('#adminClearSession').addEventListener('click',clearStaleAdminSession);
  $('#adminEmail').addEventListener('input',clearAdminLoginError);
  $('#adminPassword').addEventListener('input',clearAdminLoginError);
  $('#joinFilter').addEventListener('change',renderJoins);
+ $('#joinSearch').addEventListener('input',renderJoins);
  $('#joinApprovalForm').addEventListener('submit',approveJoin);
  $('#joinCancel').addEventListener('click',()=>{$('#joinApprovalCard').classList.add('hidden');selectedJoinId=null;});
  $('#reloadJoins').addEventListener('click',loadAll);

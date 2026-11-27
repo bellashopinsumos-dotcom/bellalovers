@@ -187,3 +187,13 @@ const setupFragment=adminJs.slice(adminJs.lastIndexOf('function setup(){'),admin
 assert.match(setupFragment,/\$\('#adminLoginForm'\)\.addEventListener\('submit',login\)/,'Registrar el login antes de los demás controles');
 assert.equal([...adminJs.matchAll(/\$\('#adminLoginForm'\)\.addEventListener\('submit',login\)/g)].length,1,'No duplicar el controlador de login');
 console.log('OK: pruebas BellaLovers y regresión de acceso, recompensas y configuración');
+
+assert.match(adminHtml,/id="joinProductsTotal"[^>]*min="50000"/);
+assert.match(adminJs,/payload\.products_total<50000/);
+assert.match(approvalFn,/products<50000/);
+assert.match(publicHtml,/id="preguntas"/);
+assert.match(publicHtml,/id="shareClub"/);
+assert.match(adminJs,/pollJoins\(\)/);
+assert.match(adminHtml,/id="joinSearch"/);
+const membershipMigration=readFileSync(new URL('../supabase/migrations/20261127_minimum_membership_purchase.sql',import.meta.url),'utf8');
+assert.match(membershipMigration,/p_amount<50000/);

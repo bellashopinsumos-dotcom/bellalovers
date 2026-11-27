@@ -31,6 +31,7 @@ Deno.serve(async (req: Request) => {
  const submittedInvoice=String(payload.invoice||"").trim();
  const invoice=submittedInvoice||"REG-"+crypto.randomUUID().replaceAll("-","").toUpperCase();
  const products=Number(payload.products_total);
+ if(!Number.isSafeInteger(products)||products<50000)return send({error:"Para ingresar a BellaLovers debes confirmar una compra de mínimo $50.000 en productos."},400);
  const delivery=0;
  const channel=String(payload.channel||"otro");
  if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(requestId)||
