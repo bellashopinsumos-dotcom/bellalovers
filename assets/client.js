@@ -3,6 +3,9 @@ import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,safeUrl} from 
 let sb=null, session=null, customer=null, rules={...DEFAULT_RULES}, ledger=[], cycles=[], purchases=[], requests=[], rewards=[], teacherCode=null;
 let cart={}; let giftClaims=[]; let serverBalance=null; let rewardSort='points';
 let requestsOpen=false;
+const PAGE=document.body.dataset.page||"home";
+const params=new URLSearchParams(location.search);
+function accessUrl(screen="signin"){const u=new URL("./acceso.html",location.href);if(screen==="register")u.searchParams.set("modo","registro");if(params.get("ref"))u.searchParams.set("ref",params.get("ref"));return u.href;}
 
 
 function applyPublicRules(){
@@ -52,7 +55,7 @@ async function loadPublicRules(){
 function configureHomeNavigation() {
  // Las anclas del menú no deben quedarse grabadas para el siguiente refresco.
  document.addEventListener('click', event => {
-  const link=event.target.closest?.('a[href^="#"]');
+  const link=event.target.closest?.('a[data-open-auth],a[href^="#"]');
   if(link?.dataset.openAuth){
    event.preventDefault();
    if(customer&&link.dataset.openAuth==='signin'){show('account');return;}
@@ -93,6 +96,7 @@ let authModalTrigger=null;
 let guestMode=false,guestIdentity=null;
 const GUEST_SESSION_KEY='bellaLoversGuestLookup';
 function closeAuthModal(){
+ if(PAGE==='access'){location.assign('./index.html');return;}
  const modal=$('#authModal');
  if(!modal||modal.classList.contains('hidden'))return;
  modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');
@@ -100,27 +104,21 @@ function closeAuthModal(){
  authModalTrigger?.focus?.();authModalTrigger=null;
 }
 function openAuthModal(screen='signin'){
- if(customer&&screen==='signin'){show('account');return;}
- authModalTrigger=document.activeElement;setAuthScreen(screen);
- $('#joinSent').classList.add('hidden');
- $('#joinForm').classList.toggle('hidden',!requestsOpen);
- $('#memberLoginFeedback').classList.add('hidden');
- const modal=$('#authModal');
- modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');
- document.body.classList.add('auth-modal-open');
- requestAnimationFrame(()=>$('#closeAuthModal').focus());
+ location.assign(accessUrl(screen));
 }
 function show(which){
  const account=$('#account'),nav=$('#navCuenta');
  if(which==='account'){
-  closeAuthModal();
+  if(PAGE!=='account'){location.assign('./cuenta.html');return;}
+  $('#accountLoading').classList.add('hidden');
   account.classList.remove('hidden');
   $('#navRegister')?.classList.add('hidden');
-  if(nav){nav.textContent='Mi cuenta ♡';nav.href='#account';delete nav.dataset.openAuth;}
+  if(nav){nav.textContent='Mi cuenta ♡';nav.href='./cuenta.html';delete nav.dataset.openAuth;}
   account.scrollIntoView({behavior:'smooth',block:'start'});
  }else{
+  if(PAGE==='account'){location.replace(accessUrl());return;}
   account.classList.add('hidden');$('#navRegister')?.classList.remove('hidden');
-  if(nav){nav.textContent='Iniciar sesión ♡';nav.href='#inicio';nav.dataset.openAuth='signin';}
+  if(nav){nav.textContent='Iniciar sesión ♡';nav.href=accessUrl();nav.dataset.openAuth='signin';}
  }
 }
 function setAuthScreen(screen){
@@ -134,6 +132,7 @@ function setAuthScreen(screen){
  });
 }
 function handleAuthKeydown(event){
+ if(PAGE==='access')return;
  const modal=$('#authModal');
  if(modal.classList.contains('hidden'))return;
  if(event.key==='Escape'){event.preventDefault();closeAuthModal();return;}
@@ -425,7 +424,7 @@ async function logOut(){
  if(sb&&!guestMode)await sb.auth.signOut();
  guestMode=false;guestIdentity=null;customer=null;serverBalance=null;
  ledger=[];purchases=[];requests=[];rewards=[];cycles=[];cart={};
- show('login');window.scrollTo({top:0,behavior:'smooth'});
+ location.replace('./index.html');
 }
 function showMemberQr(){
  if(!customer)return;
@@ -472,6 +471,7 @@ async function loadAffiliatedTeachers(){
   select.append(option);
  }
  if([...select.options].some(o=>o.value===previous))select.value=previous;
+ $('#joinTeacherField').classList.toggle('hidden',!(data||[]).length);
  $('#joinTeacherHelp').textContent=(data||[]).length?
   'Elige una profesora afiliada activa. Si no te recomendó ninguna, deja «Ninguna».':
   'BellaShop todavía no ha publicado profesoras afiliadas. Puedes continuar sin seleccionar ninguna.';
@@ -487,7 +487,7 @@ function setup(){
  $('#joinForm').addEventListener('submit',sendJoinRequest);
  $('#memberLoginForm').addEventListener('submit',sendMemberAccess);
  $('#closeAuthModal').addEventListener('click',closeAuthModal);
- $('#authModal').addEventListener('click',event=>{if(event.target===$('#authModal'))closeAuthModal();});
+ $('#authModal').addEventListener('click',event=>{if(PAGE!=='access'&&event.target===$('#authModal'))closeAuthModal();});
  document.addEventListener('keydown',handleAuthKeydown);
  $$('[data-auth-screen]').forEach(button=>button.addEventListener('click',()=>{
   setAuthScreen(button.dataset.authScreen);
@@ -506,31 +506,37 @@ function setup(){
  }));
 
  $('#joinForm').classList.add('hidden');$('#joinClosed').classList.remove('hidden');
- setAuthScreen('signin');
+ setAuthScreen(params.get('modo')==='registro'?'register':'signin');
+ if(PAGE==='home'&&params.has('ref')){location.replace(accessUrl('register'));return;}
+ if(PAGE==='home'&&sessionStorage.getItem(GUEST_SESSION_KEY)){const nav=$('#navCuenta');nav.href='./cuenta.html';nav.textContent='Mi cuenta ♡';delete nav.dataset.openAuth;}
  if(!HAS_BACKEND)return;
  db().then(async x=>{
   sb=x;
   await loadPublicRules();
+  if(PAGE==='home')return;
+  if(PAGE==='access'){
   try{await loadAffiliatedTeachers();}catch(err){console.warn('Profesoras afiliadas no disponibles:',err.message);$('#joinTeacherHelp').textContent='No pudimos cargar las profesoras. Puedes continuar sin seleccionar ninguna.';}
   try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);}
+  }
   const stored=sessionStorage.getItem(GUEST_SESSION_KEY);
-  if(stored){
+  if(stored&&PAGE==='account'){
    try{
     const guest=JSON.parse(stored);
     if(Date.now()<guest.expires_at&&guest.identifier&&guest.fullName){
-     await fetchGuestAccount(guest.identifier,guest.fullName,{open:true});
+     await fetchGuestAccount(guest.identifier,guest.fullName);show('account');
      return;
     }
    }catch(err){console.warn('No se pudo restaurar la consulta:',err.message);}
    sessionStorage.removeItem(GUEST_SESSION_KEY);
   }
+  if(PAGE==='account'){location.replace(accessUrl());return;}
   const {data:{session}}=await sb.auth.getSession();
   if(session){
    // Cerrar cualquier sesión antigua para mantener un único flujo de consulta.
    await sb.auth.signOut();
    show('login');
   }
- }).catch(err=>notify('No fue posible conectar con BellaLovers: '+err.message,'error'));
+ }).catch(err=>{if(PAGE==='account')$('#accountLoading').textContent='No pudimos cargar tu cuenta. Regresa al inicio e inténtalo de nuevo.';notify('No fue posible conectar con BellaLovers: '+err.message,'error');});
 }
 
 configureHomeNavigation();
