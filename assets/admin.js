@@ -803,7 +803,7 @@ async function saveSettings(e){e.preventDefault();if(!requireLive()||!checkManag
  if(!/^https:\/\//.test(payload.shop_url))return notify('El catálogo debe usar una URL HTTPS','error');
  if(!confirm('¿Confirmas el cambio de las reglas futuras de BellaLovers?'))return;
  try{await run(sb.from('bl_settings').update(payload).eq('id',1));notify('Configuración actualizada');await loadAll();}catch(err){notify(err.message,'error');}}
-async function saveTiers(e){e.preventDefault();if(!requireLive()||!checkManager())return;try{const data=$$('[data-tier]').map(x=>({min_amount:Number(x.dataset.tier),points:Number(x.value)}));if(data.some(x=>!Number.isInteger(x.points)||x.points<0))throw new Error('Puntos inválidos');await run(sb.from('bl_referral_tiers').upsert(data,{onConflict:'min_amount'}));notify('Tabla de referidos actualizada');await loadAll();}catch(err){notify(err.message,'error');}}
+async function saveTiers(e){e.preventDefault();if(!requireLive()||!checkManager())return;if(!settings.teacher_referral_points_enabled)return notify('La distribución de puntos por referidos aún no está definida.','error');try{const data=$$('[data-tier]').map(x=>({min_amount:Number(x.dataset.tier),points:Number(x.value)}));if(data.some(x=>!Number.isInteger(x.points)||x.points<0))throw new Error('Puntos inválidos');await run(sb.from('bl_referral_tiers').upsert(data,{onConflict:'min_amount'}));notify('Tabla de referidos actualizada');await loadAll();}catch(err){notify(err.message,'error');}}
 function downloadCsv(headers,rows,name){const values=[headers,...rows].map(row=>row.map(x=>{
   let v=String(x??'').replace(/^[\s\uFEFF\u200B]*[=+\-@]/,m=>"'"+m);
   return '"'+v.replace(/"/g,'""')+'"';

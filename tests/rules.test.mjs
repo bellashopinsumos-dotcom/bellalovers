@@ -210,3 +210,6 @@ assert.match(adminHtml,/id="purchaseAffiliate"/);
 assert.match(adminJs,/bl_purchase_with_affiliate/);
 assert.match(publicAccountFn,/teacher_summary/);
 assert.match(publicHtml,/id="teacherDashboard"/);
+
+assert.doesNotMatch(publicHtml,/Registro gratuito · ingreso desde/);
+assert.match(publicAccountFn,/referral_points_enabled/);

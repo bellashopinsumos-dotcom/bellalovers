@@ -135,8 +135,8 @@ Deno.serve(async(req:Request)=>{
    if(person.category==="profesora"){
     const {data:affiliate,error:affiliateError}=await client.from("bl_affiliated_teachers").select("id,code,active").eq("linked_profile_id",person.id).maybeSingle();
     if(affiliateError)throw affiliateError;
-    const {data:tiers,error:tierError}=await client.from("bl_referral_tiers").select("min_amount,points").order("min_amount");
-    if(tierError)throw tierError;
+    const {data:teacherPolicy,error:policyError}=await client.from("bl_settings").select("teacher_referral_points_enabled").eq("id",1).single();
+    if(policyError)throw policyError;
     const history=new Map<string,{date:string,points:number,status:string,kind:string}>();
     let pending=0;
     if(affiliate){
@@ -156,7 +156,7 @@ Deno.serve(async(req:Request)=>{
      for(const x of earned.data||[]){const v=purchaseMap.get(x.awarded_purchase);if(v)history.set(v.id,{date:v.created_at,points:v.status==="confirmada"?Number(v.referral_awarded||0):0,status:v.status,kind:"Compra referida con puntos"});}
      for(const x of selected.data||[]){if(!history.has(x.id))history.set(x.id,{date:x.created_at,points:0,status:x.status,kind:"Compra con recomendación"});}
     }
-    teacher_summary={active:affiliate?.active===true,code:affiliate?.active?affiliate.code:null,pending,tiers:tiers||[],referral_points:points.filter(x=>x.kind==="referido").reduce((n,x)=>n+Number(x.delta),0),history:[...history.values()].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,100)};
+    teacher_summary={active:affiliate?.active===true,code:affiliate?.active?affiliate.code:null,pending,referral_points_enabled:teacherPolicy?.teacher_referral_points_enabled===true,referral_points:points.filter(x=>x.kind==="referido").reduce((n,x)=>n+Number(x.delta),0),history:[...history.values()].sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,100)};
    }
    // Never disclose phone, email, database UUID, invoice number, internal notes or payment receipts.
    return respond({

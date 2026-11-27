@@ -310,7 +310,7 @@ function renderAccount(){
   $('#teacherCodeRow').hidden=!(customer.category==='profesora');
   $('#myTeacherCode').textContent=teacherCode || 'Pendiente de validación';
   const refpts=teacherSummary?.referral_points??ledger.filter(x=>x.kind==='referido').reduce((s,x)=>s+x.delta,0);
-  $('#myRefPointsRow').hidden=customer.category!=='profesora'; $('#myRefPoints').textContent=String(refpts)+' puntos';
+  $('#myRefPointsRow').hidden=customer.category!=='profesora'||!teacherSummary?.referral_points_enabled; $('#myRefPoints').textContent=String(refpts)+' puntos';
   const welcome=$('#welcomeBanner'); welcome.classList.toggle('hidden',customer.category!=='estudiante');
   if(customer.category==='estudiante') {
     const eligible=purchases.some(p=>p.status==='confirmada'&&p.welcome_eligible);
@@ -330,10 +330,10 @@ function renderTeacherDashboard(){
  const teacher=customer?.category==='profesora';panel.classList.toggle('hidden',!teacher);if(!teacher)return;
  const d=teacherSummary||{},history=Array.isArray(d.history)?d.history:[];
  $('#teacherAffiliationStatus').textContent=d.active?'Afiliación activa a BellaShop':'Tu afiliación no está activa o todavía no está vinculada. Contacta a BellaShop.';
- $('#teacherEarned').textContent=String(d.referral_points||0);$('#teacherPending').textContent=String(d.pending||0);$('#teacherConfirmed').textContent=String(history.filter(x=>x.status==='confirmada').length);
+ $('#teacherEarned').textContent=d.referral_points_enabled?String(d.referral_points||0):'Próximamente';$('#teacherPending').textContent=String(d.pending||0);$('#teacherConfirmed').textContent=String(history.filter(x=>x.status==='confirmada').length);
  $('#teacherSharePanel').classList.toggle('hidden',!d.active||!d.code);
- $('#teacherTiers').innerHTML=(d.tiers||[]).map(t=>'<div class="status-line"><span>Desde '+esc(fmt(t.min_amount))+'</span><strong>'+esc(t.points)+' punto(s)</strong></div>').join('');
- $('#teacherHistory').innerHTML=history.length?history.map(x=>'<div class="data-row"><div><strong>'+esc(x.kind)+'</strong><small>'+esc(date(x.date))+' · '+esc(x.status==='confirmada'?'Confirmada':'Anulada')+'</small></div><strong>'+ (x.points>0?'+'+esc(x.points)+' pts':'0 pts')+'</strong></div>').join(''):'<div class="empty">Aún no hay compras referidas confirmadas.</div>';
+ $('#teacherTiers').textContent='Beneficios adicionales por recomendaciones: próximamente.';
+ $('#teacherHistory').innerHTML=history.length?history.map(x=>'<div class="data-row"><div><strong>'+esc(x.kind)+'</strong><small>'+esc(date(x.date))+' · '+esc(x.status==='confirmada'?'Confirmada':'Anulada')+'</small></div><strong>'+ (x.points>0?'+'+esc(x.points)+' pts':x.status==='confirmada'?'Registrada':'Anulada')+'</strong></div>').join(''):'<div class="empty">Aún no hay compras referidas confirmadas.</div>';
 }
 function imageCard(r){const url=r.image_url&&safeUrl(r.image_url);return url ? `<img src="${esc(url)}" alt="${esc(r.name)}" loading="lazy" onerror="this.style.display='none'">` : '♡';}
 function renderRewards(){
