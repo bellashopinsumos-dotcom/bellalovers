@@ -275,14 +275,16 @@ async function findPurchaseCustomer(){
   result.textContent='Buscando clienta…';
   let profile=null;
   const fields='id,member_code,full_name,phone,category,blocked,archived_at,deleted_at';
-  if(/^BL-[0-9A-F]{8}$/i.test(raw)){
-   profile=await run(sb.from('bl_profiles').select(fields).eq('member_code',raw.toUpperCase()).maybeSingle());
+  if(/^\d{1,9}$/.test(raw)&&Number(raw)>0){
+   profile=await run(sb.from('bl_profiles').select(fields).eq('member_code',raw.padStart(5,'0')).maybeSingle());
+  }else if(/^BL-[0-9A-F]{8}$/i.test(raw)){
+   profile=await run(sb.from('bl_profiles').select(fields).eq('legacy_member_code',raw.toUpperCase()).maybeSingle());
   }else profile=await run(sb.from('bl_profiles').select(fields).eq('phone',normalizedPurchasePhone(raw)).maybeSingle());
   if(seq!==cashLookupSeq||raw!==$('#purchasePhone').value.trim()||staff?.role!=='admin')return null;
   if(!profile){result.innerHTML='<span class="status red">No encontrada</span> No hay una membresía aprobada. <button type="button" class="btn btn-outline btn-small" id="cashGoJoins">Revisar solicitudes</button>';$('#cashGoJoins').onclick=()=>showPanel('joins');return null;}
   if(profile.blocked||profile.archived_at||profile.deleted_at){result.textContent='Esta cuenta está suspendida, archivada o eliminada.';return null;}
   cashMember=profile;$('#purchaseCustomer').value=profile.id;populatePurchaseAffiliates();$('#purchaseBenefitWrap').classList.toggle('hidden',profile.category!=='iniciante');
-  result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span><small>BL-'+esc(profile.id.slice(0,8).toUpperCase())+' · Membresía activa</small>';
+  result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span><small>ID: '+esc(profile.member_code)+' · Membresía activa</small>';
   updateCashPreview();return profile;
  }catch(err){if(seq===cashLookupSeq)result.textContent=err.message;return null;}
 }
@@ -302,7 +304,7 @@ async function startCashScan(){
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
   info.textContent='Acerca el QR personal de BellaLovers a la cámara.';
   let last=0;
-  async function scan(ts){if(generation!==scanGeneration||!scanStream)return;try{if(video.readyState>=2&&ts-last>180){last=ts;let code=null;if(detector){try{code=(await detector.detect(video))[0]?.rawValue;}catch{detector=null;}}if(!code&&window.jsQR){const scale=Math.min(1,720/video.videoWidth);canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);code=window.jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height)?.data;}if(generation!==scanGeneration)return;if(code&&/^BL-[0-9a-f]{8}$/i.test(code.trim())){stopCashScan();$('#purchasePhone').value=code.trim().toUpperCase();await findPurchaseCustomer();$('#purchaseAmount').focus();return;}if(code)info.textContent='Este QR no corresponde a un carné BellaLovers.';}}catch{}if(generation===scanGeneration)scanFrame=requestAnimationFrame(scan);}
+  async function scan(ts){if(generation!==scanGeneration||!scanStream)return;try{if(video.readyState>=2&&ts-last>180){last=ts;let code=null;if(detector){try{code=(await detector.detect(video))[0]?.rawValue;}catch{detector=null;}}if(!code&&window.jsQR){const scale=Math.min(1,720/video.videoWidth);canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);code=window.jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height)?.data;}if(generation!==scanGeneration)return;if(code&&/^(?:\d{5,9}|BL-[0-9a-f]{8})$/i.test(code.trim())){stopCashScan();$('#purchasePhone').value=code.trim().toUpperCase();await findPurchaseCustomer();$('#purchaseAmount').focus();return;}if(code)info.textContent='Este QR no corresponde a un carné BellaLovers.';}}catch{}if(generation===scanGeneration)scanFrame=requestAnimationFrame(scan);}
   scanFrame=requestAnimationFrame(scan);
  }catch(err){if(generation!==scanGeneration)return;stopCashScan();panel.classList.remove('hidden');info.textContent=err.name==='NotAllowedError'?'Permiso de cámara denegado. Puedes buscar por celular.':err.message;}
 }
@@ -312,13 +314,13 @@ function renderCustomers(){
  const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
  const chosen=$('#customerStatusFilter')?.value||'all';
  const filtered=profiles.filter(p=>{
-   const match=(p.full_name+' '+(p.phone||'')+' '+(p.member_code||'BL-'+p.id.slice(0,8))).toLowerCase().includes(term);
+   const match=(p.full_name+' '+(p.phone||'')+' '+(p.member_code||'')).toLowerCase().includes(term);
    const status=p.deleted_at?'deleted':p.archived_at?'archived':p.blocked?'blocked':'active';
    return match&&(chosen==='all'?status!=='deleted':chosen===status);
  });
  const status=p=>p.deleted_at?pill('Eliminada','red'):p.archived_at?pill('Archivada','neutral'):p.blocked?pill('Bloqueada','red'):pill('Activa','green');
  $('#customersTable').innerHTML=table(['Nombre','ID','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>
-   `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td><strong>${esc(p.member_code||"BL-"+p.id.slice(0,8).toUpperCase())}</strong></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
+   `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td><strong>${esc(p.member_code||"—")}</strong></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
  $$('[data-view-customer]').forEach(b=>b.onclick=()=>{
    selectedCustomerId=b.dataset.viewCustomer;renderCustomerDetail();
    if(window.innerWidth<690)$('#selectedCustomerCard')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -362,7 +364,7 @@ function renderCustomerDetail(){
    (p.blocked||archived||deleted?' disabled':'')+'>Deshacer ajuste</button></div>').join('');
  const html=[
   '<div class="admin-form">',
-  '<div><p class="form-help">Clienta, ID y celular de contacto</p><strong>'+esc(p.full_name)+'</strong><p>'+esc(p.phone||'Sin celular asociado')+'</p><p><strong>ID: '+esc(p.member_code||'BL-'+p.id.slice(0,8).toUpperCase())+'</strong></p><p class="admin-tag">Estado: '+esc(status)+'</p></div>',
+  '<div><p class="form-help">Clienta, ID y celular de contacto</p><strong>'+esc(p.full_name)+'</strong><p>'+esc(p.phone||'Sin celular asociado')+'</p><p><strong>ID: '+esc(p.member_code||'—')+'</strong></p><p class="admin-tag">Estado: '+esc(status)+'</p></div>',
   '<div><p class="form-help">Saldo actual</p><strong>'+ubalance(p.id)+' puntos</strong><p>Próximo vencimiento: '+date(cycle?.expires_at)+'</p></div>',
   '<div><label for="editCustomerCategory">Categoría</label><select class="admin-input" id="editCustomerCategory" '+(archived||deleted?'disabled':'')+'>'+categoryOptions+'</select></div>',
   '<div><p class="form-help">Registro y trazabilidad</p><p>Ingreso: '+date(p.created_at)+'</p><p>'+(deleted?'Eliminada: '+date(p.deleted_at):archived?'Archivada: '+date(p.archived_at):'Cuenta con historial completo')+'</p></div>',

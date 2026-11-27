@@ -163,7 +163,7 @@ assert.match(adminJs,/stopPendingRewardPoll\(\)/,'Se detiene la comprobación al
 assert.match(adminJs,/updatePendingRewardAlerts\(\)/,'Administración muestra el número de canjes pendientes');
 assert.match(adminJs,/renderMonthlyChart\(valid\)/,'Estadísticas basadas en compras confirmadas');
 assert.match(adminJs,/exportClubSummary\(\)/,'El resumen mensual se puede exportar');
-assert.match(adminJs,/p\.id\.slice\(0,8\)/,'Búsqueda administrativa por código de carné');
+assert.match(adminJs,/\.eq\('member_code',raw\.padStart\(5,'0'\)\)/,'Búsqueda administrativa por ID consecutivo');
 
 // Regresión del acceso administrativo: el error debe permanecer visible
 // y las sesiones antiguas se pueden reiniciar sin tocar usuarios del servidor.
@@ -218,3 +218,6 @@ assert.equal(DEFAULT_RULES.student_gift_min,200000,'Beneficio iniciante desde do
 assert.match(publicHtml,/value="iniciante"/);
 assert.match(adminHtml,/id="purchaseBenefit"/);
 assert.match(adminJs,/member_code/);
+
+assert.match(clientJs,/customer\.member_code/);
+assert.match(adminHtml,/3123456789 o 00001/);

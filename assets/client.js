@@ -272,7 +272,7 @@ function renderAccount(){
   $('#memberName').textContent=customer.full_name;
   $('#memberCategory').textContent=TYPE[customer.category]||customer.category;
   $('#myJoinedDate').textContent=date(customer.created_at);
-  const memberCode=customer.member_code||('BL-'+String(customer.id).replace(/^public-/,'').slice(0,8).toUpperCase());
+  const memberCode=customer.member_code||'—';
   $('#memberCode').textContent=memberCode;
   $('#memberQrCode').textContent=memberCode;
   $('#memberQrPanel').classList.add('hidden');$('#showMemberQr').setAttribute('aria-expanded','false');

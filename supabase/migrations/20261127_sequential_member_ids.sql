@@ -1,0 +1,12 @@
+LOCK TABLE public.bl_profiles IN ACCESS EXCLUSIVE MODE;
+CREATE SEQUENCE IF NOT EXISTS bella_private.bl_member_number_seq AS bigint START WITH 1;
+ALTER TABLE public.bl_profiles ADD COLUMN IF NOT EXISTS member_number bigint;
+WITH ordered AS (SELECT id,row_number() OVER (ORDER BY created_at,id) AS n FROM public.bl_profiles) UPDATE public.bl_profiles p SET member_number=o.n FROM ordered o WHERE p.id=o.id AND p.member_number IS NULL;
+SELECT setval('bella_private.bl_member_number_seq',COALESCE((SELECT max(member_number) FROM public.bl_profiles),0)+1,false);
+ALTER TABLE public.bl_profiles ALTER COLUMN member_number SET DEFAULT nextval('bella_private.bl_member_number_seq'::regclass), ALTER COLUMN member_number SET NOT NULL;
+ALTER TABLE public.bl_profiles RENAME COLUMN member_code TO legacy_member_code;
+ALTER TABLE public.bl_profiles ADD COLUMN member_code text GENERATED ALWAYS AS (lpad(member_number::text,greatest(5,length(member_number::text)),'0')) STORED;
+CREATE UNIQUE INDEX bl_profiles_member_number_unique ON public.bl_profiles(member_number);
+CREATE UNIQUE INDEX bl_profiles_sequential_code_unique ON public.bl_profiles(member_code);
+REVOKE ALL ON SEQUENCE bella_private.bl_member_number_seq FROM PUBLIC,anon,authenticated;
+NOTIFY pgrst,'reload schema';
