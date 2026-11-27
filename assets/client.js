@@ -481,6 +481,7 @@ async function loadJoinStatus(){
  requestsOpen=(await run(sb.rpc('bl_join_requests_status')))===true;
  $('#joinForm').classList.toggle('hidden',!requestsOpen);
  $('#joinClosed').classList.toggle('hidden',requestsOpen);
+ if(!requestsOpen)$('#joinClosed').innerHTML='<strong>Solicitudes temporalmente cerradas</strong><p>BellaShop abrirá las inscripciones aquí mismo.</p>';
 }
 
 function setup(){
@@ -491,6 +492,7 @@ function setup(){
  document.addEventListener('keydown',handleAuthKeydown);
  $$('[data-auth-screen]').forEach(button=>button.addEventListener('click',()=>{
   setAuthScreen(button.dataset.authScreen);
+  if(PAGE==='access'){const url=new URL(location.href);if(button.dataset.authScreen==='register')url.searchParams.set('modo','registro');else url.searchParams.delete('modo');history.replaceState(history.state,'',url);}
   $('#memberLoginFeedback').classList.add('hidden');
  }));
  $('#refreshMemberRewards').addEventListener('click',()=>{if(customer)loadPublicRules().then(()=>refreshAccount()).then(()=>notify('Tu cuenta está actualizada.')).catch(e=>notify('No fue posible actualizar: '+e.message,'error'));});
@@ -506,6 +508,7 @@ function setup(){
  }));
 
  $('#joinForm').classList.add('hidden');$('#joinClosed').classList.remove('hidden');
+ if(PAGE==='access')$('#joinClosed').innerHTML='<strong>Consultando inscripciones…</strong><p>Un momento mientras comprobamos la disponibilidad.</p>';
  setAuthScreen(params.get('modo')==='registro'?'register':'signin');
  if(PAGE==='home'&&params.has('ref')){location.replace(accessUrl('register'));return;}
  if(PAGE==='home'&&sessionStorage.getItem(GUEST_SESSION_KEY)){const nav=$('#navCuenta');nav.href='./cuenta.html';nav.textContent='Mi cuenta ♡';delete nav.dataset.openAuth;}
@@ -516,7 +519,7 @@ function setup(){
   if(PAGE==='home')return;
   if(PAGE==='access'){
   try{await loadAffiliatedTeachers();}catch(err){console.warn('Profesoras afiliadas no disponibles:',err.message);$('#joinTeacherHelp').textContent='No pudimos cargar las profesoras. Puedes continuar sin seleccionar ninguna.';}
-  try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);}
+  try{await loadJoinStatus();}catch(err){console.warn('Solicitudes no disponibles:',err.message);$('#joinClosed').innerHTML='<strong>No pudimos comprobar las inscripciones.</strong><p>Recarga la página o comunícate con BellaShop por WhatsApp.</p>';}
   }
   const stored=sessionStorage.getItem(GUEST_SESSION_KEY);
   if(stored&&PAGE==='account'){
@@ -533,11 +536,12 @@ function setup(){
   const {data:{session}}=await sb.auth.getSession();
   if(session){
    // Cerrar cualquier sesión antigua para mantener un único flujo de consulta.
-   await sb.auth.signOut();
+   await sb.auth.signOut({scope:'local'});
    show('login');
   }
  }).catch(err=>{if(PAGE==='account')$('#accountLoading').textContent='No pudimos cargar tu cuenta. Regresa al inicio e inténtalo de nuevo.';notify('No fue posible conectar con BellaLovers: '+err.message,'error');});
 }
 
+if(PAGE==='account')window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 configureHomeNavigation();
 setup();

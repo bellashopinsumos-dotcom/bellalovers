@@ -94,7 +94,15 @@ assert.match(adminJs, /bl_decide_guest_reward/, 'Admin confirma por WhatsApp ant
 assert.doesNotMatch(adminHtml, /id="copyMemberKey"/, 'No se entregan claves a clientas');
 assert.match(keyFn, /status:410/, 'Endpoint de claves privadas deshabilitado');
 assert.match(publicAccountFn, /invoice:null/, 'No compartir números de factura en consultas sin autenticación');
-assert.match(clientJs, /openAuthModal/, 'Al tocar iniciar sesión se abre modal');
+assert.match(clientJs, /location\.assign\(accessUrl\(screen\)\)/, 'El acceso navega a otra página');
+const accessHtml=readFileSync(new URL('../acceso.html',import.meta.url),'utf8');
+const accountHtml=readFileSync(new URL('../cuenta.html',import.meta.url),'utf8');
+const teacherHtml=readFileSync(new URL('../profesoras.html',import.meta.url),'utf8');
+assert.match(accessHtml,/data-page="access"/);
+assert.match(accountHtml,/data-page="account"/);
+assert.match(teacherHtml,/id="teacherForm"/);
+assert.match(teacherHtml,/wa\.me\/573122002698/);
+assert.match(clientJs,/location\.assign\('\.\/cuenta\.html'\)/);
 assert.match(clientJs, /closeAuthModal/, 'Permite cerrar modal');
 assert.match(clientJs, /handleAuthKeydown/, 'Cierre con Escape y navegación de teclado');
 assert.match(clientJs, /normalizeIdentifier/, 'Identificador normalizado sin contraseñas');
