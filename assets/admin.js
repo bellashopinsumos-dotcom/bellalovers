@@ -317,8 +317,8 @@ function renderCustomers(){
    return match&&(chosen==='all'?status!=='deleted':chosen===status);
  });
  const status=p=>p.deleted_at?pill('Eliminada','red'):p.archived_at?pill('Archivada','neutral'):p.blocked?pill('Bloqueada','red'):pill('Activa','green');
- $('#customersTable').innerHTML=table(['Nombre','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>
-   `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
+ $('#customersTable').innerHTML=table(['Nombre','ID','Celular','Categoría','Puntos','Estado',''],filtered.map(p=>
+   `<tr><td><strong>${esc(p.full_name)}</strong><div class="muted-cell">${date(p.created_at)}</div></td><td><strong>${esc(p.member_code||"BL-"+p.id.slice(0,8).toUpperCase())}</strong></td><td>${esc(p.phone)}</td><td>${esc(TYPE[p.category])}</td><td><strong>${ubalance(p.id)}</strong></td><td>${status(p)}</td><td><button class="btn btn-outline" data-view-customer="${esc(p.id)}">Ver ficha</button></td></tr>`));
  $$('[data-view-customer]').forEach(b=>b.onclick=()=>{
    selectedCustomerId=b.dataset.viewCustomer;renderCustomerDetail();
    if(window.innerWidth<690)$('#selectedCustomerCard')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -362,7 +362,7 @@ function renderCustomerDetail(){
    (p.blocked||archived||deleted?' disabled':'')+'>Deshacer ajuste</button></div>').join('');
  const html=[
   '<div class="admin-form">',
-  '<div><p class="form-help">Clienta y celular de contacto</p><strong>'+esc(p.full_name)+'</strong><p>'+esc(p.phone||'Sin celular asociado')+'</p><p class="admin-tag">Estado: '+esc(status)+'</p></div>',
+  '<div><p class="form-help">Clienta, ID y celular de contacto</p><strong>'+esc(p.full_name)+'</strong><p>'+esc(p.phone||'Sin celular asociado')+'</p><p><strong>ID: '+esc(p.member_code||'BL-'+p.id.slice(0,8).toUpperCase())+'</strong></p><p class="admin-tag">Estado: '+esc(status)+'</p></div>',
   '<div><p class="form-help">Saldo actual</p><strong>'+ubalance(p.id)+' puntos</strong><p>Próximo vencimiento: '+date(cycle?.expires_at)+'</p></div>',
   '<div><label for="editCustomerCategory">Categoría</label><select class="admin-input" id="editCustomerCategory" '+(archived||deleted?'disabled':'')+'>'+categoryOptions+'</select></div>',
   '<div><p class="form-help">Registro y trazabilidad</p><p>Ingreso: '+date(p.created_at)+'</p><p>'+(deleted?'Eliminada: '+date(p.deleted_at):archived?'Archivada: '+date(p.archived_at):'Cuenta con historial completo')+'</p></div>',
@@ -934,7 +934,7 @@ function setup(){
  $('#affiliateReset').addEventListener('click',resetAffiliateForm);
  $('#resetRewardForm').onclick=()=>{$('#rewardForm').reset();$('#rewardId').value='';updateRewardPhotoPreview(null);};$('#resetGiftForm').onclick=()=>{$('#giftForm').reset();$('#giftId').value='';};
  $('#expirePoints').onclick=async()=>{if(!requireLive()||!checkManager())return;try{const n=await rpc('bl_expire_due');notify('Vencimientos procesados: '+n+' puntos');await loadAll();}catch(err){notify(err.message,'error');}};
- $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
+ $('#csvCustomers').onclick=()=>{if(!requireLive())return;downloadCsv(['Nombre','ID','Celular','Categoría','Puntos','Fecha'],profiles.map(p=>[p.full_name,p.member_code,p.phone,p.category,ubalance(p.id),p.created_at]),'bellalovers-clientas.csv');};
  $('#csvPurchases').onclick=()=>{if(!requireLive())return;downloadCsv(['Registro','Canal','Cliente','Valor productos','Descuento especial','Puntos','Estado','Fecha'],purchases.map(p=>[p.invoice,CHANNEL_LABEL[p.channel]||'No especificado',uname(p.customer_id),p.products_total,p.special_discount,p.points_awarded,p.status,p.created_at]),'bellalovers-compras.csv');};
  $('#csvAudit').onclick=()=>{if(!requireLive()||!checkManager())return;downloadCsv(['Fecha','Acción','Entidad','Identificador','Responsable','Detalle'],audit.map(x=>[x.created_at,x.action,x.entity,x.entity_id,x.actor,JSON.stringify(x.detail||{})]),'bellalovers-auditoria.csv');};
  if(!HAS_BACKEND){showAdminLoginError('El servicio BellaLovers no está configurado. Contacta al encargado.');return;}
