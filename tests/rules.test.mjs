@@ -213,3 +213,6 @@ assert.match(publicHtml,/id="teacherDashboard"/);
 
 assert.doesNotMatch(publicHtml,/Registro gratuito · ingreso desde/);
 assert.match(publicAccountFn,/referral_points_enabled/);
+
+assert.equal(DEFAULT_RULES.student_gift_min,100000,'Regalo estudiantil desde cien mil');
+assert.match(publicHtml,/primera compra desde \$100\.000/);

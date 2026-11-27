@@ -23,7 +23,7 @@ export const date = (value) => value ? new Intl.DateTimeFormat('es-CO',{dateStyl
 export function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 export function short(value, n=45) { const t=String(value??''); return t.length > n ? `${t.slice(0,n-1)}…` : t; }
 export const TYPE = { estudiante: 'Estudiante de uñas', manicurista: 'Manicurista / clienta frecuente', profesora: 'Profesora de uñas' };
-export const DEFAULT_RULES = { min_purchase:50000, point_value:10000, unlock_points:50, student_gift_min:150000, cycle_months:12, grace_days:30, exclude_discounts:true, student_first_no_points:true, shop_url:CONFIG.shopUrl };
+export const DEFAULT_RULES = { min_purchase:50000, point_value:10000, unlock_points:50, student_gift_min:100000, cycle_months:12, grace_days:30, exclude_discounts:true, student_first_no_points:true, shop_url:CONFIG.shopUrl };
 export function calcPoints(amount, rules=DEFAULT_RULES, discounted=false, validNumber=1, category='manicurista') {
   if (!Number.isFinite(Number(amount)) || Number(amount) < rules.min_purchase) return 0;
   if (rules.exclude_discounts && discounted) return 0;

@@ -109,7 +109,7 @@ Deno.serve(async(req:Request)=>{
   if(action==="view"){
    const [settingsResult,purchasesResult,rewardsResult,redemptionsResult,guestResult,teacherResult,giftResult]=await Promise.all([
     client.from("bl_settings").select("unlock_points,student_gift_min").eq("id",1).single(),
-    client.from("bl_purchases").select("created_at,products_total,points_awarded,status,channel,special_discount")
+    client.from("bl_purchases").select("created_at,products_total,points_awarded,status,channel,special_discount,welcome_eligible")
       .eq("customer_id",person.id).order("created_at",{ascending:false}).limit(80),
     client.from("bl_rewards").select("id,name,product_ref,image_url,points_cost,stock,reserved,active,audience")
       .eq("active",true).order("points_cost",{ascending:true}).limit(100),
@@ -165,7 +165,7 @@ Deno.serve(async(req:Request)=>{
      category:person.category,created_at:person.created_at,blocked:false
     },
     settings:{unlock_points:settingsResult.data.unlock_points||50,
-     student_gift_min:settingsResult.data.student_gift_min||150000},
+     student_gift_min:settingsResult.data.student_gift_min??100000},
     balance,cycles,ledger:points.slice(0,250).map(p=>({
      cycle_id:p.cycle_id,created_at:p.created_at,kind:p.kind,delta:p.delta,detail:""
     })),

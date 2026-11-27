@@ -1,5 +1,5 @@
 import {HAS_BACKEND} from './config.js';
-import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
+import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=estudiantes10020261127';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
 let knownJoinIds=null;
 let cashMember=null,cashBusy=false,cashLookupSeq=0,scanStream=null,scanFrame=0,scanGeneration=0;
