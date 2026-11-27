@@ -197,3 +197,10 @@ assert.match(adminJs,/pollJoins\(\)/);
 assert.match(adminHtml,/id="joinSearch"/);
 const membershipMigration=readFileSync(new URL('../supabase/migrations/20261127_minimum_membership_purchase.sql',import.meta.url),'utf8');
 assert.match(membershipMigration,/p_amount<50000/);
+
+assert.match(adminHtml,/id="quickPurchase"/);
+assert.match(adminHtml,/id="purchaseScan"/);
+assert.match(adminHtml,/id="purchasePreview"/);
+assert.match(adminJs,/cashBusy\|\|!requireLive\(\)\|\|!checkManager\(\)/);
+const cashMigration=readFileSync(new URL('../supabase/migrations/20261127_purchase_registration_admin_only.sql',import.meta.url),'utf8');
+assert.equal((cashMigration.match(/staff\(true\)/g)||[]).length,3);

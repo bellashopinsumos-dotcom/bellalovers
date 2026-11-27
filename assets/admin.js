@@ -2,6 +2,7 @@ import {HAS_BACKEND} from './config.js';
 import {db,$,$$,fmt,date,esc,TYPE,DEFAULT_RULES,notify,setLoading,pill,safeUrl} from './core.js?v=adminacceso20261121b';
 let sb, staff, mode='locked', recoveryMode=false, photoPreviewUrl=null;
 let knownJoinIds=null;
+let cashMember=null,cashBusy=false,cashLookupSeq=0,scanStream=null,scanFrame=0,scanGeneration=0;
 let pendingRewardPoll=null,pendingRewardKnownIds=null,pendingRewardCount=0,pendingRewardDirty=false;
 let profiles=[], purchases=[], points=[],adjustmentReversals=[], cycles=[], rewards=[], redemptions=[], redemptionItems=[],teachers=[],affiliatedTeachers=[],affiliateAttributions=[],referrals=[],tiers=[],giftOptions=[],giftClaims=[],audit=[],staffDirectory=[],joinRequests=[],guestRewardRequests=[],selectedJoinId=null,settings={...DEFAULT_RULES},selectedCustomerId=null;
 const CHANNEL_LABEL={tienda:'Tienda',whatsapp:'WhatsApp',domicilio:'Domicilio',web:'Página web',otro:'No especificado / otro'};
@@ -19,6 +20,8 @@ function table(headers, rows){
  return `<table class="admin-table"><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.join(''):`<tr><td colspan="${headers.length}" class="empty">Aún no hay registros.</td></tr>`}</tbody></table>`;
 }
 function showPanel(name){
+ if(name==='purchases'&&staff?.role!=='admin'){notify('Solo el administrador puede registrar compras.','error');return;}
+ if(name!=='purchases')stopCashScan();
  if(name==='redemptions'&&pendingRewardDirty){
   pendingRewardDirty=false;loadAll().catch(err=>notify(err.message,'error'));
  }
@@ -32,6 +35,7 @@ function enter(){
  $('#adminApp').classList.remove('hidden');
  $('#adminMode').textContent=staff.role==='admin'?'Administrador':'Operador';
  $('#staffIdentity').textContent=staff.role;
+ const admin=staff.role==='admin';$('[data-go="purchases"],[data-section="purchases"]').forEach(el=>el.classList.toggle('hidden',!admin));$('#cashShortcut').classList.toggle('hidden',!admin);if(!admin)showPanel('overview');
 }
 
 function explainAdminError(error){
@@ -244,23 +248,62 @@ function normalizedPurchasePhone(input){
  if(!/^3\d{9}$/.test(local))throw new Error('Escribe un celular colombiano de 10 dígitos.');
  return '+57'+local;
 }
-async function findPurchaseCustomer(){
- const result=$('#purchaseLookupResult');
- $('#purchaseCustomer').value='';
- try{
-  if(!requireLive())return null;
-  const phone=normalizedPurchasePhone($('#purchasePhone').value);
-  result.textContent='Buscando clienta…';
-  const profile=await run(sb.from('bl_profiles').select('id,full_name,phone,category,blocked,archived_at,deleted_at').eq('phone',phone).maybeSingle());
-  if(!profile){result.innerHTML='<span class="status red">No encontrada</span> No hay una membresía aprobada con ese celular. Revisa Solicitudes de ingreso.';return null;}
-  if(profile.blocked||profile.archived_at||profile.deleted_at){
-   result.textContent='Esta cuenta está suspendida, archivada o eliminada. Revisa Clientas antes de registrar compras.';return null;
-  }
-  $('#purchaseCustomer').value=profile.id;
-  result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span>';
-  return profile;
- }catch(err){result.textContent=err.message;return null;}
+function updateCashPreview(){
+ const amount=Number($('#purchaseAmount').value),min=Number(settings.min_purchase)||50000,unit=Number(settings.point_value)||10000;
+ const valid=Number.isSafeInteger(amount)&&amount>0&&amount<=500000000;
+ $('#purchaseSave').disabled=cashBusy||!cashMember||!valid||staff?.role!=='admin';
+ const number=$('#purchasePreview'),note=$('#purchasePreviewNote');
+ if(!cashMember||!valid){number.textContent='—';note.textContent='Selecciona una clienta y escribe el valor.';return;}
+ let estimate=amount>=min?Math.floor(amount/unit):0;
+ if(amount<min)note.textContent='Compra inferior a '+fmt(min)+': no suma puntos.';
+ else if(settings.exclude_discounts!==false&&$('#purchaseDiscount').checked){estimate=0;note.textContent='Descuento especial: no suma puntos.';}
+ else if(cashMember.category==='estudiante'&&settings.student_first_no_points!==false){const eligible=purchases.some(x=>x.customer_id===cashMember.id&&x.status==='confirmada'&&x.products_total>=min&&(settings.exclude_discounts===false||!x.special_discount));if(!eligible){number.textContent='Hasta '+estimate;note.textContent='Si es su primera compra válida, no suma puntos. El servidor verifica su historial.';return;}note.textContent='Estimación; el servidor confirma los puntos definitivos.';}
+ else note.textContent='Estimación; el servidor confirma los puntos definitivos.';
+ number.textContent='+'+estimate;
 }
+function clearCashMember(){cashLookupSeq++;cashMember=null;$('#purchaseCustomer').value='';updateCashPreview();}
+async function findPurchaseCustomer(){
+ const result=$('#purchaseLookupResult'), raw=$('#purchasePhone').value.trim();
+ clearCashMember();const seq=cashLookupSeq;
+ try{
+  if(!requireLive()||!checkManager())return null;
+  result.textContent='Buscando clienta…';
+  let profile=null;
+  const fields='id,full_name,phone,category,blocked,archived_at,deleted_at';
+  if(/^BL-[0-9A-F]{8}$/i.test(raw)){
+   const prefix=raw.slice(3).toLowerCase(),matches=profiles.filter(x=>x.id.slice(0,8).toLowerCase()===prefix);
+   if(matches.length!==1)throw new Error('No se pudo identificar un carné único. Busca por celular.');
+   profile=await run(sb.from('bl_profiles').select(fields).eq('id',matches[0].id).maybeSingle());
+  }else profile=await run(sb.from('bl_profiles').select(fields).eq('phone',normalizedPurchasePhone(raw)).maybeSingle());
+  if(seq!==cashLookupSeq||raw!==$('#purchasePhone').value.trim()||staff?.role!=='admin')return null;
+  if(!profile){result.innerHTML='<span class="status red">No encontrada</span> No hay una membresía aprobada. <button type="button" class="btn btn-outline btn-small" id="cashGoJoins">Revisar solicitudes</button>';$('#cashGoJoins').onclick=()=>showPanel('joins');return null;}
+  if(profile.blocked||profile.archived_at||profile.deleted_at){result.textContent='Esta cuenta está suspendida, archivada o eliminada.';return null;}
+  cashMember=profile;$('#purchaseCustomer').value=profile.id;
+  result.innerHTML='<strong>✓ '+esc(profile.full_name)+'</strong><span>'+esc(profile.phone)+' · '+esc(TYPE[profile.category]||profile.category)+'</span><small>BL-'+esc(profile.id.slice(0,8).toUpperCase())+' · Membresía activa</small>';
+  updateCashPreview();return profile;
+ }catch(err){if(seq===cashLookupSeq)result.textContent=err.message;return null;}
+}
+function stopCashScan(){scanGeneration++;if(scanFrame)cancelAnimationFrame(scanFrame);scanFrame=0;scanStream?.getTracks().forEach(t=>t.stop());scanStream=null;const v=$('#purchaseVideo');if(v)v.srcObject=null;$('#purchaseScanner')?.classList.add('hidden');}
+async function startCashScan(){
+ if(!requireLive()||!checkManager())return;
+ stopCashScan();const generation=scanGeneration;
+ const panel=$('#purchaseScanner'),video=$('#purchaseVideo'),info=$('#purchaseScanStatus');panel.classList.remove('hidden');
+ try{
+  let detector=null;if(window.BarcodeDetector){try{detector=new BarcodeDetector({formats:['qr_code']});}catch{}}
+  if(!detector&&!window.jsQR)throw Error('No se cargó el lector QR. Escribe el código del carné o el celular.');
+  if(!navigator.mediaDevices?.getUserMedia)throw Error('Este navegador no permite usar la cámara. Escribe el código del carné.');
+  info.textContent='Solicitando permiso para usar la cámara…';
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  if(generation!==scanGeneration){stream.getTracks().forEach(t=>t.stop());return;}
+  scanStream=stream;video.srcObject=stream;await video.play();if(generation!==scanGeneration)return;
+  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+  info.textContent='Acerca el QR personal de BellaLovers a la cámara.';
+  let last=0;
+  async function scan(ts){if(generation!==scanGeneration||!scanStream)return;try{if(video.readyState>=2&&ts-last>180){last=ts;let code=null;if(detector){try{code=(await detector.detect(video))[0]?.rawValue;}catch{detector=null;}}if(!code&&window.jsQR){const scale=Math.min(1,720/video.videoWidth);canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);ctx.drawImage(video,0,0,canvas.width,canvas.height);code=window.jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,canvas.width,canvas.height)?.data;}if(generation!==scanGeneration)return;if(code&&/^BL-[0-9a-f]{8}$/i.test(code.trim())){stopCashScan();$('#purchasePhone').value=code.trim().toUpperCase();await findPurchaseCustomer();$('#purchaseAmount').focus();return;}if(code)info.textContent='Este QR no corresponde a un carné BellaLovers.';}}catch{}if(generation===scanGeneration)scanFrame=requestAnimationFrame(scan);}
+  scanFrame=requestAnimationFrame(scan);
+ }catch(err){if(generation!==scanGeneration)return;stopCashScan();panel.classList.remove('hidden');info.textContent=err.name==='NotAllowedError'?'Permiso de cámara denegado. Puedes buscar por celular.':err.message;}
+}
+function resetCashForm(){stopCashScan();$('#purchaseForm').reset();clearCashMember();$('#purchaseLookupResult').textContent='Busca una membresía activa.';$('#purchaseReceipt').classList.add('hidden');$('#purchasePhone').focus();}
 
 function renderCustomers(){
  const term=$('#searchCustomers').value.trim().toLocaleLowerCase('es');
@@ -701,29 +744,25 @@ async function approveJoin(e){
 
 function renderAll(){updateJoinBadge();renderGuestRewardRequests();renderJoins();renderOverview();populateClientSelects();renderCustomers();renderPurchases();renderRewards();renderRedemptions();renderTeachers();renderGifts();renderSettings();renderStaff();renderAudit();}
 async function purchaseSubmit(e){
- e.preventDefault();if(!requireLive())return;
- const btn=$('#purchaseForm button[type=submit]');
- const customer=await findPurchaseCustomer();
- if(!customer)return notify('Primero busca un celular que pertenezca a una clienta activa.','error');
+ e.preventDefault();if(cashBusy||!requireLive()||!checkManager())return;
+ const btn=$('#purchaseSave'),amount=Number($('#purchaseAmount').value);
+ if(!cashMember||!Number.isSafeInteger(amount)||amount<=0||amount>500000000)return notify('Busca una clienta y escribe el valor de productos.','error');
+ cashBusy=true;updateCashPreview();
+ const original=cashMember.id;
  try{
-  const amount=Number($('#purchaseAmount').value);
-  if(!Number.isSafeInteger(amount)||amount<=0||amount>500000000)throw new Error('Escribe el valor exacto de productos pagados.');
-  if(!confirm('¿Confirmas que '+customer.full_name+' realizó esta compra por '+fmt(amount)+' en productos?'))return;
+  const customer=await findPurchaseCustomer();
+  if(!customer||customer.id!==original)throw Error('No se pudo comprobar la misma clienta. Revisa sus datos.');
+  if(!confirm('¿Confirmas la compra de '+customer.full_name+' por '+fmt(amount)+' en productos?'))return;
   setLoading(btn,true,'Guardando compra…');
-  const result=await rpc('bl_purchase_simple',{
-   p_customer:customer.id,p_amount:amount,
-   p_invoice:$('#purchaseInvoice').value.trim()||null,
-   p_channel:$('#purchaseChannel').value||null,
-   p_discount:$('#purchaseDiscount').checked,
-   p_notes:$('#purchaseNotes').value.trim()||null
-  });
-  notify('Compra registrada: '+result.points+' puntos. '+(result.internal_reference?'Referencia interna: '+result.reference:'Factura: '+result.reference));
-  $('#purchaseForm').reset();$('#purchaseCustomer').value='';
-  $('#purchaseLookupResult').textContent='Compra guardada. Busca otra clienta por celular.';
-  await loadAll();
+  const result=await rpc('bl_purchase_simple',{p_customer:customer.id,p_amount:amount,p_invoice:$('#purchaseInvoice').value.trim()||null,p_channel:$('#purchaseChannel').value||null,p_discount:$('#purchaseDiscount').checked,p_notes:$('#purchaseNotes').value.trim()||null});
+  if(!result)throw Error('No se confirmó el registro.');
+  resetCashForm();
+  const receipt=$('#purchaseReceipt');receipt.textContent='✓ Compra registrada: '+customer.full_name+' · '+fmt(amount)+' · '+result.points+' puntos. '+(result.internal_reference?'Referencia interna: ':'Factura: ')+result.reference;receipt.classList.remove('hidden');
+  notify('Compra registrada: '+result.points+' puntos.');await loadAll();
  }catch(err){notify('No se pudo guardar la compra: '+err.message,'error');}
- finally{setLoading(btn,false);}
+ finally{cashBusy=false;setLoading(btn,false);updateCashPreview();}
 }
+
 async function rewardSubmit(e){
  e.preventDefault();if(!requireLive()||!checkManager())return;
  const btn=$('#rewardForm button[type=submit]');
@@ -879,9 +918,12 @@ function setup(){
  $('#adminLogout').onclick=logout;$('#adminLogoutMobile').onclick=logout;$('#refreshAdmin').onclick=()=>loadAll();
  $('#searchCustomers').addEventListener('input',renderCustomers);$('#customerStatusFilter').addEventListener('change',renderCustomers);$('#staffForm').addEventListener('submit',saveStaff);
  $('#purchaseForm').addEventListener('submit',purchaseSubmit);
- $('#purchaseFind').addEventListener('click',findPurchaseCustomer);
+ $('#purchaseFind').addEventListener('click',async()=>{if(await findPurchaseCustomer())$('#purchaseAmount').focus();});
+ $('#purchasePhone').addEventListener('keydown',async e=>{if(e.key==='Enter'){e.preventDefault();if(await findPurchaseCustomer())$('#purchaseAmount').focus();}});
+ $('#purchaseScan').addEventListener('click',startCashScan);$('#purchaseScanClose').addEventListener('click',stopCashScan);$('#purchaseReset').addEventListener('click',()=>{if(!cashBusy)resetCashForm();});
+ $('#purchaseAmount').addEventListener('input',updateCashPreview);$('#purchaseDiscount').addEventListener('change',updateCashPreview);$('[data-cash-amount]').forEach(b=>b.onclick=()=>{$('#purchaseAmount').value=b.dataset.cashAmount;updateCashPreview();});window.addEventListener('pagehide',stopCashScan);
  $('#purchasePhone').addEventListener('input',()=>{
-   $('#purchaseCustomer').value='';
+   clearCashMember();
    $('#purchaseLookupResult').textContent='Pulsa Buscar para confirmar la clienta.';
  });$('#rewardForm').addEventListener('submit',rewardSubmit);$('#giftForm').addEventListener('submit',giftSubmit);$('#giftDeliveryForm').addEventListener('submit',giftDeliverySubmit);$('#settingsForm').addEventListener('submit',saveSettings);$('#tierForm').addEventListener('submit',saveTiers);
  $('#affiliateForm').addEventListener('submit',submitAffiliate);
@@ -912,5 +954,5 @@ function setup(){
   notify('No fue posible conectar: '+message,'error');
  });
 }
-async function logout(){if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;stopPendingRewardPoll();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
+async function logout(){stopCashScan();clearCashMember();if(mode==='live'&&sb)await sb.auth.signOut();mode='locked';staff=null;stopPendingRewardPoll();$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminPassword').value='';}
 setup();
